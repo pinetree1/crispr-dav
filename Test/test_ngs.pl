@@ -91,7 +91,7 @@ $ngs->variantStat ( bam_inf=>$bamfile, ref_fasta=>$ref_fasta,
 };
 
 $ngs->targetSeq (bam_inf=>$bamfile, min_overlap=>$target_end - $target_start + 1, 
-	sample_name=>$sample, ref_name=>$ref_name, target_name=>$target_name, 
+	sample=>$sample, ref_name=>$ref_name, target_name=>$target_name, 
 	chr=>$chr, target_start=>$target_start, target_end=>$target_end,
 	outfile_detail=>$target_file, 
 	outfile_count=>$target_count,
@@ -99,6 +99,6 @@ $ngs->targetSeq (bam_inf=>$bamfile, min_overlap=>$target_end - $target_start + 1
 
 $ngs->categorizeHDR(bam_inf=>$bamfile, chr=>$chr, 
 	base_changes=>$base_changes,
-	sample_name=>$sample,
+	sample=>$sample,
 	min_mapq=>$min_mapq,
 	stat_outf=>$hdr_statfile);

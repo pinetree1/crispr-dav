@@ -430,7 +430,7 @@ sub targetSeq {
 		min_overlap=>1,
 		target_name=>'',  # DGKA_CR1
 		ref_name=>'', # hg19
-		sample_name=>'',
+		sample=>'',
 		@_	
 	);
 
@@ -462,79 +462,25 @@ sub targetSeq {
 
 	# among total reads, those with at least 1 base of indel inside target region.
 	my $indel_reads = 0; 
-
 	my $inframe_indel_reads = 0;
-
 	my %freqs; # frequencies of alleles
 	
 	while (my $line=<P>) {
-		my ($qname, $flag, $chr, $align_start, $mapq, $cigar, 
-			$mate_chr, $mate_start, $tlen, $seq, $qual ) = split(/\t/, $line);
-
-		next if $mapq < $h{min_mapq};  
-
-		my $chr_pos = $align_start -1;  # pos on chromosome
-		my $seq_pos = 0; # position on read sequence
-	
-		# split cigar string between number and letter
-		my @cig = split(/(?<=\d)(?=\D)|(?<=\D)(?=\d)/, $cigar);			
-
-		my $indelstr='';
-		my $indel_length = 0;
-
-		# read sequence comparable to reference but with insertion removed and deletion added back.
-		my $read_ref_seq;
-
-		for (my $i=0; $i< @cig-1; $i +=2 ) {
-			my $len = $cig[$i];
-			my $letter=$cig[$i+1];
-			if ( $letter eq "S" ) {
-				$seq_pos += $len;
-			} elsif ( $letter eq "M" ) {
-				$read_ref_seq .= substr($seq, $seq_pos, $len);
-				$seq_pos += $len;
-				$chr_pos += $len;
-			} elsif ( $letter eq "D" ) {
-				$read_ref_seq .= '-' x $len;
-				my $del_start = $chr_pos+1;
-				$chr_pos += $len;
-
-				# keep the deletion if it overlaps the target region by 1 base.
-				if ( _isOverlap($h{target_start}, $h{target_end},
-					$del_start, $chr_pos, 1)) {
-					$indelstr .= "$del_start:$chr_pos:D::";
-					$indel_length += -$len;
-				} 
-			} elsif ( $letter eq "I" ) {
-				my $inserted_seq = substr($seq, $seq_pos, $len);
-				$seq_pos += $len;
-
-				# keep the insertion if it overlaps the target region by 1 base. 
-				if ( _isOverlap($h{target_start}, $h{target_end},
-					$chr_pos, $chr_pos+1, 1) ) {
-					$indelstr .= $chr_pos . ":" . ($chr_pos+1) . ":I:$inserted_seq:";
-					$indel_length += $len;
-				}
-			}			
-		} # end for
-
-		# target sequence
-		my $target_seq = substr($read_ref_seq, $h{target_start} - $align_start, 
-			$h{target_end} - $h{target_start} + 1);
+		my @info = $self->extractReadRange($line, $h{chr}, $h{target_start}, 
+			$h{target_end}, $h{min_mapq});
+		next if !@info;
 
 		$overlap_reads ++;
 
-		if ($indelstr) {
+		if ($info[2] =~ /[ID]/) {
 			$indel_reads ++;  
-			$indelstr=~ s/:$//;
-			$inframe_indel_reads  ++ if $indel_length % 3 == 0;
-			$freqs{$indelstr}++;
+			$inframe_indel_reads++ if $info[5] % 3 == 0;
+			$freqs{$info[2]}++;
 		} else {
 			$freqs{WT}++;
 		}
 
-		my $strand = $flag & 16 ? '-' : '+';
-		print $outf join("\t", $qname, $target_seq, $indelstr, $strand)  . "\n";
+		print $outf join("\t", @info)  . "\n";
 	} # end while
 
 	#unlink $bedfile;
@@ -547,7 +493,7 @@ sub targetSeq {
 	my $pct_indel = sprintf("%.2f", 100 - $pct_wt);
 	my $pct_inframe = sprintf("%.2f", $inframe_indel_reads * 100/$overlap_reads);
 	
-	print $cntf join("\t", $h{sample_name}, $h{target_name}, $h{ref_name}, 
+	print $cntf join("\t", $h{sample}, $h{target_name}, $h{ref_name}, 
 		"$h{chr}:$h{target_start}-$h{target_end}", 
 		$overlap_reads, $wt_reads, $indel_reads, $pct_wt, $pct_indel,
 		$inframe_indel_reads, $pct_inframe) . "\n";
@@ -564,10 +510,80 @@ sub targetSeq {
 			$frame_shift = $indel_len%3 ? "Y" : "N";
 		} 
 
-		print $alef join("\t", $h{sample_name}, $h{target_name}, $h{ref_name}, 
+		print $alef join("\t", $h{sample}, $h{target_name}, $h{ref_name}, 
 			"$h{chr}:$h{target_start}-$h{target_end}", 
 			$key, $reads, $pct, $indel_len, $frame_shift) . "\n";
 	}
+}
+
+## extract read sequence in a range
+## start and end are 1-based.
+sub extractReadRange {
+	my ($self, $sam_record, $chr, $start, $end, $min_mapq)=@_; 
+	my ($qname, $flag, $refchr, $align_start, $mapq, $cigar, 
+		$mate_chr, $mate_start, $tlen, $seq, $qual ) = split(/\t/, $sam_record);
+
+	return if ($min_mapq && $mapq < $min_mapq);  
+
+	# 101900216:101900224:D:-:101900224:101900225:I:G
+	my $indelstr='';  # position are 1-based. 
+	my $indel_length = 0;
+
+	# read sequence comparable to reference but with insertion removed and deletion added back.
+	my $newseq;
+	my $chr_pos = $align_start -1;  # pos on chromosome
+	my $seq_pos = 0; # position on read sequence
+
+	# split cigar string between number and letter
+	my @cig = split(/(?<=\d)(?=\D)|(?<=\D)(?=\d)/, $cigar);			
+
+	for (my $i=0; $i< @cig-1; $i +=2 ) {
+		my $len = $cig[$i];
+		my $letter=$cig[$i+1];
+		if ( $letter eq "S" ) {
+			$seq_pos += $len;
+		} elsif ( $letter eq "M" ) {
+			$newseq .= substr($seq, $seq_pos, $len);
+			$seq_pos += $len;
+			$chr_pos += $len;
+		} elsif ( $letter eq "D" ) {
+			$newseq .= '-' x $len;
+			my $del_start = $chr_pos+1;
+			$chr_pos += $len;
+
+			# keep the deletion if it overlaps the target region by 1 base.
+			if ( _isOverlap($start, $end, $del_start, $chr_pos, 1)) {
+				$indelstr .= "$del_start:$chr_pos:D:-:";
+				$indel_length += -$len;
+			}
+		} elsif ( $letter eq "I" ) {
+			my $inserted_seq = substr($seq, $seq_pos, $len);
+			$seq_pos += $len;
+
+			# keep the insertion if it overlaps the target region by 1 base. 
+			if ( _isOverlap($start, $end, $chr_pos, $chr_pos+1, 1) ) {
+				$indelstr .= $chr_pos . ":" . ($chr_pos+1) . ":I:$inserted_seq:";
+				$indel_length += $len;
+			}			
+		} # end if 
+	}# end for 
+
+	# sequence in specified range
+	my $range_seq = substr($newseq, $start-$align_start, $end-$start+1);
+
+
+	# 8:16:D:-:16:17:I:G  postions are 1-based.
+	my $offset_indelstr;  # indel str with offset locations.
+	foreach my $e (split(/:/, $indelstr)){
+		$e = $e-$start+1 if $e =~ /^\d+$/; 	
+		$offset_indelstr .= $e . ":";
+	} 
+
+	$indelstr =~ s/:$//; 
+	$offset_indelstr =~ s/:$//;
+
+	my $strand = $flag & 16 ? '-' : '+';
+	return ($qname, $range_seq, $indelstr, $offset_indelstr, $strand, $indel_length); 
 }
 
 sub _getIndelLength {
@@ -613,9 +629,9 @@ sub categorizeHDR {
 		@_	
 	);
 
-	required_args(\%h, 'bam_inf', 'chr', 'base_changes', 'sample_name', 'stat_outf');
+	required_args(\%h, 'bam_inf', 'chr', 'base_changes', 'sample', 'stat_outf');
 
-	my $sample = $h{sample_name};
+	my $sample = $h{sample};
 	my $chr = $h{chr};
 
 	# intended base changes	
@@ -646,7 +662,7 @@ sub categorizeHDR {
 
 	## create HDR seq file
 	my $hdr_seq_file = "$outdir/$sample.hdr.seq";
-	_extractHDRseq($hdr_bam, $hdr_start, $hdr_end, $hdr_seq_file, $h{min_mapq});
+	$self->extractHDRseq($hdr_bam, $chr, $hdr_start, $hdr_end, $hdr_seq_file, $h{min_mapq});
 
 	## parse HDR seq file to categorize HDR
 	my %alts; # key position is offset by $start
@@ -725,96 +741,19 @@ sub categorizeHDR {
 # read the bam entries and categorize the HDRs
 # start, end are 1-based inclusiv. They are the first and last position 
 # of intended base change region of HDR
-sub _extractHDRseq{
-	my ($hdr_bam, $hdr_start, $hdr_end, $out_hdr_seq, $min_mapq) = @_;
+sub extractHDRseq{
+	my ($self, $hdr_bam, $chr, $hdr_start, $hdr_end, $out_hdr_seq, $min_mapq) = @_;
 
 	open(my $seqf, ">$out_hdr_seq") or die $!;
 	open(my $pipe, "samtools view $hdr_bam|") or die $!;
 	while (my $line=<$pipe>) {
-		my ($qname, $flag, $chr, $align_start, $mapq, $cigar,
-			$mate_chr, $mate_start, $tlen, $seq, $qual ) = split(/\t/, $line);
-		next if $min_mapq && $mapq < $min_mapq;
-		my $chr_pos = $align_start -1;  # pos on chromosome
-		my $seq_pos = 0; # position on read sequence
-
-		my @bases = split(//, $seq);
-		my $newseq; # new seq, but with deletion filled with -, and with insertion and soft clip removed.
-		my %insertions; # record the inserted sequence at certain chrosome position.	
-		my $offset = $hdr_start - $align_start;
-
-		# split cigar string between number and lette
-		my @cig = split(/(?<=\d)(?=\D)|(?<=\D)(?=\d)/, $cigar);
-		
-		for (my $i=0; $i< @cig-1; $i +=2 ) {
-			my $len = $cig[$i];
-			my $letter=$cig[$i+1];
-			if ( $letter eq "S" ) {
-				$seq_pos += $len;
-			} elsif ( $letter eq "M" ) {
-				$newseq .= substr($seq, $seq_pos, $len);
-				$seq_pos += $len;
-				$chr_pos += $len;
-			} elsif ( $letter eq "D" ) {
-				$newseq .= '-' x $len;
-				$chr_pos += $len;
-			} elsif ( $letter eq "I" ) {
-				$insertions{$chr_pos - ($hdr_start-1)} = substr($seq, $seq_pos, $len);
-				$seq_pos += $len;
-			}
-		}
-
-		## sequence for the HDR spanning region
-		my $hdr_len = $hdr_end - $hdr_start + 1;
-		my $hdr_seq = substr($newseq, $offset, $hdr_len); 
-
-		my $inserted_seqstr = '';
-		# p is 0-based.
-		foreach my $p ( sort {$a<=>$b} keys %insertions ) {
-			if ( defined $p && $p >= 0 && $p < $hdr_len ) {
-				$inserted_seqstr .= $p . ":I:" . $insertions{$p} . ",";
-			} 
-		} 
-		if ( $inserted_seqstr ) {
-			$inserted_seqstr =~ s/,$//;
-		}
-
-		print $seqf join("\t", $qname, $hdr_seq, $inserted_seqstr) . "\n";		
+		my @info = $self->extractReadRange($line, $chr, $hdr_start, $hdr_end, $min_mapq);
+		print $seqf join("\t", @info)."\n" if @info;		
 	}
 	close $pipe;
 	close $seqf;
 }
 
-## return a command to filter bam file
-sub getBamFilterCommand {
-	my $self = shift;
-	my %h = (
-		non_primary=>1,
-		non_supplementary=>1,
-        non_dup=>1,
-		mapped=>1,
-        @_,
-    );
-	required_args(\%h, 'bam_inf');	
-
-	my %flags = (non_primary=>256, non_supplementary=>2048, non_dup=>1024, aligned=>4);
-	my @values; # would have (256, 2048, 1024, 4) depending on the options
-
-	foreach my $opt ( keys %flags ) {			
-		if ( $h{$opt} ) {
-			push (@values, $flags{$opt});
-		}
-	}
-
-	my $cmd;
-	for ( my $i=0; $i < @values; $i++ ) {
-		my $file = $i ? '-' : $h{bam_inf};
-		if ( $cmd ) {
-			$cmd .= "|";
-		}
-		$cmd .= "$self->{samtools} view -b -F $values[$i] $file";
-	} 
-	return $cmd;	
-}
 
 sub filter_fastq {
 	my ($self, %h) = @_;
@@ -876,3 +815,5 @@ sub filter_fastq {
 	
 	qx(touch $flag);
 }
+
+1;

@@ -6,41 +6,42 @@ use Carp;
 use Data::Dumper;
 
 # Call example: my $e = new Exon('fasta_file'=>$fasta, 'seqid'=>$seqid);
+# Default samtools is the one in PATH environment.
 sub new {
 	my $self = shift;
 	my %h = (
-		fasta_file=>'',
-		seqid=>'',
 		verbose=>1,
 		@_,
 	);
 	required_args(\%h, 'fasta_file', 'seqid');
+	$h{samtools} //= 'samtools';
 	return bless \%h, $self;
 }
 
 ## Return a string of sequence from fasta using samtools
 # If fasta index file is not created before hand, it will be created in the 
 # same directory as the fasta file. So make sure file/directory permission is granted.
+# start and end are 1-based coordinates
 sub getSeq {
 	my $self = shift;
-	my %h = ( start=>0, end=>0, @_ );
+	my %h = (start=>'', end=>'', 
+		@_ );
 	my $region = $self->{seqid};
 	if ( $h{start} ) {
-			$region .= ":$h{start}";
+		$region .= ":$h{start}";
 		if ( $h{end} ) {
 			$region .= "-$h{end}";
 		}
-	}	
+	}
 
-	my $result = qx(samtools faidx $self->{fasta_file} $region);
+	my $result = qx($self->{samtools} faidx $self->{fasta_file} $region);
 	my @a = split(/\n/, $result);
 	shift @a;
 	return join("", @a);
 }
 
 ## Return CDS sequence, considering indels.
-## indels: e.g. 52272278:52272279:I:ATTTCA:52272280:52272281:I:AA:52272282:52272283:I:GT
-# e.g. 52272278:52272279:I:ATTTCGGCAATG:52272281:52272282:D:
+# e.g. 52272278:52272279:I:ATTTCGGCAATG:52272281:52272282:D:-
 # these coordinates are 1-based and inclusive. For insertion, sequence is inserted between the 2 positions.
 # The returned sequence is 5' to 3'.
 
@@ -58,13 +59,13 @@ sub getExonsSeq {
 		@_,
 	);
 
-	required_args('start', 'end', 'exonStarts', 'exonEnds');
+	required_args(\%h, 'start', 'end', 'exonStarts', 'exonEnds');
 
 	my @starts = split(/,/, $h{exonStarts});
 	my @ends = split(/,/, $h{exonEnds});
 
 	# Obtain genomic sequence from start to end of all exons, on positive strand
-	my $seq = $self->getSeq($starts[0]+1, $ends[-1]);
+	my $seq = $self->getSeq(start=>$starts[0]+1, end=>$ends[-1]);
 
 	my $exonseq = "";
 	my @coords; # 0-based
@@ -93,7 +94,7 @@ sub getExonsSeq {
 			push(@new_coords, $coords[$i]);
 		}
 	}
-
+	print STDERR "Exonseq:$exonseq\n" if $self->{verbose};
 	return ($exonseq, \@new_coords);
 }
 
@@ -212,11 +213,11 @@ sub locateGuideInCDS {
 	my $self = shift;
 	my %h = ( strand=>'+', @_ );
 
-	required_args('strand', 'cdsStart', 'cdsEnd', 
+	required_args(\%h, 'strand', 'cdsStart', 'cdsEnd', 
 		'exonStarts', 'exonEnds', 'guide_start', 'guide_end');
 
-	my ($cds_chr_seq, $cds_chr_coords) = $self->getExonsSeq( $h{cdsStart}, 
-		$h{cdsEnd}, $h{exonStarts}, $h{exonEnds} );
+	my ($cds_chr_seq, $cds_chr_coords) = $self->getExonsSeq(start=>$h{cdsStart}, 
+		end=>$h{cdsEnd}, exonStarts=>$h{exonStarts}, exonEnds=>$h{exonEnds} );
 	my @bases = split(//, $cds_chr_seq);
 	my @coords = @$cds_chr_coords; # 0-based
 	## @coords contains coordinates of each CDS base.
@@ -284,45 +285,11 @@ sub locateGuideInCDS {
 	if ( $h{strand} eq '-' ) {
 		print STDERR "In CDS - strand, reversing sequence and segments.\n" if $self->{verbose};
 		$guide_cds_seq = $self->revcom($guide_cds_seq) if $guide_cds_seq;
-		my $aref = $self->reverse_segments(\@segments, $cds_len);
+		my $aref = $self->reverse_segments(segment_aref=>\@segments, total_length=>$cds_len);
 		@segments = @$aref;
 	}
 
 	return (join(",", @segments), $guide_cds_seq, $intron_bases);
-}
-
-## return an array ref of cds boundaries (start1, end1, start2, end2, ...) 
-## 0-based UCSC convention
-sub getCdsCoord_notused {
-	my ( $self, $cdsStart, $cdsEnd, $exonStarts, $exonEnds) = @_;
-	
-	my @starts = split(/,/, $exonStarts);
-	my @ends = split(/,/, $exonEnds);
-	
-	## which exon does the cds starts, ends ?
-	my ($m, $n); # start and end index
-	
-	for(my $i=0; $i< @starts; $i++) {
-		if ( !defined $m && $cdsStart >= $starts[$i] && $cdsStart <= $ends[$i] ) {
-			$m=$i;
-		}
-		
-		if ( !defined $n && $cdsEnd >= $starts[$i] && $cdsEnd <= $ends[$i] ) {
-			$n=$i;
-		}	
-	}
-	
-	## piece together partial and full exons
-	
-	my @bounds; # (start1, end1, start2, end2, ...) 
-	my ($p, $q); # start and end within an exon
-	for(my $i=$m; $i<=$n; $i++) {
-		$p = $i==$m? $cdsStart : $starts[$i];
-		$q = $i==$n? $cdsEnd : $ends[$i];
-		push(@bounds, $p, $q);
-	}
-	
-	return \@bounds;
 }
 
 # [1,15],[2],[16,30]: seq between 1 and 30, with insertion of 2 bases after 15.
@@ -382,7 +349,7 @@ sub getGenomicSeq {
 		$self->getGenomicSeq_PositiveStrand($h{input_seq}, $h{start_pos}, $h{indelstr});
 	if ( $h{strand} eq '-' ) {
 		$seq = $self->revcom($seq);
-		$segment_aref = $self->reverse_segments($segment_aref);
+		$segment_aref = $self->reverse_segments(segment_aref=>$segment_aref);
 	}
 	
 	return ($seq, $segment_aref);

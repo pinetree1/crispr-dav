@@ -1,4 +1,4 @@
-package NGS;
+package NGS; 
 # package for NGS processing
 # Author: xwang
 use strict;
@@ -14,24 +14,74 @@ sub new {
 		samtools=>'samtools',
 		bedtools=>'bedtools',
 		bwa=>'bwa',
-		prinseq=>'prinseq-lite.pl',
-		verbose=>1,
+		verbose=>0,
+		tmpdir=>'/tmp',
 		@_, 
 	);	
 	bless \%h, $self;
+}
+
+# filter reads in fastq file with prinseq
+# fastq file must be already in .gz format
+sub filter_reads {
+	my $self = shift;
+	my %h = (
+		prinseq=>'prinseq-lite.pl',
+		min_qual_mean=>30,
+		min_len=>50,
+		ns_max_p=>3,
+		read2_inf=>'', 
+		read2_outf=>'',	
+		@_, 
+	);
+
+	required_args(\%h, 'read1_inf', 'read1_outf');
+	
+	my $f1 = $h{read1_inf};
+	my $f2 = $h{read2_inf};
+	if ( $f1 !~/\.gz$/ or ( $f2 && $f2 !~/\.gz$/ ) ) {
+		croak "Fastq file must be gzipped and has .gz extension";
+	} 
+
+	my $param="-min_len $h{min_len}" if defined $h{min_len};
+	$param .=" -min_qual_mean $h{min_qual_mean}" if defined $h{min_qual_mean};
+	$param .=" -ns_max_p $h{ns_max_p}" if defined $h{ns_max_p};
+
+	my $read1_outf = $h{read1_outf};
+	my $read2_outf = $h{read2_outf};
+
+	my ($cmd, $status);	
+	my $log="$read1_outf.filter.log";
+	if ( !$f2 ) {
+		$cmd= "(gunzip -c $f1 | $h{prinseq} -fastq stdin";
+		$cmd .= " -out_good $read1_outf -out_bad null $param) &>$log";
+		$cmd .= " && gzip -c $read1_outf.fastq > $read1_outf && rm $read1_outf.fastq";
+		print STDERR "Filtering fastq: $cmd\n";
+		croak "Error: Failed to filter $f1" if system($cmd);
+	} else {
+		$cmd = "gunzip -c $f1 > $read1_outf && gunzip -c $f2 > $read2_outf";
+		$cmd .=" && ($h{prinseq} -fastq $read1_outf -fastq2 $read2_outf";
+		$cmd .=" -out_good $read1_outf -out_bad null $param) &>$log";
+		$cmd .=" && gzip -c ${read1_outf}_1.fastq > $read1_outf";
+		$cmd .=" && gzip -c ${read1_outf}_2.fastq > $read2_outf";
+		$cmd .=" && rm -f ${read1_outf}_[12]*.fastq";
+		print STDERR "Filtering fastq: $cmd\n" if $self->{verbose};
+		croak "Error: Failed to filter $f1 and $f2" if system($cmd);
+	}
 }
 
 ## trim reads with sickle. 
 sub trim_reads {
 	my $self = shift;
 	my %h = (
-		read2_inf => "", # read2 input file
-		read2_outf=>"", # read2 outfile
-		singles_outf=>"",  # singles outfile
-		trim_logf=>"", 
-		param=>"",
-		scheme=>"sanger",  # quality score scheme
+		read2_inf =>'', # read2 input file
+		read2_outf=>'', # read2 outfile
+		singles_outf=>'',  # singles outfile
+		trim_logf=>'', 
+		scheme=>'sanger',  # quality score scheme
 		sickle=>'sickle',
+		min_qual_mean=>30,
+		min_len=>50,
 		@_,   # read1_inf, read1_outf 
 	);
 		
@@ -49,9 +99,9 @@ sub trim_reads {
 		$cmd .= " -r $h{read2_inf} -p $h{read2_outf} -s $h{singles_outf}";
 	}
 
-	$cmd .= " $h{param}" if $h{param};
+	$cmd .= " -q $h{min_qual_mean} -l $h{min_len}";
 	$cmd .= " > $h{trim_logf}" if $h{trim_logf};
-
+	$cmd .= " && rm -f $h{singles_outf}" if $h{singles_outf};
 	print STDERR "$cmd\n" if $self->{verbose};
 	return system($cmd);
 }
@@ -61,14 +111,15 @@ sub create_bam {
 	my %h = ( 
 		read2_inf=>'', # read2 input file
 		picard=>'', # picard path, required if mark_duplicate=1
-		mark_duplicate=>0,
+		mark_duplicate=>0,	# whether to mark duplicate reads
 
 		abra=>'',  # ABRA jar file, required if realign_indel=1	
 		target_bed=>'', # e.g. amplicon bed file, required for indel realignment
-		realign_indel=>0,
+		realign=>0,	# whether to do realignment
 		ref_fasta=>'',  # reference fasta file
 
-		remove_duplicate=>0,
+		remove_duplicate=>0,	# whether to remove duplicate reads
+		chromCount_outfile=>'', # output read counts on chromosomes if file name is provided
 		@_
 	);	
 
@@ -95,8 +146,12 @@ sub create_bam {
 
 	my @bam_stats = $self->bamReadCount($h{bam_outf});	
 
+	if ( $h{chromCount_outfile} ) {
+		$self->chromCount(sample=>$h{sample}, bam_inf=>$h{bam_outf}, 
+			outfile=>$h{chromCount_outfile});
+	}
+
 	if ( $h{remove_duplicate} ) {
-		print STDERR "Removing duplicates.\n";
 		$self->remove_duplicate($h{bam_outf});
 	}
 	$self->index_bam($h{bam_outf});
@@ -332,9 +387,13 @@ sub regionReadCount {
 ## create a bed file, with 0-based coordinates: [start coord, end coord).
 ## start and end is 1-based.
 sub makeBed {
-	my ($self, $chr, $start, $end, $outfile) = @_;
-	open(my $outf, ">$outfile") or die $!;	
-	print $outf join("\t", $chr, $start-1, $end)."\n";
+	my $self = shift;
+	my %h= (zero_based=>1, @_);
+	required_args(\%h, 'chr', 'start', 'end', 'outfile');
+
+	open(my $outf, ">$h{outfile}") or die $!;	
+	my $newstart = $h{zero_based}? $h{start}-1 : $h{start};
+	print $outf join("\t", $h{chr}, $newstart, $h{end})."\n";
 	close $outf;
 }
 
@@ -377,10 +436,21 @@ sub readFlow {
 
 # Calculate the number of reads aligned on different chromosomes
 sub chromCount {
-	my ($self, $bamfile, $outfile) = @_;
-	my $cmd = "$self->{samtools} view $bamfile | cut -f 3 | sort | uniq -c | sed 's/^[ ]*//'";
-	print STDERR "$cmd\n" if $self->{verbose};
-	qx($cmd >$outfile);
+	my $self = shift;
+	my %h = (@_);
+	required_args(\%h,, 'sample', 'bam_inf', 'outfile');
+
+	my $result = qx($self->{samtools} view $h{bam_inf} | cut -f 3 | sort | uniq -c);
+	open(my $outf, ">$h{outfile}") or croak $!;
+	print $outf join("\t", "Sample", "Chromosome", "ReadCount") . "\n";
+	foreach my $line ( split(/\n/, $result) ) {
+		next if $line !~ /\w/;
+		chomp $line;
+		my ($reads, $chr)=($line=~/(\d+)\s(\S+)/);
+		next if $chr eq '*';
+		print $outf join("\t", $h{sample}, $chr, $reads) . "\n"; 
+	}
+	close $outf;
 }
 
 
@@ -401,6 +471,7 @@ sub variantStat {
 	required_args(\%h, 'bam_inf', 'ref_fasta', 'outfile'); 
 	my $cmd = "$h{pysamstats} --type $h{type} --max-depth $h{max_depth}";
 	$cmd .= " --window-size $h{window_size} --fasta $h{ref_fasta}";
+	$cmd .= " --fields chrom,pos,ref,reads_all,matches,mismatches,deletions,insertions,A,C,T,G,N";
 	if ( $h{chr} && $h{start} > 0 && $h{end} > 0 ) {
 		$cmd .= " --chromosome $h{chr} --start $h{start} --end $h{end}";	
 	}
@@ -435,22 +506,22 @@ sub targetSeq {
 	);
 
 	required_args(\%h, 'bam_inf', 'chr', 'target_start', 'target_end', 
-		'outfile_detail', 'outfile_count', 'outfile_allele');
+		'outfile_targetSeq', 'outfile_indelPct', 'outfile_indelLen');
 
-	open(my $outf, ">$h{outfile_detail}") or croak $!;
-	open(my $cntf, ">$h{outfile_count}") or croak $!;
-	open(my $alef, ">$h{outfile_allele}") or croak $!;
+	open(my $seqf, ">$h{outfile_targetSeq}") or croak $!;
+	open(my $pctf, ">$h{outfile_indelPct}") or croak $!;
+	open(my $lenf, ">$h{outfile_indelLen}") or croak $!;
 
-	print $outf join("\t", "ReadName", "TargetSeq", "IndelStr", "Strand") . "\n";
-	print $cntf join("\t", "Sample", "Reference", "CrisprSite", "CrisprRegion", "TargetReads", 
+	print $seqf join("\t", "ReadName", "TargetSeq", "IndelStr", "OffsetIndelStr", 
+			"Strand", "IndelLength") . "\n";
+	print $pctf join("\t", "Sample", "CrisprSite", "Reference", "CrisprRegion", "TargetReads", 
 			"WtReads", "IndelReads", "PctWt", "PctIndel", "InframeIndel", "PctInframeIndel") . "\n";
-	print $alef join("\t", "Sample", "Reference", "CrisprSite", "CrisprRegion", "WtIndel", 
-		"Reads", "Pct", "IndelLength", "FrameShift") . "\n"; 
+	print $lenf join("\t", "Sample", "CrisprSite", "CrisprRegion", "IndelStr", 
+		"ReadCount", "ReadPct", "IndelLength", "FrameShift") . "\n"; 
 
-	#my $cmd = "$self->{samtools} view $h{bam_inf} $h{chr}:$h{target_start}-$h{target_end}";
 	my $ratio = $h{min_overlap}/($h{target_end} - $h{target_start} + 1);
 	my $bedfile="$h{bam_inf}.tmp.target.bed";
-	$self->makeBed($h{chr}, $h{target_start}, $h{target_end}, $bedfile);
+	$self->makeBed(chr=>$h{chr}, start=>$h{target_start}, end=>$h{target_end}, outfile=>$bedfile);
 	my $cmd = "$self->{bedtools} intersect -a $h{bam_inf} -b $bedfile -F $ratio -u";
 	$cmd .= " | $self->{samtools} view -";
 	print STDERR "$cmd\n" if $self->{verbose};
@@ -480,7 +551,7 @@ sub targetSeq {
 			$freqs{WT}++;
 		}
 
-		print $outf join("\t", @info)  . "\n";
+		print $seqf join("\t", @info)  . "\n";
 	} # end while
 
 	#unlink $bedfile;
@@ -493,7 +564,7 @@ sub targetSeq {
 	my $pct_indel = sprintf("%.2f", 100 - $pct_wt);
 	my $pct_inframe = sprintf("%.2f", $inframe_indel_reads * 100/$overlap_reads);
 	
-	print $cntf join("\t", $h{sample}, $h{target_name}, $h{ref_name}, 
+	print $pctf join("\t", $h{sample}, $h{target_name}, $h{ref_name}, 
 		"$h{chr}:$h{target_start}-$h{target_end}", 
 		$overlap_reads, $wt_reads, $indel_reads, $pct_wt, $pct_indel,
 		$inframe_indel_reads, $pct_inframe) . "\n";
@@ -510,7 +581,7 @@ sub targetSeq {
 			$frame_shift = $indel_len%3 ? "Y" : "N";
 		} 
 
-		print $alef join("\t", $h{sample}, $h{target_name}, $h{ref_name}, 
+		print $lenf join("\t", $h{sample}, $h{target_name}, 
 			"$h{chr}:$h{target_start}-$h{target_end}", 
 			$key, $reads, $pct, $indel_len, $frame_shift) . "\n";
 	}
@@ -649,7 +720,7 @@ sub categorizeHDR {
 	my @pos = sort {$a <=> $b} keys %alt;
 	my $hdr_start = $pos[0];
 	my $hdr_end = $pos[-1];
-	$self->makeBed($chr, $hdr_start, $hdr_end, $bedfile);
+	$self->makeBed(chr=>$h{chr}, start=>$hdr_start, end=>$hdr_end, outfile=>$bedfile);
 
 	# create bam file containing HDR bases.
 	my $hdr_bam = "$outdir/$sample.hdr.bam";
@@ -755,65 +826,19 @@ sub extractHDRseq{
 }
 
 
-sub filter_fastq {
-	my ($self, %h) = @_;
-	my $outdir = $h{filter_dir};
-	my $filter_param = $h{filter_param};
-	my $b = $self->{prinseq};
-	$self->assert_prog($b);
-	my $ext = $h{ext};
-	
-	croak "Must have outdir. ext defaults to fastq.gz\n" if (!$outdir);
-	make_path($outdir) if !-d $outdir;
-	$ext =~ s/^\.// if $ext;  # remove the front . if there.
-	$ext //= "fastq.gz";
-	
-	my $f = $h{read1};
-	my $f2 = $h{read2};
-	
-	croak "Read1 file variable has no value.\n" if (!$f);
-	
-	basename($f) =~ /(.*)\.$ext/;
-	my $stem = $1;
-	
-	(my $sample=$stem) =~ s/_R1//;
-	my $flag = getFlag("$outdir/$sample.filter");
-	if (-f $flag ) {
-		print STDERR "Skipped filtering of $sample\n";
-		return;
+## return a record in a bed file
+# region_name: the 4th field 
+sub getRecord {
+	my ($self, $bedfile, $region_name) = @_;	
+	open(my $fh, $bedfile) or die $!;
+	while (<$fh>) {
+		chomp;
+		my @a = split /\t/;
+		if ( !$region_name or $region_name eq $a[3]) {
+			return @a;	
+		}	
 	}
-	
-	if ( !$f2 ) {
-		my $cmd = "$b -fastq $f";
-		if ( $ext =~ /\.gz/ ) {
-			$cmd= "gunzip -c $f | $b -fastq stdin";
-		} 
-		$cmd .= " -out_good $outdir/$stem -out_bad null $filter_param";
-		print STDERR "Filtering $stem: $cmd\n";
-		croak "Error: Failed to filter $f\n" if system($cmd);
-		if ( -f "$outdir/$stem.fastq" ) {
-			croak "Error: Failed to gzip $stem\n" if system("gzip -f $outdir/$stem.fastq");
-		}
-	} else {
-		if ( $ext =~ /\.gz/ ) {
-			my $fb = basename($f); $fb =~ s/\.gz//;
-			my $fb2 = basename($f2); $fb2 =~ s/\.gz//;
-			my $fq = "$outdir/" . basename($fb);
-			my $fq2 = "$outdir/" . basename($fb2);
-			$stem =~ s/[_\.]R[12]//;
-			my $cmd = "gunzip -c $f > $fq && gunzip -c $f2 > $fq2";
-			$cmd .=" && $b -fastq $fq -fastq2 $fq2 -out_good $outdir/$stem -out_bad null $filter_param";
-			$cmd .=" && mv $outdir/${stem}_1.fastq $outdir/${stem}_R1.fastq";
-			$cmd .=" && mv $outdir/${stem}_2.fastq $outdir/${stem}_R2.fastq";
-			$cmd .=" && gzip -f $outdir/${stem}_R1.fastq";
-			$cmd .=" && gzip -f $outdir/${stem}_R2.fastq";
-			$cmd .=" && rm -f $outdir/${stem}_[12]_singletons.fastq";
-			print STDERR "Filtering $stem: $cmd\n";
-			croak "Error: Failed to filter $stem\n" if system($cmd);
-		}
-	}
-	
-	qx(touch $flag);
+	close $fh;
 }
 
 1;

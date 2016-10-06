@@ -1,0 +1,136 @@
+## Survey the amplicon: coverage, insertion, deletion  
+## Locate sgRNA coordinates if available.
+suppressMessages(library(ggplot2))
+
+args <- commandArgs(trailingOnly=FALSE)
+script.name <- sub("--file=", "", args[grep("--file=",args)])
+script.path <- dirname(script.name)
+source(file.path(script.path, "func.R"))
+
+args <- commandArgs(trailingOnly=TRUE)
+if(length(args) < 1) {
+  args <- c("--help")
+}
+
+## Help section
+if("--help" %in% args) {
+  exit(cat( script.name, "
+      Arguments:
+      --inf=pysamstat variation file, e.g. xx.var. Required.
+      --sub=subtitle. Use quote if there are spaces.Optional.
+      --hname=name of highlight region, e.g. sgRNA. Optional but required if --hstart is provided.
+      --hstart=highlight region start position, e.g. sgRNA start position. Optional.
+      --hend=highlight region end position, e.g. sgRNA end position. Optional.
+      --type=type of data: coverage, insertion, deletion, indel, snp. Default: coverage. Optional.
+      --chr=chromosome name, e.g. 'hg19 chr3'. Optional.
+      --outf=ouput png file. Required. 
+      --wing=number of bases on each site of sgRNA to see snp. Default: 50
+      --help 	Print this message
+	"))
+}
+
+## Parse arguments (we expect the form --arg=value)
+parseArgs <- function(x) strsplit(sub("^--", "", x), "=")
+argsDF <- as.data.frame(do.call("rbind", parseArgs(args)))
+argsL <- as.list(as.character(argsDF$V2))
+names(argsL) <- argsDF$V1
+if ( is.null(argsL$inf) | is.null(argsL$outf) ) { 
+	exit("Missing required argument")
+}
+
+## set the output file name and path
+infile  <-argsL$inf
+outfile <- argsL$outf
+if (file.exists(infile)==FALSE) exit(paste("Could not find", infile))
+
+hstart <- NULL
+hend <- NULL
+hname <- NULL
+if (!is.null(argsL$hstart)) hstart <- as.numeric(argsL$hstart)
+if (!is.null(argsL$hend)) hend <- as.numeric(argsL$hend)
+if (!is.null(argsL$hname)) hname <- as.character(argsL$hname)
+if (!is.null(argsL$hstart)) {
+	if ( is.null(argsL$hend) | is.null(argsL$hname) ) {
+		exit("Missing --hend or --hname")
+	}
+}
+
+type <- "coverage"
+if (!is.null(argsL$type)) {
+	type <- argsL$type
+}
+
+## read data
+dat <- read.table(infile, header=TRUE, sep="\t")
+if ( nrow(dat)== 0 ) { 
+	exit("No data in input file")
+}
+
+mindepth<-1000  # min depth marking the start and end of amplicon region
+h=1
+t=nrow(dat)
+
+if (!is.null(argsL$wing)) {
+	wingLength <- strtoi(argsL$wing)
+} else {
+	wingLength <- 50
+}
+
+h <- which(dat$reads_all>mindepth)[1]
+if (is.na(h)) exit(paste("No position has depth >=", mindepth))
+t <- tail(which(dat$reads_all>mindepth), n=1)
+if ( t > nrow(dat) ) {
+	exit("There is not enough data for plotting")
+}
+
+dat2 <- dat[h:t, ]
+
+# titles and data columns
+xtitle <- "Position"
+if (!is.null(argsL$chr)) {
+	xtitle <- paste(argsL$chr, xtitle)
+}
+mtitle <- "Depth of Coverage"
+ytitle <- "Read Depths"
+ycol <- "reads_all"   # y column name
+if (type=="insertion"){
+	mtitle <- "Insertion Distribution"
+	ytitle <- "Insertion Read %"
+	ycol <- "PctInsertion"
+	dat2[[ycol]] <- dat2$insertions/dat2$reads_all * 100
+} else if ( type == "deletion" ) {
+	mtitle <- "Deletion Distribution"
+	ytitle <- "Deletion Read %"
+	ycol <- "PctDeletion"
+	dat2[[ycol]] <- dat2$deletions/dat2$reads_all * 100
+} 
+
+if ( !is.null(argsL$sub) ) {
+	mtitle <- paste0(mtitle, "\n", argsL$sub)
+}
+
+## create the plot
+wt <- 500
+ht <- 500
+
+p<- ggplot(data=dat2, aes(x=pos, y=dat2[[ycol]])) + 
+	geom_line(color="blue") + 
+	theme_bw() +
+	scale_x_continuous(breaks=seq(min(dat2$pos), max(dat2$pos),by=50)) +
+	labs(x=xtitle, y=ytitle, title=mtitle) + customize_title_axis(angle=90)
+
+if ( !is.null(hstart) & !is.null(hend) ) {
+	p<- p + geom_rect(aes(xmin=hstart, xmax=hend, ymin=-Inf, ymax=Inf, 
+			fill=hname), alpha=0.01) +
+		scale_fill_manual(limits=c(hname), values=c('grey')) + 
+		theme(legend.title=element_blank(), 
+			legend.key=element_rect(fill='grey'),
+			legend.text=element_text(face="bold", size=12),
+			legend.position="bottom",
+			legend.direction="horizontal"
+			)	
+}
+
+png(filename=outfile, width=wt, height=ht)
+p
+invisible(dev.off())

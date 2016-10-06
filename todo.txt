@@ -1,5 +1,0 @@
-1. Make sure NM_ name in amplicon is in refGene table?
-2. create_beds.pl not setting amplicon.bed correctly when no sequence match via bwa
-3. investigate why some sgRNA sequences have no hits using bwa, but have good match on ucsc web site.
-
-4. consolidate prefilter creation in one step.

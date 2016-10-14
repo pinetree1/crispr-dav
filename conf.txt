@@ -15,15 +15,18 @@ min_len 	= 50
 ns_max_p	= 3
 
 [app]
-# These Tools must be in PATH:
-# samtools, bwa, java, bedtools, asub
 # samtools version 0.1.19-44428cd
 # bwa version 0.7.5a-r405
 
-bedtools = /home/wangx112/app//bedtools2/bin/bedtools
 prinseq = /home/wangx112/app/prinseq-lite-0.20.4/prinseq-lite.pl 
+samtools = /apps/sys/bioinfo/bin/samtools
+bwa = /apps/sys/bioinfo/bin/bwa
+java = /apps/sys/java/jdk1.7.0_51/bin/java
 picard	= /home/wangx112/production/crispr/app/picard-tools-1.107
 abra = /home/wangx112/production/crispr/app/bin/abra-0.94-SNAPSHOT-jar-with-dependencies.jar
+bedtools = /home/wangx112/app//bedtools2/bin/bedtools
+pysamstats = /home/wangx112/bin/pysamstats
+rscript = /home/wangx112/app/R-3.2.1/bin/Rscript
 
 [other]
 # Remove duplicates from bam file
@@ -33,7 +36,7 @@ remove_duplicate = N
 realign_flag = Y
 
 # require BWA mapping quality score when selecting mapped reads
-min_mapq = 20
+min_mapq = 30
 
 # number of bases on each side of sgRNA to see snp
 wing_length = 50

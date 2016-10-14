@@ -20,23 +20,15 @@ cnt_outfile <- args[2]
 pct_outfile <- args[3]
 if (file.exists(infile)==FALSE) exit(paste("Could not find", infile))
 
-dat <- read.table(file=infile, sep="\t", header=TRUE)
-
-## function
-create_plot <- function (data, imgfile, cols, ytitle, maintitle) {
-	
+## function to create plot
+create_plot <- function (data, imgfile, cols, ytitle, maintitle) {	
 	n<- length(unique(data$Sample))
 	h<-500
 	w<- ifelse(n>10, w<-50*n, h)
 
 	legends <- c("WT", "All Indel", "Inframe Indel")
 
-	cat("called: file:", imgfile, ", yt:", ytitle, ", main:", maintitle, "\n")
-	cat("cols:", cols, "\n")
-	cat(str(data), "\n")
-
-	png(filename=imgfile, height=h, width=w)
-	ggplot(data, aes(x=Sample, y=value, fill=variable)) + 
+	p <-ggplot(data, aes(x=Sample, y=value, fill=variable)) + 
 		geom_bar(stat='identity', position=position_dodge(), width=0.35) +
 		labs(y=ytitle, title=maintitle) + 
 		scale_fill_discrete(name="Read Type", breaks=cols, labels=legends) +
@@ -47,19 +39,24 @@ create_plot <- function (data, imgfile, cols, ytitle, maintitle) {
 		geom_text(aes(label=value, ymax=value), position=position_dodge(width=0.9), 
 			check_overlap=TRUE, vjust=-0.5, size=4)
 
+	png(filename=imgfile, height=h, width=w)
+	plot(p)
 	invisible(dev.off())
 }
 
-## Create plot about read counts
+## read input
+dat <- read.table(file=infile, sep="\t", header=TRUE)
+
+## plot for read count
 cols <- c("WtReads", "IndelReads", "InframeIndel")
 data <- melt(dat, id.vars="Sample", measure.vars=cols)
-ytitle="Number of Reads"
-maintitle="Read Counts at CRISPR Site"
-create_plot(data, cnt_outfile, cols, ytitle, maintitle)
+ytitle<-"Number of Reads"
+maintitle<-"Read Counts at CRISPR Site"
+create_plot(data, cnt_outfile, cols, ytitle, maintitle) 
 
-## Create plot about read pct
+## plot for indel pct
 cols <- c("PctWt", "PctIndel", "PctInframeIndel")
 data <- melt(dat, id.vars="Sample", measure.vars=cols)
-ytitle="Percentage of Reads"
-maintitle="Read Percentages at CRISPR Site"
-create_plot(data, pct_outfile, cols, ytitle, maintitle)
+ytitle<-"Percentage of Reads"
+maintitle<-"Percentages of reads at CRISPR Site"
+create_plot(data, pct_outfile, cols, ytitle, maintitle) 

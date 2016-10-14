@@ -32,8 +32,8 @@ my $outdir = dirname($outfile);
 make_path($outdir) if !-d $outdir;
 
 open(my $ofh, ">$outfile") or die $!;
-print $ofh join("\t", "Sample", "CrisprSite", "Offset", "Location", "Type",
-	"IndelStr", "IndelLength", "ReadCount", "ReadPct", "Strand", "Frame", "Sequence") . "\n";
+print $ofh join("\t", "Sample", "Cleavage_Site", "Offset", "Location", "Type",
+	"IndelStr", "Indel_Length", "Reads", "Pct", "Strand", "Frame", "Sequence") . "\n";
 
 my ($sample, $site_name, $chr, $guide_start, $guide_end) = getCrisprInfo($infile); 
 	

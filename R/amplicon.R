@@ -21,10 +21,9 @@ if("--help" %in% args) {
       --hname=name of highlight region, e.g. sgRNA. Optional but required if --hstart is provided.
       --hstart=highlight region start position, e.g. sgRNA start position. Optional.
       --hend=highlight region end position, e.g. sgRNA end position. Optional.
-      --type=type of data: coverage, insertion, deletion, indel, snp. Default: coverage. Optional.
+      --type=type of data: coverage, insertion, deletion. Optional. All types will be plotted by default. 
       --chr=chromosome name, e.g. 'hg19 chr3'. Optional.
-      --outf=ouput png file. Required. 
-      --wing=number of bases on each site of sgRNA to see snp. Default: 50
+      --outf=ouput png file prefix. Required. Extension(.cov.png, .ins.png, .del.png) will be added. 
       --help 	Print this message
 	"))
 }
@@ -40,7 +39,7 @@ if ( is.null(argsL$inf) | is.null(argsL$outf) ) {
 
 ## set the output file name and path
 infile  <-argsL$inf
-outfile <- argsL$outf
+prefix <- argsL$outf
 if (file.exists(infile)==FALSE) exit(paste("Could not find", infile))
 
 hstart <- NULL
@@ -55,11 +54,6 @@ if (!is.null(argsL$hstart)) {
 	}
 }
 
-type <- "coverage"
-if (!is.null(argsL$type)) {
-	type <- argsL$type
-}
-
 ## read data
 dat <- read.table(infile, header=TRUE, sep="\t")
 if ( nrow(dat)== 0 ) { 
@@ -70,12 +64,6 @@ mindepth<-1000  # min depth marking the start and end of amplicon region
 h=1
 t=nrow(dat)
 
-if (!is.null(argsL$wing)) {
-	wingLength <- strtoi(argsL$wing)
-} else {
-	wingLength <- 50
-}
-
 h <- which(dat$reads_all>mindepth)[1]
 if (is.na(h)) exit(paste("No position has depth >=", mindepth))
 t <- tail(which(dat$reads_all>mindepth), n=1)
@@ -85,52 +73,67 @@ if ( t > nrow(dat) ) {
 
 dat2 <- dat[h:t, ]
 
-# titles and data columns
-xtitle <- "Position"
-if (!is.null(argsL$chr)) {
-	xtitle <- paste(argsL$chr, xtitle)
+getMainTitle <- function(main_title, sub_title) {
+	mt=ifelse(is.null(sub_title), main_title, paste0(main_title, "\n", sub_title))
 }
-mtitle <- "Depth of Coverage"
-ytitle <- "Read Depths"
-ycol <- "reads_all"   # y column name
-if (type=="insertion"){
-	mtitle <- "Insertion Distribution"
+
+create_plot <- function (dat, ycol, xtitle, ytitle, mtitle, outfile,
+	hstart, hend, hname ) {
+
+	## create the plot
+	wt <- 500
+	ht <- 500
+
+	p<- ggplot(dat, aes(x=pos, y=dat[,ycol]), environment = environment() ) + 
+		geom_line(color="blue") + 
+		theme_bw() +
+		scale_x_continuous(breaks=seq(min(dat$pos), max(dat$pos),by=50)) +
+		labs(x=xtitle, y=ytitle, title=mtitle) + customize_title_axis(angle=90)
+
+	if ( !is.null(hstart) & !is.null(hend) ) {
+		p<- p + geom_rect(aes(xmin=hstart, xmax=hend, ymin=-Inf, ymax=Inf, 
+			fill=hname), alpha=0.01) +
+			scale_fill_manual(limits=c(hname), values=c('grey')) + 
+			theme(legend.title=element_blank(), 
+				legend.key=element_rect(fill='grey'),
+				legend.text=element_text(face="bold", size=12),
+				legend.position="bottom",
+				legend.direction="horizontal"
+			)	
+	}
+
+	png(filename=outfile, width=wt, height=ht)
+	plot(p)
+	invisible(dev.off())
+}
+
+xtitle <- ifelse(is.null(argsL$chr), "Position", paste(argsL$chr, "Position"))
+type <- ifelse(is.null(argsL$type), "all", argsL$type)
+sub_title<- ifelse(is.null(argsL$sub), NULL, argsL$sub)
+
+if ( type %in% c("all", "coverage") ) {
+	mtitle <- getMainTitle("Depth of Coverage", sub_title)
+	ytitle <- "Read Depths"
+	ycol <- "reads_all"   # y column name
+	outfile <- paste0(prefix, '.cov.png') 
+	create_plot (dat2, ycol, xtitle, ytitle, mtitle, outfile, hstart, hend, hname) 
+}
+
+if (type %in% c('all', 'insertion')){
+	mtitle <- getMainTitle("Insertion Distribution", sub_title)
 	ytitle <- "Insertion Read %"
 	ycol <- "PctInsertion"
 	dat2[[ycol]] <- dat2$insertions/dat2$reads_all * 100
-} else if ( type == "deletion" ) {
-	mtitle <- "Deletion Distribution"
+	outfile <- paste0(prefix, '.ins.png')
+	create_plot (dat2, ycol, xtitle, ytitle, mtitle, outfile, hstart, hend, hname)
+} 
+
+if ( type %in% c('all', 'deletion') ) {
+	mtitle <- getMainTitle("Deletion Distribution", sub_title)
 	ytitle <- "Deletion Read %"
 	ycol <- "PctDeletion"
 	dat2[[ycol]] <- dat2$deletions/dat2$reads_all * 100
+	outfile <- paste0(prefix, '.del.png')
+	create_plot (dat2, ycol, xtitle, ytitle, mtitle, outfile, hstart, hend, hname)
 } 
 
-if ( !is.null(argsL$sub) ) {
-	mtitle <- paste0(mtitle, "\n", argsL$sub)
-}
-
-## create the plot
-wt <- 500
-ht <- 500
-
-p<- ggplot(data=dat2, aes(x=pos, y=dat2[[ycol]])) + 
-	geom_line(color="blue") + 
-	theme_bw() +
-	scale_x_continuous(breaks=seq(min(dat2$pos), max(dat2$pos),by=50)) +
-	labs(x=xtitle, y=ytitle, title=mtitle) + customize_title_axis(angle=90)
-
-if ( !is.null(hstart) & !is.null(hend) ) {
-	p<- p + geom_rect(aes(xmin=hstart, xmax=hend, ymin=-Inf, ymax=Inf, 
-			fill=hname), alpha=0.01) +
-		scale_fill_manual(limits=c(hname), values=c('grey')) + 
-		theme(legend.title=element_blank(), 
-			legend.key=element_rect(fill='grey'),
-			legend.text=element_text(face="bold", size=12),
-			legend.position="bottom",
-			legend.direction="horizontal"
-			)	
-}
-
-png(filename=outfile, width=wt, height=ht)
-p
-invisible(dev.off())

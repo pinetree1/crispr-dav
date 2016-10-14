@@ -1,6 +1,7 @@
 #!/bin/env perl
+# Start processing of all samples and integrate them.
+# xwang
 
-#This program analyzes CRSIPR data.
 use strict;
 use File::Path qw(make_path);
 use File::Spec;
@@ -18,37 +19,38 @@ $| = 1;
 my %h = get_input();
 process_samples();
 read_flow();
-chrom_read();
 crispr_data();
 
 sub process_samples { 
 	## process each sample separately
 	my @samples = sort keys %{$h{sample_crisprs}};
 	foreach my $sample ( @samples ) {
+		next if -f "$h{align_dir}/$sample.done";
 		my $cmd = prepareCommand($sample);
-		print STDERR "$cmd\n";
-		system($cmd);
+		Util::run($cmd, "Failed in processing sample $sample");
 	}
 }
 
 sub read_flow {
 	my $dir = $h{align_dir};
 	my @samples = sort keys %{$h{sample_crisprs}};
+	my $hasHeader = 1;
+
 	## merge amplicode-wide read count data
 	my $outfile = "$dir/read_count.txt";
-	my $hasHeader = 1;
 	my @infiles = map { "$dir/$_.cnt" } @samples;
 	Util::tabcat(\@infiles, $outfile, $hasHeader);
-}
 
-sub chrom_read {
-	my $dir = $h{align_dir};
-	my @samples = sort keys %{$h{sample_crisprs}};
+	my $cmd = "$h{rscript} $Bin/R/read_flow.R --inf=$outfile --outf=$dir/read_count.png";
+	$cmd .= "  --rmd=$h{remove_duplicate}";
+	Util::run($cmd, "Failed to create plot of read flow");
+
 	## merge amplicode-wide chromosome read count data
-	my $outfile = "$dir/chr_read_count.txt";
-	my $hasHeader = 1;
-	my @infiles = map { "$dir/$_.chr" } @samples;	
+	$outfile = "$dir/chr_read_count.txt";
+	@infiles = map { "$dir/$_.chr" } @samples;	
 	Util::tabcat(\@infiles, $outfile, $hasHeader);
+	my $cmd="$h{rscript} $Bin/R/read_chr.R $outfile $dir/chr_read_count.png";
+	Util::run($cmd, "Failed to create plot of read count on chromosomes");
 }
 
 sub crispr_data {	
@@ -56,16 +58,58 @@ sub crispr_data {
 	my $dir = $h{align_dir};
 	my $hasHeader = 1;
 	my @crisprs = sort keys %{$h{crispr_samples}};
+
 	foreach my $crispr ( @crisprs ) {
+		my $dest = "$h{deliv_dir}/$crispr/assets";
+		make_path($dest);
+
 		my @samp = sort keys %{$h{crispr_samples}->{$crispr}};
-		foreach my $ext ( "pct", "len", "can", "hdr" ) {
-			my $outfile = "$h{align_dir}/$crispr.$ext";
+		foreach my $ext ( "snp", "pct", "len", "can", "hdr" ) {
+			my $outfile = "$h{align_dir}/$crispr" . "_$ext.txt";
 			my @infiles = map { "$h{align_dir}/$_.$crispr.$ext" } @samp;
 			Util::tabcat(\@infiles, $outfile, $hasHeader);
-		}			
-	}
-}
 
+			my $excel_outfile="$dest/$crispr" . "_$ext.xlsx";
+			Util::tab2xlsx($outfile, $excel_outfile);
+
+			if ( $ext eq "pct" ) {
+				# create plots for indel count and pct
+				my $cmd="$h{rscript} $Bin/R/indel.R $outfile $dest/$crispr.indelcnt.png $dest/$crispr.indelpct.png";
+				Util::run($cmd, "Failed to create indel count/pct plots");
+			} elsif ( $ext eq "hdr" ) {
+				# create HDR plot
+				my $cmd = "$h{rscript} $Bin/R/hdr_freq.R --inf=$outfile --sub=$crispr --outf=$dest/$crispr.hdr.png";
+				Util::run($cmd, "Failed to create HDR plot");
+			} elsif ( $ext eq "can" ) {
+				# create canvasXpress alignment html file
+				foreach my $pct (0..1) { 
+					my $cmd = "$Bin/crispr2cx.pl -input $outfile -perc $pct > $h{deliv_dir}/$crispr/${crispr}_cx$pct.html";
+					Util::run($cmd, "Failed to create canvasXpress alignment view");
+				}
+			}
+		} # ext			
+
+		
+		## move the png files for individual sample to dest
+		foreach my $s ( @samp ) {
+			my @pngs = glob("$h{align_dir}/$s.$crispr.*.png");
+			next if !@pngs;
+			my $str = join(" ", @pngs);
+			qx(mv -f $str $dest); 
+		}
+
+		## copy the read count plots and data
+		qx(cp $h{align_dir}/read_count.png $h{align_dir}/chr_read_count.png $dest);
+		Util::tab2xlsx("$h{align_dir}/read_count.txt", "$dest/read_count.xlsx"); 
+
+		## create results html page
+		my $cmd="$Bin/resultPage.pl --ref $h{genome} --gene $h{geneid}";
+		$cmd .= " --region $h{region} --crispr $h{crispr} --cname $crispr";
+		$cmd .= " $h{align_dir} $h{deliv_dir}";
+		Util::run($cmd, "Failed to create results html page");
+	 
+	} # crispr 
+}
 
 sub prepareCommand {
 	my $sample = shift;
@@ -85,7 +129,7 @@ sub prepareCommand {
 
 	$cmd .= " --min_qual_mean $h{min_qual_mean}" if $h{min_qual_mean};
 	$cmd .= " --min_len $h{min_len}" if $h{min_len};
-	$cmd .= " --ns_max_p $h{bwa}" if $h{bwa};
+	$cmd .= " --ns_max_p $h{ns_max_p}" if $h{ns_max_p};
 
 	$cmd .= " --unique" if $h{remove_duplicate};
 	$cmd .= " --realign" if $h{realign_flag};
@@ -164,8 +208,8 @@ Usage: $0 [options]
 	$h{refGene} = $cfg->{$h{genome}}{refGene};
 	
 	## tools
-	foreach my $tool ( "picard",  "abra", "prinseq", 
-		"samtools", "bwa", "java", "bedtools", "pysamstats" ) {
+	foreach my $tool ( "picard",  "abra", "prinseq", "samtools", 
+		"bwa", "java", "bedtools", "pysamstats", "rscript") {
 		$h{$tool} = $cfg->{app}{$tool} if $cfg->{app}{$tool}; 
 	}
 	

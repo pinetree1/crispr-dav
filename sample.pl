@@ -1,10 +1,14 @@
 #!/bin/env perl
+# Process one sample
+# xwang
+
 use strict;
 use Getopt::Long;
 use FindBin qw($Bin);
 use lib "$Bin/Modules";
 use NGS;
 use Exon;
+use Util;
 use Data::Dumper;
 
 my %h = get_input();
@@ -88,11 +92,31 @@ for my $target_name ( sort split(/,/, $h{target_names}) ) {
 	}
 
 	## prepare data for alignment visualization by Canvas Xpress.
-	my $cmd= "$Bin/canvasXpressData.pl --ref_fasta $h{ref_fasta}";
+	my $cmd= "$Bin/cxdata.pl --ref_fasta $h{ref_fasta}";
 	$cmd .= " --refGene $h{refGene} --geneid $h{geneid}"; 
 	$cmd .= " --samtools $h{samtools} $lenfile $canvasfile";
-	die "Failed to create data for Canvas Xpress\n" if system($cmd);
+	Util::run($cmd, "Failed to create data for Canvas Xpress");
+
+	## create plots of coverage, insertion and deletion on amplicon
+	my $cmd = "$h{rscript} $Bin/R/amplicon.R --inf=$varstat --outf=$outdir/$sample.$target_name";
+	$cmd .= " --sub=$sample --hname=$target_name --hstart=$target_start --hend=$target_end";
+	$cmd .= " --chr=$h{genome} $chr";	
+	Util::run($cmd, "Failed to generate amplicon-wide plots");
+
+	## create a plot of base changes in crispr site and surronding regions
+	$cmd = "$h{rscript} $Bin/R/snp.R --inf=$varstat --outf=$outdir/$sample.$target_name.snp.png";
+	$cmd .= " --outtsv=$outdir/$sample.$target_name.snp";
+	$cmd .= " --sample=$sample --hname=$target_name --hstart=$target_start --hend=$target_end";
+	$cmd .= " --chr=$h{genome} $chr";
+	Util::run($cmd, "Failed to generate base-change plot");
+ 
+	## create plots of indel length distributions (with and without WT)
+	$cmd = "$h{rscript} $Bin/R/indel_length.R $lenfile $outdir/$sample.$target_name.len.png";
+	$cmd .= " $outdir/$sample.$target_name.len2.png";
+	Util::run($cmd, "Failed to generate indel length distribution plots"); 
 }
+
+qx(touch $outdir/$sample.done);
 
 sub get_input {
 	my $usage = "$0 [options] sampleName read1FastqFile outdir
@@ -143,7 +167,7 @@ sub get_input {
 
 	my %h;	
 	GetOptions(\%h, 'picard=s', 'abra=s', 'prinseq=s', 'samtools=s', 'bwa=s',
-		'java=s', 'bedtools=s', 'pysamstats=s', 'tmpdir=s',
+		'java=s', 'bedtools=s', 'pysamstats=s', 'rscript=s', 'tmpdir=s',
 		'read2fastq=s', 'unique', 'realign', 'min_mapq=i',
 		'min_qual_mean=i', 'min_len=i', 'ns_max_p=i',
 		'genome=s', 'idxbase=s', 'ref_fasta=s', 'refGene=s', 'geneid=s',

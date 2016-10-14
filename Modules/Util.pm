@@ -1,4 +1,6 @@
 # Miscellaneous utility functions
+# Author: xwang
+
 package Util;
 use strict;
 use Carp qw(carp croak);
@@ -43,4 +45,10 @@ sub tabcat {
 	}
 }
 
+sub run {
+	my ($cmd, $fail_msg, $silent) = @_;
+	print "$cmd\n" if !$silent;
+	print "$fail_msg\n" if system($cmd);
+} 
+	
 1;

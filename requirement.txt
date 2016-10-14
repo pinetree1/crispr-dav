@@ -1,13 +1,11 @@
 1. Applications:
 
 ABRA: abra-0.94-SNAPSHOT-jar-with-dependencies.jar
-asub
-
 bwa
 samtools
 picard
-
 sickle
+prinseq
 pysamstats
 java
 Rscript
@@ -17,7 +15,13 @@ Bioperl Bio::
 Config::Tiny
 Excel::
 Log::
+JSON
 
 3. python lib
 set PYTHONPATH to include library required by pysamstats, e.g.
 ~/lib/python2.7/site-packages
+
+4. R
+ggplot2
+reshape2
+naturalsort

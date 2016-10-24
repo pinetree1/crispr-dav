@@ -3,6 +3,8 @@
 
 use strict;
 use JSON;
+use FindBin qw($Bin);
+use lib $Bin;
 use BMS::TableReader;
 use BMS::ArgumentParser;
 use Bio::PrimarySeq;

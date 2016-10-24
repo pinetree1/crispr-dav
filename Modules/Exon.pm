@@ -1,12 +1,31 @@
 package Exon;
-# package of obtaining exon or genomic sequence, with or without indels
-# Author: xwang
+
+=head1 DESCRIPTION
+
+The package is used to obtain exon or genomic sequence, with or without indel.
+
+=head1 SYNOPSIS
+
+=head1 AUTHOR
+
+Xuning Wang <xuning.wang@bms.com>
+
+=cut
+
 use strict;
 use Carp;
 use Data::Dumper;
 
-# Call example: my $e = new Exon('fasta_file'=>$fasta, 'seqid'=>$seqid);
-# Default samtools is the one in PATH environment.
+=head2 new
+
+ Usage   : my $obj = new Exon('fasta_file'=>$fasta, 'seqid'=>$seqid);
+ Function: Generate a new object
+ Returns : a Exon object
+ Args    : fasta_file, seqid, verbose, samtools
+ 	       Default samtools is the one in PATH environment.
+
+=cut
+
 sub new {
 	my $self = shift;
 	my %h = (
@@ -18,10 +37,18 @@ sub new {
 	return bless \%h, $self;
 }
 
-## Return a string of sequence from fasta using samtools
-# If fasta index file is not created before hand, it will be created in the 
-# same directory as the fasta file. So make sure file/directory permission is granted.
-# start and end are 1-based coordinates
+=head2 getSeq
+
+ Usage   : my $seq=$obj->getSeq();
+ Function: Return a string of sequence from fasta using samtools
+	If fasta index file is not created before hand, it will be created in the same 
+	directory as the fasta file. So make sure file/directory permission is granted.
+	start and end are 1-based coordinates
+ Returns : return a sequence string 
+ Args    : start, end. Optional 
+
+=cut
+
 sub getSeq {
 	my $self = shift;
 	my %h = (start=>'', end=>'', 
@@ -40,18 +67,16 @@ sub getSeq {
 	return join("", @a);
 }
 
-## Return CDS sequence, considering indels.
-# e.g. 52272278:52272279:I:ATTTCGGCAATG:52272281:52272282:D:-
-# these coordinates are 1-based and inclusive. For insertion, sequence is inserted between the 2 positions.
-# The returned sequence is 5' to 3'.
+=head2 getExonsSeq
 
-## The segments are like [1,15],[2],[16,30]: seq between 1 and 30, with insertion of 2 bases after 15.
-# [1,15],[20,30]: seq between 1 and 30, with deletion of 16-19.
-# Each pair of backets is called a segment, such as [1,15] or [2]. 
+ 
+ Usage   : my ($seq, $aref)=$obj->getExonSeq(start=x, end=y, exonStarts=m1,m2, exonEnds=n1,n2) 
+ Function: Obtain a sequence spliced from all exons within the range of start-end.
+ Returns : Return a sequence and an reference of array of coordinates (0-based) of the bases in the sequence.
+ Args    : start, end, exonStarts, and exonEnds. They are in UCSC refseq format: 0-based; end is exclusive.
+	The coordinates are 1-based and inclusive. For insertion, sequence is inserted between the 2 positions.
 
-# Obtain a sequence spliced from all exons within the range of start-end.  
-# Return such sequence and an reference of the array of coordinates (0-based) of the bases in the sequence 
-# start, end, exonStarts, and exonEnds are in UCSC refseq format: 0-based; end is exclusive. 
+=cut
 
 sub getExonsSeq {
 	my $self = shift;
@@ -98,9 +123,19 @@ sub getExonsSeq {
 	return ($exonseq, \@new_coords);
 }
 
-## Return a modified sequence due to indels, and segments to be used for canvas xpress
-## wt_coords is array ref. Elements are 0-based coordinates. $indelstr is 1-based.
-## indelstr is 1-based, e.g. 52272278:52272279:I:ATTTCA:52272290:52272291:D:. 
+=head2 getMutantExonsSeq
+
+ Usage   : my ($seq, $seg_aref, $intron_bases)= $obj->getMutantExonsSeq(wt_seq=, wt_coord=, indelstr= ) 
+ Function: 
+ Returns : Return a modified sequence due to indels, and segments to be used for canvas xpress
+	The segments are like [1,15],[2],[16,30]: seq between 1 and 30, with insertion of 2 bases after 15.
+	[1,15],[20,30]: seq between 1 and 30, with deletion of 16-19.
+	Each pair of backets is called a segment, such as [1,15] or [2]. 
+ Args    : wt_coords is array ref. Elements are 0-based coordinates. $indelstr is 1-based.
+	indelstr is 1-based, e.g. 52272278:52272279:I:ATTTCA:52272290:52272291:D:.
+
+=cut
+
 sub getMutantExonsSeq {
 	my $self = shift;
 	my %h = ( @_ );
@@ -205,10 +240,17 @@ sub getMutantExonsSeq {
 	return ($newseq, \@segments, $intron_bases);
 }
 
-## guide sequence is a short stretch (usually 20 bases) of sequence, and can be in exon/intron.
-## Return the guide sequence and its location inside CDS
-## guide_start and guide_end are genomic coordinates and are 1-based inclusive.
-## the strand is the direction of the gene.
+=head2 locateGuideInCDS
+
+ Usage   : my ($segment_str, $guide_cds_seq, $intron_bases) = $obj->locateGuideInCDS(args)
+ Function: Find the location of guide sequence in CDS.
+ Returns : Return the guide sequence and its location inside CD
+	Guide sequence is a short stretch (usually 20 bases) of sequence, and can be in exon/intron.
+ Args    : guide_start and guide_end are genomic coordinates and are 1-based inclusive.
+	strand is the direction of the gene.
+
+=cut
+
 sub locateGuideInCDS {
 	my $self = shift;
 	my %h = ( strand=>'+', @_ );
@@ -292,13 +334,15 @@ sub locateGuideInCDS {
 	return (join(",", @segments), $guide_cds_seq, $intron_bases);
 }
 
-# [1,15],[2],[16,30]: seq between 1 and 30, with insertion of 2 bases after 15.
-# [1,15],[20,30]: seq between 1 and 30, with deletion of 16-19. 
-# each pair of backets is called a segment, such as [1,15] or [2] 
-## Change the direction of the segments, i.e. change original start to end, original end to start, ...
+=head2 reverse_segments
 
-## total_length, by default, is the length of the segment in wildtype 
-## Return a reference of the segement array
+ Usage   : my $seg_aref = $obj->reverse_segments($old_seg_aref)
+ Function: Change the direction of the segments, i.e. change original start to end, original end to start, .. 
+ Returns : Return a reference of the segement array
+ Args    : total_length, by default, is the length of the segment in wildtype 
+
+=cut
+
 sub reverse_segments {
 	my $self = shift;
 	my %h = ( total_length=>'', @_ );
@@ -333,14 +377,19 @@ sub reverse_segments {
 	return \@segments;
 }
 
-## Return genomic sequence as a result of indel
-## indelstr is like 123:145:D::155:156:I:ATCG
-## start_pos is where the 1st base in the input_seq starts in a coordinate system used by indelstr
-## Both start_pos and indel str use 1-based coordinate.
-## The input_seq, start_pos and indelstr are all based on a positive strand direction
+=head2 getGenomicSeq
 
-## The input_seq is a contigous sequence, like genomic sequence.
-## strand can be + or -. 
+ Function: Obtain a modified sequence after indel.  
+ Returns : genomic sequence, and segment array reference 
+ Args    : indelstr is like 123:145:D::155:156:I:ATCG
+	start_pos is where the 1st base in the input_seq starts in a coordinate system used by indelstr
+	Both start_pos and indel str use 1-based coordinate.
+	The input_seq, start_pos and indelstr are all based on a positive strand direction
+	The input_seq is a contigous sequence, like genomic sequence.
+	strand can be + or -. 
+
+=cut
+
 sub getGenomicSeq {
 	my $self = shift;
 	my %h = ( strand=>'+', @_ );
@@ -354,7 +403,6 @@ sub getGenomicSeq {
 	
 	return ($seq, $segment_aref);
 }
-
 
 sub getGenomicSeq_PositiveStrand {
 	my $self = shift;

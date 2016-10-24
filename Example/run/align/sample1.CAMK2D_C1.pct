@@ -1,0 +1,2 @@
+Sample	CrisprSite	Reference	CrisprRegion	TargetReads	WtReads	IndelReads	PctWt	PctIndel	InframeIndel	PctInframeIndel
+sample1	CAMK2D_C1	hg19	chr4:114680480-114680499	7925	3956	3969	49.92	50.08	154	1.94

@@ -1,0 +1,2 @@
+Sample	RawReads	QualityReads	MappedReads	PctMap	Duplicates	PctDup	UniqueReads	RegionReads
+sample1	123022	114074	113533	99.53	48272	42.32	65261	30669

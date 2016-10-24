@@ -1,0 +1,39 @@
+WARNING: Unknown OS
+
+Mon Oct 24 15:12:53 EDT 2016
+
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+[bam_header_read] EOF marker is absent. The input is probably truncated.
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+sh: module: line 1: syntax error: unexpected end of file
+sh: error importing function definition for `BASH_FUNC_module'
+/bin/sh: module: line 1: syntax error: unexpected end of file
+/bin/sh: error importing function definition for `BASH_FUNC_module'
+/bin/sh: module: line 1: syntax error: unexpected end of file
+/bin/sh: error importing function definition for `BASH_FUNC_module'
+/bin/sh: module: line 1: syntax error: unexpected end of file
+/bin/sh: error importing function definition for `BASH_FUNC_module'

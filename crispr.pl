@@ -17,18 +17,35 @@ use Data::Dumper;
 $| = 1;
 
 my %h = get_input();
-process_samples();
+my $jobs = process_samples();
+if ($h{sge}) {
+	Util::waitForJobs($jobs, 10, 3000);
+}
 read_flow();
 crispr_data();
 
 sub process_samples { 
 	## process each sample separately
 	my @samples = sort keys %{$h{sample_crisprs}};
+	my $jobs; # a hash ref. {sample}=>jobname
+	my $i=0;
 	foreach my $sample ( @samples ) {
+		$i++;
 		next if -f "$h{align_dir}/$sample.done";
 		my $cmd = prepareCommand($sample);
-		Util::run($cmd, "Failed in processing sample $sample");
+		if ( $h{sge} ) {
+			my $jobname=Util::getJobName($sample, "CR",  "$i");
+			$cmd = "qsub -cwd -V -o $h{align_dir}/$sample.log -j y -b y -N $jobname $cmd";
+			print STDERR "$cmd\n" if $h{verbose};
+			if (system($cmd)==0 ) {;
+				$jobs->{$jobname}=$sample;
+			}
+		} else {
+			Util::run($cmd, "Failed in processing sample $sample", $h{verbose});
+		}
 	}
+
+	return $jobs;
 }
 
 sub read_flow {
@@ -43,14 +60,14 @@ sub read_flow {
 
 	my $cmd = "$h{rscript} $Bin/R/read_flow.R --inf=$outfile --outf=$dir/read_count.png";
 	$cmd .= "  --rmd=$h{remove_duplicate}";
-	Util::run($cmd, "Failed to create plot of read flow");
+	Util::run($cmd, "Failed to create plot of read flow", $h{verbose});
 
 	## merge amplicode-wide chromosome read count data
 	$outfile = "$dir/chr_read_count.txt";
 	@infiles = map { "$dir/$_.chr" } @samples;	
 	Util::tabcat(\@infiles, $outfile, $hasHeader);
 	my $cmd="$h{rscript} $Bin/R/read_chr.R $outfile $dir/chr_read_count.png";
-	Util::run($cmd, "Failed to create plot of read count on chromosomes");
+	Util::run($cmd, "Failed to create plot of read count on chromosomes", $h{verbose});
 }
 
 sub crispr_data {	
@@ -75,16 +92,16 @@ sub crispr_data {
 			if ( $ext eq "pct" ) {
 				# create plots for indel count and pct
 				my $cmd="$h{rscript} $Bin/R/indel.R $outfile $dest/$crispr.indelcnt.png $dest/$crispr.indelpct.png";
-				Util::run($cmd, "Failed to create indel count/pct plots");
+				Util::run($cmd, "Failed to create indel count/pct plots", $h{verbose});
 			} elsif ( $ext eq "hdr" ) {
 				# create HDR plot
 				my $cmd = "$h{rscript} $Bin/R/hdr_freq.R --inf=$outfile --sub=$crispr --outf=$dest/$crispr.hdr.png";
-				Util::run($cmd, "Failed to create HDR plot");
+				Util::run($cmd, "Failed to create HDR plot", $h{verbose});
 			} elsif ( $ext eq "can" ) {
 				# create canvasXpress alignment html file
 				foreach my $pct (0..1) { 
 					my $cmd = "$Bin/crispr2cx.pl -input $outfile -perc $pct > $h{deliv_dir}/$crispr/${crispr}_cx$pct.html";
-					Util::run($cmd, "Failed to create canvasXpress alignment view");
+					Util::run($cmd, "Failed to create canvasXpress alignment view", $h{verbose});
 				}
 			}
 		} # ext			
@@ -106,9 +123,9 @@ sub crispr_data {
 		my $cmd="$Bin/resultPage.pl --ref $h{genome} --gene $h{geneid}";
 		$cmd .= " --region $h{region} --crispr $h{crispr} --cname $crispr";
 		$cmd .= " $h{align_dir} $h{deliv_dir}";
-		Util::run($cmd, "Failed to create results html page");
-	 
+		Util::run($cmd, "Failed to create results html page", $h{verbose});
 	} # crispr 
+	print STDERR "All done!\n";
 }
 
 sub prepareCommand {
@@ -160,6 +177,7 @@ Usage: $0 [options]
 	--genome <str> Genome version. Default: $DEFAULT_GENOME. Must match config file.
 	--outdir <str> Output directory. Default: current directory
 	--help  Print this help message.
+	--verbose Print some commands and information
 
 	Required:
 
@@ -178,13 +196,15 @@ Usage: $0 [options]
 	--sitemap <str> Required. A file that associates sample name with crispr sites. 
 		Each line starts with sample name, followed by crispr sequences.. 
 		Sample name and crispr sequences are separated by spaces or tabs.
+
+	--sge Submit jobs to SGE default queue.
 ";
 
 	my @orig_args = @ARGV;
 
 	my %h;
 	GetOptions(\%h, 'conf=s', 'genome=s', 'outdir=s', 'help', 
-		'region=s', 'crispr=s', 'filemap=s', 'sitemap=s');
+		'region=s', 'crispr=s', 'filemap=s', 'sitemap=s', 'sge', 'verbose');
 
 	$h{conf} //= $DEFAULT_CONF;
 	$h{genome} //= $DEFAULT_GENOME;
@@ -196,7 +216,7 @@ Usage: $0 [options]
 		die "$usage\n\nMissing required options.\n";
 	}	
 
-	print STDERR "Main command: $0 @orig_args\n";
+	print STDERR "Main command: $0 @orig_args\n" if $h{verbose};
 	
 	## Output directory
 	make_path($h{outdir});
@@ -248,7 +268,7 @@ Usage: $0 [options]
 	$h{sample_fastqs} = getFastqFiles($h{filemap});
 	
 	foreach my $key ( sort keys %h ) {
-		print STDERR "$key => $h{$key}\n";
+		print STDERR "$key => $h{$key}\n" if $h{verbose};
 	}
 
 	return %h;
@@ -337,4 +357,11 @@ sub getFastqFiles {
 	}
 	close $fh;
 	return \%fastqs;
+}
+
+sub wait_complete {
+	my $jobs = shift;
+	return if !$jobs;
+
+
 }

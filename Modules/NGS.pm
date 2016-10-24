@@ -1,11 +1,31 @@
 package NGS; 
-# package for NGS processing
-# Author: xwang
+
+=head1 DESCRIPTION
+
+The package is used to perform various NGS tasks, such as filtering, aligning, read counting, variant stats.
+
+=head1 SYNOPSIS
+
+=head1 AUTHOR
+
+Xuning Wang <xuning.wang@bms.com>
+
+=cut
+ 
 use strict;
 use File::Basename;
 use File::Path qw(make_path);
-use Carp;
+use Carp qw(croak);
 use Data::Dumper;
+
+=head2 new
+
+ Usage   : $obj = new NGS()
+ Function: Create a NGS object
+ Returns : Returns a NGS object
+ Args    : java, samtools, bedtools, bwa, verbose, tmpdir. 
+		bedtools must be at least version 2
+=cut
 
 sub new {
 	my $self = shift;
@@ -21,8 +41,15 @@ sub new {
 	bless \%h, $self;
 }
 
-# filter reads in fastq file with prinseq
-# fastq file must be already in .gz format
+=head2 filter_reads
+
+ Usage   : $obj->filter_reads(read1_inf=>'dir1/S1.fastq.gz', read1_outf='dir2/S1.fastq.gz')
+ Function: filter reads in .gz fastq file with PRINSEQ prinseq-lite.pl
+ Returns : 
+ Args    : Required: read1_inf (input read1 file), read1_outf (output read1 file). More optional args.   
+
+=cut
+
 sub filter_reads {
 	my $self = shift;
 	my %h = (
@@ -70,7 +97,15 @@ sub filter_reads {
 	}
 }
 
-## trim reads with sickle. 
+=head2 trim_reads
+
+ Usage   : $obj->trim_reads(read1_inf=>'x', read1_outf=>'y')
+ Function: Trim reads with sickle. 
+ Returns :
+ Args    :	read1_inf, read1_outf
+
+=cut
+
 sub trim_reads {
 	my $self = shift;
 	my %h = (
@@ -105,6 +140,15 @@ sub trim_reads {
 	print STDERR "$cmd\n" if $self->{verbose};
 	return system($cmd);
 }
+
+=head2 create_bam
+
+ Usage   : $obj->create_bam(sample=>, read1_inf=>, idxbase=>, bam_outf=> )
+ Function: a wrapper function to create bam file, etc from fastq file.
+ Returns : array of read counts by bamReadCount().
+ Args    : sample, read1_inf, idxbase, bam_outf, and many optional/default args 
+
+=cut
 
 sub create_bam {
 	my $self = shift;
@@ -159,8 +203,15 @@ sub create_bam {
 	return @bam_stats;
 }
 
-## bwa alignment with bwa mem, and sort/index
-## Removing non-primary and supplemental alignment entries
+=head2 bwa_align
+
+ Usage   : $obj->bwa_align(read1_inf=>, idxbase=>, bam_outf=>)
+ Function: bwa alignment with bwa mem, and sort/index; removing non-primary and supplemental alignment entries
+ Returns :
+ Args    : read1_inf, idxbase, bam_outf, etc
+
+=cut
+
 sub bwa_align {
 	my $self = shift;
 	my %h = ( 
@@ -196,10 +247,15 @@ sub bwa_align {
 	return system($cmd);	
 }
 
-## sort reads in bam. If bam_outf is not specified, 
-## the input bam is replaced.
-## Required arguments: bam_inf
-## Optional arguments: bam_outf
+=head2 sort_index_bam
+
+ Usage   : sort_index_bam(bam_inf=>'x.bam')
+ Function: sort reads in bam. If bam_outf is not specified, the input bam is replaced.
+ Returns :
+ Args    : Required arguments: bam_inf; Optional: bam_outf
+
+=cut
+
 sub sort_index_bam {
 	my $self = shift;
 	my %h = ( @_ );
@@ -220,20 +276,29 @@ sub sort_index_bam {
 	return system($cmd);
 }
 
+=head2 index_bam
 
-## Create index for bam. 
-## Required arguments: bam_inf
-## The resulting index file is <bamfile>.bai. If bam file is x.bam, then index is x.bam.bai
+ Function: Create index for bam. 
+	The resulting index file is <bamfile>.bai. If bam file is x.bam, then index is x.bam.bai
+ Args    : bam_inf
+ 
+=cut
+
 sub index_bam {
 	my ($self, $bamfile) = @_;
 	my $cmd = "$self->{samtools} index $bamfile";
 	return system($cmd);
 }
 
-## mark duplicate reads in bam
-## Required arguments: bam_inf
-## Optional arguments: bam_outf
-## Bam index created by picard for x.bam is x.bai, inconsistent with samtools index. 
+=head2 mark_duplicate
+
+ Usage   : $obj->mark_duplicate(bam_inf=>, picard=>'path_to_MarkDuplicates.jar')
+ Function: mark but not remove duplicate reads in bam using Picard
+ Args    : bam_inf. Optional arguments: bam_outf, picard
+	Choose the version of Picard that has MarkDuplicates.jar 
+
+=cut
+
 sub mark_duplicate {
 	my $self = shift;
 	my %h = (
@@ -272,9 +337,16 @@ sub mark_duplicate {
 	return system($cmd);	
 }
 
-## Update bam file with ABRA indel detection
-## Required arguments: bam_inf, target_bed, ref_fasta, 
-## Optional arguments: bam_outf 
+=head2 ABRA_realign
+
+ Usage   : $obj->ABRA_realign(bam_inf=>, abra=>'path/of/abra.jar', ...) 
+ Function: Update bam file with ABRA for enhanced indel detection
+ Args    : bam_inf, abra, target_bed, ref_fasta, 
+	target_bed is a bed file that specifies the region to realign
+	ref_fasta is a reference fasta file.
+
+=cut
+
 sub ABRA_realign {
 	my $self = shift;
 	my %h = ( 
@@ -317,8 +389,17 @@ sub ABRA_realign {
 	}
 }
 
+=head2 remove_duplicate
+
+ Usage   : $obj->remove_duplicate($inbam, $outbam)
+ Function: removing duplicates from input bam file that is already marked for duplicates.
+ Args    : input bam file, optional output bam file
+
+=cut
+
 sub remove_duplicate {
 	my ($self, $inbam, $outbam) = @_;
+	croak "Cannot find inbam $inbam.\n" if !-f $inbam;
 
 	my $replace = 0;
 	if (!$outbam) {
@@ -332,7 +413,15 @@ sub remove_duplicate {
 	}
 }
 
-## Count reads in fastq file. If it's gzipped, set gz=1
+=head2 fastqReadCount
+
+ Usage   : $obj->fastqReadCount($fastq_file, $gz)
+ Function: Count reads in fastq file. If it's gzipped, set gz=1
+ Returns : number of reads
+ Args    : fastq file, gz flag (1/0)
+
+=cut
+	
 sub fastqReadCount {
 	my ($self, $fastq_file, $gz) = @_;
 	my $cmd = $gz? "gunzip -c $fastq_file|wc -l" : "wc -l $fastq_file";
@@ -342,10 +431,15 @@ sub fastqReadCount {
 }
 
 
-## Obtain read counts from bam file.
-## The bam file should be marked duplicates.
-## In order to count reads in a region (chr, start, end), the bam file must be indexed.  
-## The start and end are 1-based chromosome position.
+=head2 bamReadCount
+
+ Usage   : $obj->bamReadCount($bamfile)
+ Function: Obtain read counts from bam file. The bam file should be marked duplicates.
+ Returns : an array of counts
+ Args    : input bam file
+
+=cut
+
 sub bamReadCount {
 	my ($self, $bamfile) = @_;
 	my $cmd = $self->{samtools} . " view -c $bamfile";
@@ -361,8 +455,17 @@ sub bamReadCount {
 	return ($bam_reads, $mapped_reads, $duplicate_reads, $uniq_reads);
 }
 
-## start and and are 1-based and inclusive.
-## bedtools must be at least version 2
+=head2 regionReadCount
+
+ Usage   : $obj->regionReadCount(args) 
+ Function: Count the number of reads overlapping a region
+ Returns : read count
+ Args    : bam_inf, chr, start, end. Start and end are 1-based and inclusive.
+	In order to count reads in a region (chr, start, end), the bam file must be indexed.  
+	The start and end are 1-based chromosome position.
+
+=cut
+
 sub regionReadCount {
 	my $self = shift;
 	my %h = (min_overlap=>1, @_);
@@ -384,21 +487,34 @@ sub regionReadCount {
 	return $cnt;
 }
 
-## create a bed file, with 0-based coordinates: [start coord, end coord).
-## start and end is 1-based.
+=head2 makeBed
+
+ Usage   : $obj->makeBed(chr=>, start=>, end=>, outfile=>)
+ Function: create a bed file, with 0-based coordinates: [start coord, end coord).
+ Args    : chr, start, end, outfile. start and end is 1-based, by default.
+
+=cut
+
 sub makeBed {
 	my $self = shift;
 	my %h= (zero_based=>1, @_);
 	required_args(\%h, 'chr', 'start', 'end', 'outfile');
 
-	open(my $outf, ">$h{outfile}") or die $!;	
+	open(my $outf, ">$h{outfile}") or croak $!;	
 	my $newstart = $h{zero_based}? $h{start}-1 : $h{start};
 	print $outf join("\t", $h{chr}, $newstart, $h{end})."\n";
 	close $outf;
 }
 
-## Count reads in different stages
-## start and end are 1-based.
+=head2 readFlow
+ 
+ Usage   : $obj->readFlow(r1_fastq_inf=>, outfile=>, ...)
+ Function: Count reads in different stages
+ Args    : r1_fastq_inf, bamstat_aref, sample, outfile, etc
+	start and end are 1-based.
+
+=cut 
+
 sub readFlow {
 	my $self = shift;
 	my %h = ( gz=>1, r2_fastq_inf=>'',
@@ -409,7 +525,7 @@ sub readFlow {
 
 	required_args(\%h, 'r1_fastq_inf',  'bamstat_aref', 'sample', 'outfile');
 
-	open(my $cntf, ">$h{outfile}") or die $!;
+	open(my $cntf, ">$h{outfile}") or croak $!;
 	print $cntf join("\t", "Sample", "RawReads", "QualityReads", "MappedReads", 
 			"PctMap", "Duplicates", "PctDup", "UniqueReads", "RegionReads") . "\n";
 
@@ -434,7 +550,14 @@ sub readFlow {
 	close $cntf;
 }
 
-# Calculate the number of reads aligned on different chromosomes
+=head2 chromCount
+
+ Usage   : $obj->chromCount(sample='x', bam_inf=>, outfile=> )
+ Function: Calculate the number of reads aligned on different chromosomes
+ Args    : sample, bam_inf, outfile
+
+=cut
+ 
 sub chromCount {
 	my $self = shift;
 	my %h = (@_);
@@ -453,8 +576,15 @@ sub chromCount {
 	close $outf;
 }
 
+=head2 variantStat
 
-## Create variant stat file from bam file
+ Usage   : $obj->variantStat(bam_inf=>, outfile=>, )
+ Function: Caluculate depth, indel, SNPs in a bam file.
+ Args    : bam_inf, ref_fasta, outfile, etc.
+	pysamstats must be in PATH or specified. Require python module pysam.
+
+=cut
+
 sub variantStat {
 	my $self = shift;
 	my %h = (
@@ -482,6 +612,14 @@ sub variantStat {
 	return system($cmd);		
 }
 
+=head2 required_args
+ 
+ Usage   : $obj->required_args($href)
+ Function: Quit if a required argument is missing.
+ Args    : a hash reference
+
+=cut
+
 sub required_args {
 	my $href = shift;
 	foreach my $arg ( @_ ) {
@@ -491,9 +629,16 @@ sub required_args {
 	}
 }
 
+=head2 targetSeq
 
-## Find reads that overlap with the target region. 
-## start and end are 1-based and inclusive.
+ Usage   : $obj->targetSeq(args)
+ Function: Find reads that overlap with the target region. 
+ Args    : bam_inf, chr, target_start, target_end, 
+			outfile_targetSeq, outfile_indelPct, outfile_indelLen
+	target_start and target_end are 1-based and inclusive.
+
+=cut
+
 sub targetSeq {
 	my $self = shift;
 	my %h = (
@@ -526,7 +671,7 @@ sub targetSeq {
 	$cmd .= " | $self->{samtools} view -";
 	print STDERR "$cmd\n" if $self->{verbose};
 
-	open(P, "$cmd|") or die $!;
+	open(P, "$cmd|") or croak $!;
 
 	# reads overlapping target region that meet min_mapq and min_overlap
 	my $overlap_reads = 0; 
@@ -587,8 +732,15 @@ sub targetSeq {
 	}
 }
 
-## extract read sequence in a range
-## start and end are 1-based.
+=head2 extractReadRange
+
+ Usage   : $obj->extractReadRange($sam_record, $chr, $start, $end, $min_mapq)
+ Function: extract read sequence within a range 
+ Args    : $sam_record, $chr, $start, $end, $min_mapq 
+	start and end are 1-based and inclusive.
+
+=cut
+
 sub extractReadRange {
 	my ($self, $sam_record, $chr, $start, $end, $min_mapq)=@_; 
 	my ($qname, $flag, $refchr, $align_start, $mapq, $cigar, 
@@ -689,10 +841,17 @@ sub _isOverlap {
 	return $overlap >= $min_overlap? 1:0;
 }
 
-## HDR homology directed repair
-## base_changes is a comma-separated strings of positons and bases. Format: <pos><base>,...
-## for example, 101900208C,101900229G,101900232C,101900235A. Bases are on positive strand, and 
-## are intended new bases, not reference bases. 
+=head2 categorizeHDR
+
+ Usage   : $obj->categorizeHDR(bam_inf=>, ...)
+ Function: To classify oligos in HDR (homology directed repair) region into different categories 
+ Args    : bam_inf, chr, base_changes, sample, stat_outf 
+	base_changes is a comma-separated strings of positons and bases. Format: <pos><base>,...
+	for example, 101900208C,101900229G,101900232C,101900235A. Bases are on positive strand, and 
+	are intended new bases, not reference bases. 
+
+=cut
+
 sub categorizeHDR {
 	my $self = shift;
 	my %h = (
@@ -729,7 +888,7 @@ sub categorizeHDR {
 	my $cmd = "$self->{bedtools} intersect -a $h{bam_inf} -b $bedfile -F 1 -u";
 	$cmd .= " > $hdr_bam && samtools index $hdr_bam";
 	print STDERR "$cmd\n" if $self->{verbose};
-	die "Failed to create $hdr_bam\n" if system($cmd);
+	croak "Failed to create $hdr_bam\n" if system($cmd);
 
 	## create HDR seq file
 	my $hdr_seq_file = "$outdir/$sample.hdr.seq";
@@ -749,7 +908,7 @@ sub categorizeHDR {
 	my $partial_oligo = 0; # reads with some but not all desired bases, no indel.
 	my $non_oligo = 0; # reads without any desired base changes, regardless of indel 
 
-	open( my $inf, $hdr_seq_file) or die $!;
+	open( my $inf, $hdr_seq_file) or croak $!;
 	while ( my $line = <$inf> ) {
 		next if $line !~ /\w/;
 		chomp $line;
@@ -789,7 +948,7 @@ sub categorizeHDR {
 
 	} # end while
 
-	open(my $outf, ">$h{stat_outf}") or die $!;
+	open(my $outf, ">$h{stat_outf}") or croak $!;
 	
 	my @cnames = ("PerfectOligo", "EditedOligo", "PartialOligo", "NonOligo");
 	my @pct_cnames;
@@ -809,14 +968,24 @@ sub categorizeHDR {
 	close $outf;
 }
 
+=head2 extractHDRseq 
+
+ Usage   : $obj->extractHDRseq(args)
+ Function: read the bam entries and categorize the HDRs 
+ Returns :
+ Args    : hdr_start, hdr_end are 1-based inclusive. They are the first and last position
+	of intended base change region of HDR
+
+=cut
+
 # read the bam entries and categorize the HDRs
 # start, end are 1-based inclusiv. They are the first and last position 
 # of intended base change region of HDR
 sub extractHDRseq{
 	my ($self, $hdr_bam, $chr, $hdr_start, $hdr_end, $out_hdr_seq, $min_mapq) = @_;
 
-	open(my $seqf, ">$out_hdr_seq") or die $!;
-	open(my $pipe, "samtools view $hdr_bam|") or die $!;
+	open(my $seqf, ">$out_hdr_seq") or croak $!;
+	open(my $pipe, "samtools view $hdr_bam|") or croak $!;
 	while (my $line=<$pipe>) {
 		my @info = $self->extractReadRange($line, $chr, $hdr_start, $hdr_end, $min_mapq);
 		print $seqf join("\t", @info)."\n" if @info;		
@@ -825,12 +994,18 @@ sub extractHDRseq{
 	close $seqf;
 }
 
+=head2 getRecord
+ 
+ Usage   : $obj->getRecord($bedfile, $region_name)
+ Function: Get an entry of specific region_name from  a bed file  
+ Returns : An array of items in bed entry
+ Args    : bed_file, region_name (the 4th field) 
 
-## return a record in a bed file
-# region_name: the 4th field 
+=cut
+
 sub getRecord {
 	my ($self, $bedfile, $region_name) = @_;	
-	open(my $fh, $bedfile) or die $!;
+	open(my $fh, $bedfile) or croak $!;
 	while (<$fh>) {
 		chomp;
 		my @a = split /\t/;

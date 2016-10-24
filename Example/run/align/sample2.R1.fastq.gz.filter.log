@@ -1,0 +1,25 @@
+Input and filter stats:
+	Input sequences (file 1): 55,915
+	Input bases (file 1): 6,806,589
+	Input mean length (file 1): 121.73
+	Input sequences (file 2): 55,915
+	Input bases (file 2): 6,811,428
+	Input mean length (file 2): 121.82
+	Good sequences (pairs): 51,123
+	Good bases (pairs): 12,750,998
+	Good mean length (pairs): 249.42
+	Good sequences (singletons file 1): 1,543 (2.76%)
+	Good bases (singletons file 1): 202,244
+	Good mean length (singletons file 1): 131.07
+	Good sequences (singletons file 2): 411 (0.74%)
+	Good bases (singletons file 2): 51,654
+	Good mean length (singletons file 2): 125.68
+	Bad sequences (file 1): 3,249 (5.81%)
+	Bad bases (file 1): 229,011
+	Bad mean length (file 1): 70.49
+	Bad sequences (file 2): 1,543 (2.76%)
+	Bad bases (file 2): 207,094
+	Bad mean length (file 2): 134.22
+	Sequences filtered by specified parameters:
+	min_len: 4390
+	min_qual_mean: 3240

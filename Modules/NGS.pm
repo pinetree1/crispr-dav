@@ -886,7 +886,7 @@ sub categorizeHDR {
 
 	my $samtools = $self->{samtools};
 	my $cmd = "$self->{bedtools} intersect -a $h{bam_inf} -b $bedfile -F 1 -u";
-	$cmd .= " > $hdr_bam && samtools index $hdr_bam";
+	$cmd .= " > $hdr_bam && $samtools index $hdr_bam";
 	print STDERR "$cmd\n" if $self->{verbose};
 	croak "Failed to create $hdr_bam\n" if system($cmd);
 
@@ -985,7 +985,7 @@ sub extractHDRseq{
 	my ($self, $hdr_bam, $chr, $hdr_start, $hdr_end, $out_hdr_seq, $min_mapq) = @_;
 
 	open(my $seqf, ">$out_hdr_seq") or croak $!;
-	open(my $pipe, "samtools view $hdr_bam|") or croak $!;
+	open(my $pipe, "$self->{samtools} view $hdr_bam|") or croak $!;
 	while (my $line=<$pipe>) {
 		my @info = $self->extractReadRange($line, $chr, $hdr_start, $hdr_end, $min_mapq);
 		print $seqf join("\t", @info)."\n" if @info;		

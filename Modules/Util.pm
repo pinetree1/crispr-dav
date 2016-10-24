@@ -135,7 +135,7 @@ sub getJobStatus {
 		next if !$jobs->{$name};  
 		if ($state eq 'r') {
 			$running++;
-		} elsif ( $state eq 'w' ) {
+		} elsif ( $state eq 'qw' ) {
 			$waiting++;
 		} else {
 			$failed++;

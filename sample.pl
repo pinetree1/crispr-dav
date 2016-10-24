@@ -30,7 +30,9 @@ my $varstat = "$outdir/$sample.var"; # to use for amplicon-wide plots, snp plots
 $ngs->filter_reads(read1_inf=>$h{read1fastq},
 	read2_inf=>$h{read2fastq},
 	read1_outf=>$read1_outfile,
-	read2_outf=>$read2_outfile);
+	read2_outf=>$read2_outfile,
+	prinseq=>$h{prinseq}
+	);
 
 ## Alignment and processing to create bam file
 

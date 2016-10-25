@@ -1,3 +1,0 @@
-Sample	TotalReads	PerfectOligo	EditedOligo	PartialOligo	NonOligo	PctPerfectOligo	PctEditedOligo	PctPartialOligo	PctNonOligo
-sample1	7190	214	42	102	6832	2.98	0.58	1.42	95.02
-sample2	7421	652	188	272	6309	8.79	2.53	3.67	85.02

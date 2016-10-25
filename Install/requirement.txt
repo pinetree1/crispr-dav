@@ -1,22 +1,25 @@
+These are the tools that must be present or installed:
+
 1. Applications:
 
-ABRA: abra-0.94-SNAPSHOT-jar-with-dependencies.jar
+java 1.7
 bwa
 samtools
 bedtools2
-picard 1.107 or other to work with java 1.7
 prinseq
-
+ABRA: abra-0.94-SNAPSHOT-jar-with-dependencies.jar
+picard 1.107 or other to work with java 1.7
 pysamstats: https://github.com/alimanfoo/pysamstats
 	pip install pysam==0.8.4
 	pip install pysamstats
 
-java 1.7
-R
+2. Perl modules: 
 
-2. Perl modules: see install_perlmod.sh
+To check the status of perl modules, run check_perlmod.pl. 
+To install required perl modules, run install_perlmod.sh as root.
 
-3. R packages
+3. R and packages:
+
 ggplot2
 reshape2
 naturalsort

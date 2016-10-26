@@ -21,7 +21,7 @@ my $jobs = process_samples();
 if ($h{sge}) {
 	Util::waitForJobs($jobs, 10, 3000);
 }
-read_flow();
+
 crispr_data();
 
 sub process_samples { 
@@ -48,28 +48,6 @@ sub process_samples {
 	return $jobs;
 }
 
-sub read_flow {
-	my $dir = $h{align_dir};
-	my @samples = sort keys %{$h{sample_crisprs}};
-	my $hasHeader = 1;
-
-	## merge amplicode-wide read count data
-	my $outfile = "$dir/read_count.txt";
-	my @infiles = map { "$dir/$_.cnt" } @samples;
-	Util::tabcat(\@infiles, $outfile, $hasHeader);
-
-	my $cmd = "$h{rscript} $Bin/R/read_flow.R --inf=$outfile --outf=$dir/read_count.png";
-	$cmd .= "  --rmd=$h{remove_duplicate}";
-	Util::run($cmd, "Failed to create plot of read flow", $h{verbose});
-
-	## merge amplicode-wide chromosome read count data
-	$outfile = "$dir/chr_read_count.txt";
-	@infiles = map { "$dir/$_.chr" } @samples;	
-	Util::tabcat(\@infiles, $outfile, $hasHeader);
-	my $cmd="$h{rscript} $Bin/R/read_chr.R $outfile $dir/chr_read_count.png";
-	Util::run($cmd, "Failed to create plot of read count on chromosomes", $h{verbose});
-}
-
 sub crispr_data {	
 	## merge crispr-wide data  
 	my $dir = $h{align_dir};
@@ -86,17 +64,32 @@ sub crispr_data {
 		print STDERR "hdr_bases:$hdr_bases\n" if $h{verbose};
 
 		my @samp = sort keys %{$h{crispr_samples}->{$crispr}};
-		foreach my $ext ( "snp", "pct", "len", "can", "hdr" ) {
+		foreach my $ext ( "cnt", "chr", "snp", "pct", "len", "can", "hdr" ) {
+			next if ($ext eq "can" && !$h{canvasXpress});
+
 			my $outfile = "$h{align_dir}/$crispr" . "_$ext.txt";
 			if ( $ext ne "hdr" or $hdr_bases ) {
-				my @infiles = map { "$h{align_dir}/$_.$crispr.$ext" } @samp;
+				my @infiles;
+				if ( $ext eq 'cnt' or $ext eq 'chr' ) { 
+					@infiles = map { "$h{align_dir}/$_.$ext" } @samp;
+				} else {
+					@infiles = map { "$h{align_dir}/$_.$crispr.$ext" } @samp;
+				}
+
 				Util::tabcat(\@infiles, $outfile, $hasHeader);
 
 				my $excel_outfile="$dest/$crispr" . "_$ext.xlsx";
 				Util::tab2xlsx($outfile, $excel_outfile);
 			}
 
-			if ( $ext eq "pct" ) {
+			if ( $ext eq 'cnt' ) {
+				my $cmd = "$h{rscript} $Bin/R/read_flow.R --inf=$outfile --outf=$dest/$crispr.readcnt.png";
+				$cmd .= " --rmd=$h{remove_duplicate}";
+				Util::run($cmd, "Failed to create plot of read flow", $h{verbose});
+			} elsif ( $ext eq 'chr' ) {
+				my $cmd="$h{rscript} $Bin/R/read_chr.R $outfile $dest/$crispr.readchr.png";
+				Util::run($cmd, "Failed to create plot of read count on chromosomes", $h{verbose});
+			} elsif ( $ext eq "pct" ) {
 				# create plots for indel count and pct
 				my $cmd="$h{rscript} $Bin/R/indel.R $outfile $dest/$crispr.indelcnt.png $dest/$crispr.indelpct.png";
 				Util::run($cmd, "Failed to create indel count/pct plots", $h{verbose});
@@ -122,13 +115,10 @@ sub crispr_data {
 			qx(mv -f $str $dest); 
 		}
 
-		## copy the read count plots and data
-		qx(cp $h{align_dir}/read_count.png $h{align_dir}/chr_read_count.png $dest);
-		Util::tab2xlsx("$h{align_dir}/read_count.txt", "$dest/read_count.xlsx"); 
-
 		## create results html page
-		my $cmd="$Bin/resultPage.pl --ref $h{genome} --gene $h{geneid}";
+		my $cmd="$Bin/resultPage.pl --ref $h{genome} --gene $h{gene_sym}";
 		$cmd .= " --region $h{region} --crispr $h{crispr} --cname $crispr";
+		$cmd .= " --nocx" if !$h{canvasXpress};
 		$cmd .= " $h{align_dir} $h{deliv_dir}";
 		Util::run($cmd, "Failed to create results html page", $h{verbose});
 	} # crispr 
@@ -155,17 +145,19 @@ sub prepareCommand {
 	$cmd .= " --min_len $h{min_len}" if $h{min_len};
 	$cmd .= " --ns_max_p $h{ns_max_p}" if $h{ns_max_p};
 
-	$cmd .= " --unique" if $h{remove_duplicate};
-	$cmd .= " --realign" if $h{realign_flag};
+	$cmd .= " --unique" if $h{remove_duplicate} eq "Y";
+	$cmd .= " --realign" if $h{realign_flag} eq "Y";
 	$cmd .= " --min_mapq $h{min_mapq}" if $h{min_mapq};
 
 	my $crispr_names = join(",", keys %{$h{sample_crisprs}->{$sample}});
 	$cmd .= " --genome $h{genome} --idxbase $h{ref_bwa_idx} --ref_fasta $h{ref_fasta}";	
-	$cmd .= " --refGene $h{refGene} --geneid $h{geneid}";
+	$cmd .= " --refGene $h{refGene}";
+	$cmd .= " --geneid $h{geneid}" if $h{geneid};
 	$cmd .= " --chr $h{chr} --amplicon_start $h{amplicon_start} --amplicon_end $h{amplicon_end}";
 	$cmd .= " --target_bed $h{crispr} --target_names $crispr_names";
 	$cmd .= " --wing_length $h{wing_length}" if $h{wing_length};
-	
+
+	$cmd .= " --nocx" if !$h{canvasXpress};	
 	return $cmd;	
 }
 
@@ -265,11 +257,16 @@ Usage: $0 [options]
 	$h{amplicon_start} = $amp->[1];
 	$h{amplicon_end} = $amp->[2];
 	$h{gene_sym} = $amp->[3];
-	$h{geneid} = $amp->[4];
+	$h{geneid} = $amp->[4]; 
 	$h{gene_strand} = $amp->[5];
 	$h{crisprs} = $crisprs;
 	$h{sample_crisprs} = $sample_crisprs;
 	$h{crispr_samples} = $crispr_samples;
+
+	$h{canvasXpress} = 1;
+	if ( $h{geneid} eq "" or $h{geneid} eq "N.A." ) {
+		$h{canvasXpress}= 0;
+	}
 
 	## fastq files
 	$h{sample_fastqs} = getFastqFiles($h{filemap});

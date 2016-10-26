@@ -1,6 +1,7 @@
 ## Survey the amplicon: coverage, insertion, deletion  
 ## Locate sgRNA coordinates if available.
 suppressMessages(library(ggplot2))
+options(scipen=999)
 
 args <- commandArgs(trailingOnly=FALSE)
 script.name <- sub("--file=", "", args[grep("--file=",args)])

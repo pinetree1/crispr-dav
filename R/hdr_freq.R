@@ -23,6 +23,7 @@ if("--help" %in% args) {
 
 suppressMessages(library(ggplot2))
 suppressMessages(library(reshape2))
+options(scipen=999)
 
 ## Parse arguments (we expect the form --arg=value)
 parseArgs <- function(x) strsplit(sub("^--", "", x), "=")

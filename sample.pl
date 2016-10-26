@@ -73,7 +73,6 @@ for my $target_name ( sort split(/,/, $h{target_names}) ) {
 	my $pctfile = "$outdir/$sample.$target_name.pct"; 
 	my $lenfile = "$outdir/$sample.$target_name.len"; 
 	my $hdrfile	= "$outdir/$sample.$target_name.hdr";
-	my $canvasfile="$outdir/$sample.$target_name.can";
 
 	my ($chr, $target_start, $target_end, $t1, $t2, $strand, 
 		$hdr_changes) = $ngs->getRecord($h{target_bed}, $target_name);
@@ -94,10 +93,13 @@ for my $target_name ( sort split(/,/, $h{target_names}) ) {
 	}
 
 	## prepare data for alignment visualization by Canvas Xpress.
-	my $cmd= "$Bin/cxdata.pl --ref_fasta $h{ref_fasta}";
-	$cmd .= " --refGene $h{refGene} --geneid $h{geneid}"; 
-	$cmd .= " --samtools $h{samtools} $lenfile $canvasfile";
-	Util::run($cmd, "Failed to create data for Canvas Xpress");
+	if ( !$h{nocx} ) {
+		my $canvasfile="$outdir/$sample.$target_name.can";
+		my $cmd= "$Bin/cxdata.pl --ref_fasta $h{ref_fasta}";
+		$cmd .= " --refGene $h{refGene} --geneid $h{geneid}"; 
+		$cmd .= " --samtools $h{samtools} $lenfile $canvasfile";
+		Util::run($cmd, "Failed to create data for Canvas Xpress");
+	}
 
 	## create plots of coverage, insertion and deletion on amplicon
 	my $cmd = "$h{rscript} $Bin/R/amplicon.R --inf=$varstat --outf=$outdir/$sample.$target_name";
@@ -162,6 +164,7 @@ sub get_input {
 	--target_names   <str> Names of the CRISPR sites separated by comma.
 
 	--wing_length    <int> Number of bases on each side of CRISPR to show SNP. Default: 50
+	--nocx           Do not create canvasXpress alignment data 
 	
 	--verbose        Optional. For debugging.	
 	--help           Optional. To show this message
@@ -175,7 +178,7 @@ sub get_input {
 		'genome=s', 'idxbase=s', 'ref_fasta=s', 'refGene=s', 'geneid=s',
 		'chr=s', 'amplicon_start=i', 'amplicon_end=i',
 		'target_bed=s', 'target_names=s', 
-		'wing_length=s', 'verbose', 'help');
+		'wing_length=s', 'nocx', 'verbose', 'help');
 
 	die $usage if @ARGV != 3 or $h{help};		
 	($h{sample}, $h{read1fastq}, $h{outdir}) = @ARGV;

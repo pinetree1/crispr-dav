@@ -10,7 +10,7 @@ refGene = /ng14/ngs/genome/mouse/mm10/mm10_UCSCrefGene.txt
 
 [canFam3]
 ref_fasta   = /ng14/ngs/genome/dog/canFam3/canFam3.fa
-ef_bwa_idx = /ng14/ngs/genome/dog/canFam3/canFam3.fa
+ref_bwa_idx = /ng14/ngs/genome/dog/canFam3/canFam3.fa
 refGene = /ng14/ngs/genome/dog/canFam3/canFam3_UCSCrefGene.txt
 
 ## fastq filtering by prinseq-lite.pl. 

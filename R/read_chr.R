@@ -1,6 +1,7 @@
 ## ## Create plot of read counts on different chromosomes
 suppressMessages(library(ggplot2))
 suppressMessages(library(naturalsort))
+options(scipen=999)
 
 args <- commandArgs(trailingOnly=FALSE)
 script.name <- sub("--file=", "", args[grep("--file=",args)])

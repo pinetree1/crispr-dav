@@ -1,5 +1,7 @@
 ## Create a plot of indel length vs count
 suppressMessages(library(ggplot2))
+options(scipen=999)
+
 args <- commandArgs(trailingOnly=FALSE)
 script.name <- sub("--file=", "", args[grep("--file=",args)])
 script.path <- dirname(script.name)

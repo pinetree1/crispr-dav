@@ -14,18 +14,18 @@ my $usage = "$0 [option] indir outdir
 	--region  <str> a bed file of amplicon. Required.
 	--crispr  <str> a bed file containing sgRNA region. Required.
 	--cname   <str> Name of CRISPR site. Optional. 
+	--nocx    Do not to create canvasXpress alignment view 
 	indir	input directory where result files (e.g. png files) are. 
 	outdir	output directory 
 ";
 my %h;
-GetOptions(\%h, 'ref=s', 'region=s',  'crispr=s', 'gene=s', 'cname=s');
+GetOptions(\%h, 'ref=s', 'region=s',  'crispr=s', 'gene=s', 'cname=s', 'nocx');
 	
 die $usage if ( @ARGV != 2);
 my ($indir, $outdir)=@ARGV;
 die "Missing required argument." if (!$h{ref} or !$h{region} 
 	or !$h{gene} or !$h{crispr} );
 
-die "Input directory $indir is incorrect.\n" if !-f "$indir/read_count.txt";
 my $ref=$h{ref};
 my $gene = $h{gene};
 my ($amp_chr, $amp_start, $amp_end, $amp_name, $amp_seq, $amp_strand) = getTarget($h{region});
@@ -85,8 +85,8 @@ print $fh "</select>
 	<p id='charts'></p>
 	<p><b>Preprocessing of Reads: </b>$pp_tog
 	<table><tr>
-		<td><img src=assets/read_count.png></td>$rowsep
-		<td><img src=assets/chr_read_count.png></td>
+		<td><img src=assets/$site_name.readcnt.png></td>$rowsep
+		<td><img src=assets/$site_name.readchr.png></td>
 	</tr></table>
 	</div>
 ";
@@ -128,14 +128,17 @@ if ( $hdr ) {
 ";
 }
 
-## Allele alignment view, spreadsheet data
-print $fh "<p><b>Visual Alignment of Indel Alleles</b><p>\n
-	<a href=${site_name}_cx1.html>Alleles with indel &ge; 1%</a><br>\n
-	<a href=${site_name}_cx0.html>All Alleles</a>\n
+## Allele alignment view
+if ( !$h{nocx} ) {
+	print $fh "<p><b>Visual Alignment of Indel Alleles</b><p>\n
+	  <a href=${site_name}_cx1.html>Alleles with indel &ge; 1%</a><br>\n
+	  <a href=${site_name}_cx0.html>All Alleles</a>\n";
+}
 
-	<p><b>Spreadsheet data:</b><p>
+## Spreadsheet data
+print $fh "<p><b>Spreadsheet data:</b><p>
 	<table>
-		<tr><td><a href=assets/read_count.xlsx>Read count flow</a></td></tr>
+		<tr><td><a href=assets/${site_name}_cnt.xlsx>Read count flow</a></td></tr>
 		<tr><td><a href=assets/${site_name}_pct.xlsx>Indel summary</a></td></tr>
 		<tr><td><a href=assets/${site_name}_len.xlsx>Allele data</a></td></tr>
 		<tr><td><a href=assets/${site_name}_snp.xlsx>SNP data</a></td></tr>

@@ -80,20 +80,27 @@ sub crispr_data {
 		my $dest = "$h{deliv_dir}/$crispr/assets";
 		make_path($dest);
 
+		# Does this crispr has HDR info?
+		my @tmp = split(/,/, $h{crisprs}->{$crispr});
+		my $hdr_bases = $tmp[5];
+		print STDERR "hdr_bases:$hdr_bases\n" if $h{verbose};
+
 		my @samp = sort keys %{$h{crispr_samples}->{$crispr}};
 		foreach my $ext ( "snp", "pct", "len", "can", "hdr" ) {
 			my $outfile = "$h{align_dir}/$crispr" . "_$ext.txt";
-			my @infiles = map { "$h{align_dir}/$_.$crispr.$ext" } @samp;
-			Util::tabcat(\@infiles, $outfile, $hasHeader);
+			if ( $ext ne "hdr" or $hdr_bases ) {
+				my @infiles = map { "$h{align_dir}/$_.$crispr.$ext" } @samp;
+				Util::tabcat(\@infiles, $outfile, $hasHeader);
 
-			my $excel_outfile="$dest/$crispr" . "_$ext.xlsx";
-			Util::tab2xlsx($outfile, $excel_outfile);
+				my $excel_outfile="$dest/$crispr" . "_$ext.xlsx";
+				Util::tab2xlsx($outfile, $excel_outfile);
+			}
 
 			if ( $ext eq "pct" ) {
 				# create plots for indel count and pct
 				my $cmd="$h{rscript} $Bin/R/indel.R $outfile $dest/$crispr.indelcnt.png $dest/$crispr.indelpct.png";
 				Util::run($cmd, "Failed to create indel count/pct plots", $h{verbose});
-			} elsif ( $ext eq "hdr" ) {
+			} elsif ( $ext eq "hdr" and $hdr_bases ) {
 				# create HDR plot
 				my $cmd = "$h{rscript} $Bin/R/hdr_freq.R --inf=$outfile --sub=$crispr --outf=$dest/$crispr.hdr.png";
 				Util::run($cmd, "Failed to create HDR plot", $h{verbose});
@@ -271,6 +278,8 @@ Usage: $0 [options]
 		print STDERR "$key => $h{$key}\n" if $h{verbose};
 	}
 
+	print STDERR "\nCRISPR info:\n" . Dumper($h{crisprs});
+	print STDERR "\nCRISPR samples:\n" . Dumper($h{crispr_samples});
 	return %h;
 }
 
@@ -359,9 +368,3 @@ sub getFastqFiles {
 	return \%fastqs;
 }
 
-sub wait_complete {
-	my $jobs = shift;
-	return if !$jobs;
-
-
-}

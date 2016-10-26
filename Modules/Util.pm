@@ -8,7 +8,7 @@ package Util;
 
 =head1 AUTHOR
 
-Xuning Wang <xuning.wang@bms.com>
+Xuning Wang
 
 =cut
 

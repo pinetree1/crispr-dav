@@ -8,7 +8,7 @@ The package is used to perform various NGS tasks, such as filtering, aligning, r
 
 =head1 AUTHOR
 
-Xuning Wang <xuning.wang@bms.com>
+Xuning Wang
 
 =cut
  
@@ -171,21 +171,24 @@ sub create_bam {
 
 	# bam_outf is final bam file
 
-	$self->bwa_align(read1_inf=>$h{read1_inf},
+	my $status = $self->bwa_align(read1_inf=>$h{read1_inf},
     	read2_inf=>$h{read2_inf}, id=>$h{sample}, sm=>$h{sample},
     	idxbase=>$h{idxbase},
     	bam_outf=>$h{bam_outf});
 
+	croak "Failed in BWA aligning $h{sample}\n" if $status;
 
 	## Indel realignment 
 	if ( $h{realign_indel} && $h{abra} && $h{target_bed} && $h{ref_fasta} ) {
-		$self->ABRA_realign(bam_inf=>$h{bam_outf}, abra=>$h{abra},
+		$status = $self->ABRA_realign(bam_inf=>$h{bam_outf}, abra=>$h{abra},
         	target_bed=>$h{target_bed}, ref_fasta=>$h{ref_fasta});
+		croak "Failed in ABRA realigning $h{sample}\n" if $status;
 	}
 
 	## Mark duplicates
 	if ( $h{mark_duplicate} or $h{remove_duplicate} ) {
-		$self->mark_duplicate(bam_inf=>$h{bam_outf}, picard=>$h{picard});
+		$status = $self->mark_duplicate(bam_inf=>$h{bam_outf}, picard=>$h{picard});
+		croak "Failed in marking duplicates for $h{sample}\n" if $status;
 	}
 
 	my @bam_stats = $self->bamReadCount($h{bam_outf});	
@@ -609,7 +612,8 @@ sub variantStat {
 	
 	print STDERR "$cmd\n" if $self->{verbose};
 	
-	return system($cmd);		
+	my $status = system($cmd);		
+	croak "Failed in gathering coverage and variant stats from $h{bam_inf}\n" if $status;
 }
 
 =head2 required_args

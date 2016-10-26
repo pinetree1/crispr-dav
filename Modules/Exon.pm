@@ -8,7 +8,7 @@ The package is used to obtain exon or genomic sequence, with or without indel.
 
 =head1 AUTHOR
 
-Xuning Wang <xuning.wang@bms.com>
+Xuning Wang
 
 =cut
 

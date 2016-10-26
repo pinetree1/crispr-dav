@@ -8,6 +8,11 @@ ref_fasta	= /ng14/ngs/genome/mouse/mm10/mm10.fa
 ref_bwa_idx	= /ng14/ngs/genome/mouse/mm10/mm10.fa
 refGene = /ng14/ngs/genome/mouse/mm10/mm10_UCSCrefGene.txt
 
+[canFam3]
+ref_fasta   = /ng14/ngs/genome/dog/canFam3/canFam3.fa
+ef_bwa_idx = /ng14/ngs/genome/dog/canFam3/canFam3.fa
+refGene = /ng14/ngs/genome/dog/canFam3/canFam3_UCSCrefGene.txt
+
 ## fastq filtering by prinseq-lite.pl. 
 [prinseq]
 min_qual_mean = 30
@@ -39,7 +44,7 @@ realign_flag = Y
 min_mapq = 30
 
 # number of bases on each side of sgRNA to see snp
-wing_length = 50
+wing_length = 40
 
 ## tmp directory for picard sorting 
 tmpdir = /scratch

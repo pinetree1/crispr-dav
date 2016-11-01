@@ -17,7 +17,7 @@ pysamstats (see install_mod.sh)
 R: https://cran.r-project.org/src/base/R-3/R-3.3.2.tar.gz
 R packages: ggplot2, reshape2, naturalsort
 
-Except java and pysamstats, the installation of the above tools is included in script
+Except java, pysamstats and R packages, the installation of the above tools is included in script
 install_app.sh as reference. Some apps may fail to install.
 
 2. Perl and python: 

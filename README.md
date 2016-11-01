@@ -6,7 +6,7 @@
 
 git clone http://biogit.pri.bms.com/wangx112/crispr_pub.git
 
-2. Install required tools: check Install/requirement.txt
+2. Install required tools: check Install/required_tools.txt
 
 3. Prepare a genome of interest. 
 

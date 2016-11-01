@@ -98,26 +98,26 @@ for my $target_name ( sort split(/,/, $h{target_names}) ) {
 		my $cmd= "$Bin/cxdata.pl --ref_fasta $h{ref_fasta}";
 		$cmd .= " --refGene $h{refGene} --geneid $h{geneid}"; 
 		$cmd .= " --samtools $h{samtools} $lenfile $canvasfile";
-		Util::run($cmd, "Failed to create data for Canvas Xpress");
+		Util::run($cmd, "Failed to create data for Canvas Xpress", $h{verbose});
 	}
 
 	## create plots of coverage, insertion and deletion on amplicon
 	my $cmd = "$h{rscript} $Bin/R/amplicon.R --inf=$varstat --outf=$outdir/$sample.$target_name";
 	$cmd .= " --sub=$sample --hname=$target_name --hstart=$target_start --hend=$target_end";
 	$cmd .= " --chr=$h{genome} $chr";	
-	Util::run($cmd, "Failed to generate amplicon-wide plots");
+	Util::run($cmd, "Failed to generate amplicon-wide plots", $h{verbose});
 
 	## create a plot of base changes in crispr site and surronding regions
 	$cmd = "$h{rscript} $Bin/R/snp.R --inf=$varstat --outf=$outdir/$sample.$target_name.snp.png";
 	$cmd .= " --outtsv=$outdir/$sample.$target_name.snp";
 	$cmd .= " --sample=$sample --hname=$target_name --hstart=$target_start --hend=$target_end";
 	$cmd .= " --chr=$h{genome} $chr";
-	Util::run($cmd, "Failed to generate base-change plot");
+	Util::run($cmd, "Failed to generate base-change plot", $h{verbose});
  
 	## create plots of indel length distributions (with and without WT)
 	$cmd = "$h{rscript} $Bin/R/indel_length.R $lenfile $outdir/$sample.$target_name.len.png";
 	$cmd .= " $outdir/$sample.$target_name.len2.png";
-	Util::run($cmd, "Failed to generate indel length distribution plots"); 
+	Util::run($cmd, "Failed to generate indel length distribution plots", $h{verbose}); 
 }
 
 qx(touch $outdir/$sample.done);

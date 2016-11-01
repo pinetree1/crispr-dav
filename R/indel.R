@@ -34,10 +34,9 @@ create_plot <- function (data, imgfile, cols, ytitle, maintitle) {
 		labs(y=ytitle, title=maintitle) + 
 		scale_fill_discrete(name="Read Type", breaks=cols, labels=legends) +
 		customize_title_axis(angle=45) +
-		theme(legend.text=element_text(size=13),
-			legend.title=element_text(size=13)
-			) +
-		geom_text(aes(label=value, ymax=value), position=position_dodge(width=0.9), 
+		theme(axis.text.x=element_text(vjust=1, hjust=1)) +
+		theme(legend.text=element_text(size=13), legend.title=element_text(size=13)) +
+		geom_text(aes(label=value, ymax=value), position=position_dodge(width=0.5), 
 			check_overlap=TRUE, vjust=-0.5, size=4)
 
 	png(filename=imgfile, height=h, width=w)

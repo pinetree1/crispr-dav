@@ -244,7 +244,8 @@ sub bwa_align {
 
 	$cmd .= " |$samtools view -S -b -F 256 -";
 	$cmd .= " |$samtools view -b -F 2048 -"; 
-	$cmd .= " |$samtools sort -f - $h{bam_outf} && $samtools index $h{bam_outf}";
+	#$cmd .= " |$samtools sort -f - $h{bam_outf} && $samtools index $h{bam_outf}"; # samtools 0.1.9
+	$cmd .= " |$samtools sort -o $h{bam_outf} -O BAM - && $samtools index $h{bam_outf}"; # samtools 1.3.1
 	$cmd = "($cmd) &> $h{bam_outf}.bwa.log";
 	print STDERR "$cmd\n" if $self->{verbose};
 	return system($cmd);	
@@ -266,11 +267,13 @@ sub sort_index_bam {
 	my $samtools = $self->{samtools};
 	my $cmd;
 	if ( $h{bam_outf} ) {
-		$cmd = "$samtools sort -f $h{bam_inf} $h{bam_outf}";
+		#$cmd = "$samtools sort -f $h{bam_inf} $h{bam_outf}"; # samtools 0.1.9
+		$cmd = "$samtools sort $h{bam_inf} -o $h{bam_outf} -O BAM"; #samtools 1.3.1
 		$cmd .= " && $samtools index $h{bam_outf}"; 
 	} else {
 		$cmd = "mv $h{bam_inf} $h{bam_inf}.tmp";
-		$cmd .= " && $samtools sort -f $h{bam_inf}.tmp $h{bam_inf}";
+		#$cmd .= " && $samtools sort -f $h{bam_inf}.tmp $h{bam_inf}"; #samtools 0.1.9
+		$cmd .= " && $samtools sort -o $h{bam_inf}.tmp -O BAM $h{bam_inf}"; #samtools 1.3.1
 		$cmd .= " && $samtools index $h{bam_inf}";
 		$cmd .= " && rm $h{bam_inf}.tmp";
 	}

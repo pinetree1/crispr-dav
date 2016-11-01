@@ -38,7 +38,7 @@ customize_title_axis <- function(angle=0, color="black", face="bold", family="Ti
 	f<-face
 	fm<-family
 	theme(axis.text.x=element_text(angle=angle, color=c, 
-			family=fm, face="bold", size=size, vjust=1, hjust=1), 
+			family=fm, face="bold", size=size, vjust=0.5, hjust=0.5), 
 		axis.text.y=element_text(color=c, family=fm, face=f, size=size),
 		axis.title.x=element_text(color=c, family=fm, face=f, size=size, vjust=-0.2),
 		axis.title.y=element_text(color=c, family=fm, face=f, size=size, vjust=1),

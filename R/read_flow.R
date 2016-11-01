@@ -60,19 +60,14 @@ dat.m <- melt(dat, id.vars="Sample", measure.vars=readTypes)
 # number of samples
 n <- nlevels(dat$Sample)
 h<-500
-w<-h
-if ( n > 10 ) {
-	w<-50*n
-}
-
+w<- ifelse(n>10, 50*n, h)
 png(filename=outfile, height=h, width=w)
 
-
 ggplot(dat.m, aes(x=Sample, y=value, fill=variable)) + 
-geom_bar(stat='identity', position=position_dodge()) +
-labs(x="Sample", y="Number of reads", title="Reads at Preprocessing Stages") + 
-scale_fill_discrete(breaks=readTypes, labels=labels) +
-guides(fill=guide_legend(title=NULL)) +
-theme_bw() + customize_title_axis(angle=45) 
+	geom_bar(stat='identity', position=position_dodge()) +
+	labs(x="Sample", y="Number of reads", title="Reads at Preprocessing Stages") + 
+	scale_fill_discrete(breaks=readTypes, labels=labels) +
+	guides(fill=guide_legend(title=NULL)) +
+	theme_bw() + customize_title_axis(angle=45) 
 
 invisible(dev.off())

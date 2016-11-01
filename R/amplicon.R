@@ -83,7 +83,7 @@ create_plot <- function (dat, ycol, xtitle, ytitle, mtitle, outfile,
 
 	## create the plot
 	wt <- 500
-	ht <- 500
+	ht <- 600
 
 	p<- ggplot(dat, aes(x=pos, y=dat[,ycol]), environment = environment() ) + 
 		geom_line(color="blue") + 

@@ -75,12 +75,12 @@ p<- ggplot(datm, aes(x=Sample, y=value, fill=variable)) +
 	customize_title_axis(angle=45)
 
 
-h<-450
-barspace=45
+h<-500
+barspace=60
 w<- ifelse( n*barspace<h, h, n*barspace)
 
 png(filename=outfile, height=h, width=w)
-if ( n <= 10 ) {
+if ( n < 8 ) {
 	g<- ggplotGrob(p)
 	plot(fixedWidth(g, width=0.1))
 } else {

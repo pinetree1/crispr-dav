@@ -22,6 +22,7 @@ url=https://sourceforge.net/projects/picard/files/picard-tools/1.119/picard-tool
 ## R
 url=https://cran.r-project.org/src/base/R-3/R-3.1.0.tar.gz
 (cd $dir && wget $url $opt && tar xfz R-3.1.0.tar.gz && cd R-3.1.0 && ./configure && make) &> r.log 
+
 # Then install packages: ggplot2, reshape2, and naturalsort
 
 ## bedtools. Downloading could be problematic on aws

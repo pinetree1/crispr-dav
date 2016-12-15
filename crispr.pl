@@ -83,9 +83,9 @@ sub crispr_data {
 			}
 
 			if ( $ext eq 'cnt' ) {
-				my $cmd = "$h{rscript} $Bin/R/read_flow.R --inf=$outfile --outf=$dest/$crispr.readcnt.png";
+				my $cmd = "$h{rscript} $Bin/R/read_stats.R --inf=$outfile --outf=$dest/$crispr.readcnt.png";
 				$cmd .= " --rmd=$h{remove_duplicate}";
-				Util::run($cmd, "Failed to create plot of read flow", $h{verbose});
+				Util::run($cmd, "Failed to create plot of read stats", $h{verbose});
 			} elsif ( $ext eq 'chr' ) {
 				my $cmd="$h{rscript} $Bin/R/read_chr.R $outfile $dest/$crispr.readchr.png";
 				Util::run($cmd, "Failed to create plot of read count on chromosomes", $h{verbose});

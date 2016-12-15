@@ -512,16 +512,16 @@ sub makeBed {
 	close $outf;
 }
 
-=head2 readFlow
+=head2 readStats
  
- Usage   : $obj->readFlow(r1_fastq_inf=>, outfile=>, ...)
+ Usage   : $obj->readStats(r1_fastq_inf=>, outfile=>, ...)
  Function: Count reads in different stages
  Args    : r1_fastq_inf, bamstat_aref, sample, outfile, etc
 	start and end are 1-based.
 
 =cut 
 
-sub readFlow {
+sub readStats {
 	my $self = shift;
 	my %h = ( gz=>1, r2_fastq_inf=>'',
 		# Below are required for region read count	 

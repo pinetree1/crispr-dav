@@ -56,7 +56,7 @@ my @bamstats = $ngs->create_bam(sample=>$sample,
 	);
 
 ## Count reads in processing stages
-$ngs->readFlow(bamstat_aref=>\@bamstats, 
+$ngs->readStats(bamstat_aref=>\@bamstats, 
 	r1_fastq_inf=>$h{read1fastq}, r2_fastq_inf=>$h{read2fastq}, gz=>1,
 	bam_inf=>$bamfile, chr=>$h{chr}, start=>$h{amplicon_start}, 
 	end=>$h{amplicon_end}, sample=>$sample, outfile=>$readcount);	

@@ -16,8 +16,8 @@ refGene = /ng14/ngs/genome/dog/canFam3/canFam3_UCSCrefGene.txt
 ## fastq filtering by prinseq-lite.pl. 
 [prinseq]
 min_qual_mean = 30
-min_len 	= 50
-ns_max_p	= 3
+min_len	= 50
+ns_max_p = 3
 
 [app]
 prinseq = /home/wangx112/app/prinseq-lite-0.20.4/prinseq-lite.pl 

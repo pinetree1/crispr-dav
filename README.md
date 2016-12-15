@@ -22,11 +22,11 @@ An example run is in the Example directory. The fastq directory contains fastq f
 
 In the 'run' directory, there are 5 files to prepare:
 
-	conf.txt: This is a copy of conf.txt from the crispr.pl script directory. Modified the settings to reflect your installation environment. 
+	conf.txt: Use the conf.txt in crispr.pl script directory as template, modify the settings to reflect your installation environment. 
 
-	amplicon.bed: a tab-delimited text file with 6 columns: chr, start, end, genesymbol, refseq_accession, strand. Only one amplicon is allowed in a pipeline.
+	amplicon.bed: a tab-delimited text file with 6 columns: chr, start, end, genesymbol, refseq_accession, strand. Only one amplicon is allowed in a pipeline. 1-based start and end.
  
-	site.bed: a tab-delimited text file with 7 columns: chr, start, end, crispr_name, sgRNA_sequence, strand, HDR_new_bases_and_positions. This file can contain multiple records, but crispr_name and sgRNA_sequence must be unique.
+	site.bed: a tab-delimited text file with 7 columns: chr, start, end, crispr_name, sgRNA_sequence, strand, HDR_new_bases_and_positions. This file can contain multiple records, but crispr_name and sgRNA_sequence must be unique. 1-based start and end.
 
 	file.map: a tab-delimited text file with 2 or 3 columns: sample name, read1 file, optional read 2 file
 

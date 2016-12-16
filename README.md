@@ -2,11 +2,28 @@
 
 ## Installation 
 
-1. Create a repository by git clone:
+1. Clone the CRISPR pipeline repository:
 
-git clone http://biogit.pri.bms.com/wangx112/crispr_pub.git
+git clone git@biogit.pri.bms.com:wangx112/crispr.git 
 
-2. Install required tools: check Install/required_tools.txt
+2. Install required tools: 
+
+(1) Install tools
+
+	Details are in Install/required_tools.txt.  
+	The tools can be installed in appropriate directory as non-root user. If some tools are already installed in your system, you don't need to re-install. 
+
+	Here are the steps to install all the tools in crispr base directory
+ 
+	cd crispr 
+	mkdir app  
+	cd app 
+	sh ../Install/install_app.sh 
+
+(2) Install perl and python modules
+
+	The perl modules etc must be installed as root.
+	sh ../Install/install_mod.sh 
 
 3. Prepare a genome of interest. 
 
@@ -22,7 +39,7 @@ An example run is in the Example directory. The fastq directory contains fastq f
 
 In the 'run' directory, there are 5 files to prepare:
 
-	conf.txt: Use the conf.txt in crispr.pl script directory as template, modify the settings to reflect your installation environment. 
+	conf.txt: Use the conf.txt in crispr.pl script directory as template, modify the paths and settings to reflect your installation environment. 
 
 	amplicon.bed: a tab-delimited text file with 6 columns: chr, start, end, genesymbol, refseq_accession, strand. Only one amplicon is allowed in a pipeline. 1-based start and end.
  
@@ -32,8 +49,8 @@ In the 'run' directory, there are 5 files to prepare:
 
 	sample.site: a tab-delimited text file with 2 columns: sample name, sgRNA_sequence 
 
-	The script run_crispr.sh starts the pipeline.
 
+	The script run_crispr.sh starts the pipeline: 
 	sh run_script.sh &> r.log &
 
 	This will create 2 directories: 

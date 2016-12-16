@@ -14,8 +14,8 @@ picard 1.1197 to work with java 1.7:
 
 pysamstats (see install_mod.sh)
 
-R: https://cran.r-project.org/src/base/R-3/R-3.1.0.tar.gz
-R packages: ggplot2, reshape2, naturalsort
+R: https://cran.r-project.org/src/base/R-3/R-3.2.1.tar.gz
+R packages: ggplot2, naturalsort
 
 Except java, pysamstats and R packages, the installation of the above tools is included in script
 install_app.sh as reference. Some apps may fail to install.

@@ -1,16 +1,16 @@
 [hg19]
 ref_fasta	= /ng14/ngs/genome/human/hg19/hg19.fa
-ref_bwa_idx	= /ng14/ngs/genome/human/hg19/hg19.fa
+bwa_idx	= /ng14/ngs/genome/human/hg19/hg19.fa
 refGene = /ng14/ngs/genome/human/hg19/UCSCrefGene.txt
 
 [mm10]
 ref_fasta	= /ng14/ngs/genome/mouse/mm10/mm10.fa
-ref_bwa_idx	= /ng14/ngs/genome/mouse/mm10/mm10.fa
+bwa_idx	= /ng14/ngs/genome/mouse/mm10/mm10.fa
 refGene = /ng14/ngs/genome/mouse/mm10/mm10_UCSCrefGene.txt
 
 [canFam3]
 ref_fasta   = /ng14/ngs/genome/dog/canFam3/canFam3.fa
-ref_bwa_idx = /ng14/ngs/genome/dog/canFam3/canFam3.fa
+bwa_idx = /ng14/ngs/genome/dog/canFam3/canFam3.fa
 refGene = /ng14/ngs/genome/dog/canFam3/canFam3_UCSCrefGene.txt
 
 ## fastq filtering by prinseq-lite.pl. 

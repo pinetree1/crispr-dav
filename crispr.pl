@@ -150,7 +150,7 @@ sub prepareCommand {
 	$cmd .= " --min_mapq $h{min_mapq}" if $h{min_mapq};
 
 	my $crispr_names = join(",", keys %{$h{sample_crisprs}->{$sample}});
-	$cmd .= " --genome $h{genome} --idxbase $h{ref_bwa_idx} --ref_fasta $h{ref_fasta}";	
+	$cmd .= " --genome $h{genome} --idxbase $h{bwa_idx} --ref_fasta $h{ref_fasta}";	
 	$cmd .= " --refGene $h{refGene}";
 	$cmd .= " --geneid $h{geneid}" if $h{geneid};
 	$cmd .= " --chr $h{chr} --amplicon_start $h{amplicon_start} --amplicon_end $h{amplicon_end}";
@@ -172,7 +172,7 @@ Usage: $0 [options]
 	Options:
 
 	--conf <str> Configuration file. Default: $DEFAULT_CONF
-		It specifies ref_fasta, ref_bwa_idx, min_qual_mean, min_len, etc.
+		It specifies ref_fasta, bwa_idx, min_qual_mean, min_len, etc.
 	--genome <str> Genome version. Default: $DEFAULT_GENOME. Must match config file.
 	--outdir <str> Output directory. Default: current directory
 	--help  Print this help message.
@@ -223,7 +223,7 @@ Usage: $0 [options]
 	## parameters in the config file
 	my $cfg = Config::Tiny->read($h{conf});
 	$h{ref_fasta} = $cfg->{$h{genome}}{ref_fasta};
-	$h{ref_bwa_idx} = $cfg->{$h{genome}}{ref_bwa_idx};
+	$h{bwa_idx} = $cfg->{$h{genome}}{bwa_idx};
 	$h{refGene} = $cfg->{$h{genome}}{refGene};
 	
 	## tools

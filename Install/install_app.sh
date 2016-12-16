@@ -20,8 +20,8 @@ url=https://sourceforge.net/projects/picard/files/picard-tools/1.119/picard-tool
 (cd $dir && wget $url $opt && unzip picard-tools-1.119.zip) &>picard.log
 
 ## R
-url=https://cran.r-project.org/src/base/R-3/R-3.2.5.tar.gz
-(cd $dir && wget $url $opt && tar xfz R-3.2.5.tar.gz && cd R-3.2.5 && ./configure && make) &> r.log 
+url=https://cran.r-project.org/src/base/R-3/R-3.2.1.tar.gz
+(cd $dir && wget $url $opt && tar xfz R-3.2.1.tar.gz && cd R-3.2.1 && ./configure && make) &> r.log 
 
 # Then install packages: ggplot2, reshape2, and naturalsort
 
@@ -58,12 +58,12 @@ else
 	echo "Successfully installed Picard"
 fi
 
-if [ ! -s "R-3.1.0/bin/R" ]; then
+if [ ! -s "R-3.2.1/bin/R" ]; then
 	echo "Failed to install R"
 else
 	echo "Successfully installed R"
 fi
-echo "You'll need also to instal R packages(ggplot2, reshape2 and naturalsort), if R is successfully installed."
+echo "You'll need also to instal R packages(ggplot2 and naturalsort), if R is successfully installed."
  
 if [ ! -s "bedtools-2.25.0.tar.gz" ]; then 
 	echo "Failed to download bedtools"

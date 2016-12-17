@@ -32,7 +32,7 @@ sub process_samples {
 	foreach my $sample ( @samples ) {
 		$i++;
 		next if -f "$h{align_dir}/$sample.done";
-		my $cmd = prepareCommand($sample);
+		my $cmd = prepareCommand($sample, $h{verbose});
 		if ( $h{sge} ) {
 			my $jobname=Util::getJobName($sample, "CR",  "$i");
 			$cmd = "qsub -cwd -V -o $h{align_dir}/$sample.log -j y -b y -N $jobname $cmd";
@@ -126,7 +126,7 @@ sub crispr_data {
 }
 
 sub prepareCommand {
-	my $sample = shift;
+	my ($sample, $verbose) = @_;
 	my @fastqs = split(/,/, $h{sample_fastqs}{$sample});
 
 	my $cmd = "$Bin/sample.pl $sample $fastqs[0] $h{align_dir}";
@@ -158,6 +158,8 @@ sub prepareCommand {
 	$cmd .= " --wing_length $h{wing_length}" if $h{wing_length};
 
 	$cmd .= " --nocx" if !$h{canvasXpress};	
+	$cmd .= " --verbose" if $verbose;
+
 	return $cmd;	
 }
 

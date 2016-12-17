@@ -1,6 +1,6 @@
 [hg19]
 ref_fasta	= ../hg19/hg19.fa
-ref_bwa_idx	= ../hg19/hg19.fa 
+bwa_idx	= ../hg19/hg19.fa 
 refGene = ../hg19/UCSCrefGene.txt
 
 ## fastq filtering by prinseq-lite.pl. 

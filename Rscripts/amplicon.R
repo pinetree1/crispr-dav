@@ -104,8 +104,8 @@ create_plot <- function (dat, ycol, xtitle, ytitle, mtitle, outfile,
 	}
 
 	png(filename=outfile, width=wt, height=ht)
-	plot(p)
-	invisible(dev.off())
+	on.exit(dev.off())
+	print(p)
 }
 
 xtitle <- ifelse(is.null(argsL$chr), "Position", paste(argsL$chr, "Position"))

@@ -37,5 +37,5 @@ w<-ifelse(n>5, 100*n, h)
 w <- w * length(unique(dat$Chr)) / 25
 
 png(filename=outfile, height=h, width=w)
-p
+print(p)
 invisible(dev.off())

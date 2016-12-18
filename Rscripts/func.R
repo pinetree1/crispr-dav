@@ -42,7 +42,7 @@ customize_title_axis <- function(angle=0, color="black", face="bold", family="Ti
 		axis.text.y=element_text(color=c, family=fm, face=f, size=size),
 		axis.title.x=element_text(color=c, family=fm, face=f, size=size, vjust=-0.2),
 		axis.title.y=element_text(color=c, family=fm, face=f, size=size, vjust=1),
-		plot.title=element_text(color=c, family=fm, face=f, size=size)
+		plot.title=element_text(color=c, family=fm, face=f, size=size, hjust=0.5)
 		)
 }
 
@@ -50,6 +50,9 @@ exit <- function(msg="", status=0) {
 	cat(msg, "\n")
 	quit("no", status=status)
 }
+
+## this probably won't work in newer version of ggplot2,
+## because the grobs[[4]] is not the same.
 
 fixedWidth <- function(graph, width=0.1) {
 	# Returns a new plottable object

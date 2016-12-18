@@ -60,7 +60,7 @@ datm <- melt(dat, id.vars=c('Sample', 'TotalReads'), measure.vars=vnames)
 p<- ggplot(datm, aes(x=Sample, y=value, fill=variable)) + 
 	theme_bw() + 
 	scale_y_continuous(breaks=c(0,25,50,75,100), limits=c(0,110)) +
-	geom_bar(stat='identity') +
+	geom_bar(stat='identity', width=0.3) +
 	scale_fill_discrete(name="Oligo Type: ", breaks=vnames, labels=vlabels) +
 	theme(legend.position="bottom", legend.direction="horizontal",	
 		legend.title = element_text(size=12, face="bold"),
@@ -80,13 +80,5 @@ barspace=60
 w<- ifelse( n*barspace<h, h, n*barspace)
 
 png(filename=outfile, height=h, width=w)
-if ( n < 8 ) {
-	g<- ggplotGrob(p)
-	plot(fixedWidth(g, width=0.1))
-} else {
-	# When there are too many samples, there would be no space between stacked bars
-	# if they were plotted using the fixedWidth function. Let ggplot deside itself.
-	p
-}
-
+print(p)
 invisible(dev.off())

@@ -141,6 +141,6 @@ p<- p + geom_segment(aes(x=hstart_x, y=guide_y, xend=hend_x, yend=guide_y)) +
 wt <- 12*nrow(dat)
 ht <- 500
 png(filename=outfile, width=wt, height=ht)
-p
+print(p)
 invisible(dev.off())
 

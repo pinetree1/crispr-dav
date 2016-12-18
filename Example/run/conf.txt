@@ -34,4 +34,4 @@ min_mapq = 30
 wing_length = 50
 
 ## tmp directory for picard sorting 
-#tmpdir = /scratch
+tmpdir = /scratch

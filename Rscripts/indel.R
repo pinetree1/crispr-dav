@@ -40,8 +40,8 @@ create_plot <- function (data, imgfile, cols, ytitle, maintitle) {
 			check_overlap=TRUE, vjust=-0.5, size=4)
 
 	png(filename=imgfile, height=h, width=w)
-	plot(p)
-	invisible(dev.off())
+	on.exit(dev.off())
+	print(p)
 }
 
 ## read input

@@ -138,7 +138,7 @@ if ( !$h{nocx} ) {
 ## Spreadsheet data
 print $fh "<p><b>Spreadsheet data:</b><p>
 	<table>
-		<tr><td><a href=assets/${site_name}_cnt.xlsx>Read count flow</a></td></tr>
+		<tr><td><a href=assets/${site_name}_cnt.xlsx>Read stats</a></td></tr>
 		<tr><td><a href=assets/${site_name}_pct.xlsx>Indel summary</a></td></tr>
 		<tr><td><a href=assets/${site_name}_len.xlsx>Allele data</a></td></tr>
 		<tr><td><a href=assets/${site_name}_snp.xlsx>SNP data</a></td></tr>

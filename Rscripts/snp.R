@@ -113,7 +113,7 @@ p<-ggplot(datm, aes(x=PosBase, y=value, fill=variable)) +
 		axis.text.y=element_text(face="bold"),
 		axis.title.x=element_text(face="bold", vjust=-0.2),
 		axis.title.y=element_text(face="bold", vjust=1),
-		plot.title=element_text(face="bold")
+		plot.title=element_text(face="bold", hjust=0.5)
 		) +
 	labs (x=xtitle, y=ytitle, title=mtitle) +
 	theme(legend.title=element_blank(), 

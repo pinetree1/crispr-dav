@@ -2,11 +2,11 @@
 
 ## Installation 
 
-### Clone the CRISPR pipeline repository:
+##### Clone the CRISPR pipeline repository:
 
 git clone git@biogit.pri.bms.com:wangx112/crispr.git 
 
-### Install required tools: 
+##### Install required tools: 
 
 (1) Install tools
 
@@ -25,7 +25,7 @@ git clone git@biogit.pri.bms.com:wangx112/crispr.git
 	The perl modules etc must be installed as root.
 	sh ../Install/install_mod.sh 
 
-#### Prepare a genome of interest. 
+##### Prepare a genome  
 
 (1) Prepare fasta file. For example, to parepare human genome hg19, download the chromosome sequence files from UCSC browser, combine them (excluding the haplotype and chrUn) into one file, hg19.fa.
 

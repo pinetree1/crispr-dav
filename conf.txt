@@ -38,9 +38,9 @@ remove_duplicate = N
 realign_flag = Y
 
 # require BWA mapping quality score when selecting mapped reads
-min_mapq = 30
+min_mapq = 20
 
-# number of bases on each side of sgRNA to view SNP 
+# number of bases on each side of sgRNA to view base changes 
 wing_length = 40
 
 ## tmp directory for picard sorting 

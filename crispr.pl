@@ -164,7 +164,7 @@ sub prepareCommand {
 }
 
 sub get_input {
-	my $DEFAULT_CONF = "$Bin/conf.txt";
+	my $CONF_TEMPLATE = "$Bin/conf.txt";
 	my $DEFAULT_GENOME = "hg19";
 
 	my $usage = "CRISPR data analysis.
@@ -173,7 +173,7 @@ Usage: $0 [options]
 
 	Options:
 
-	--conf <str> Configuration file. Default: $DEFAULT_CONF
+	--conf <str> Configuration file. Required. See template $CONF_TEMPLATE
 		It specifies ref_fasta, bwa_idx, min_qual_mean, min_len, etc.
 	--genome <str> Genome version. Default: $DEFAULT_GENOME. Must match config file.
 	--outdir <str> Output directory. Default: current directory
@@ -208,13 +208,12 @@ Usage: $0 [options]
 	GetOptions(\%h, 'conf=s', 'genome=s', 'outdir=s', 'help', 
 		'region=s', 'crispr=s', 'filemap=s', 'sitemap=s', 'sge', 'verbose');
 
-	$h{conf} //= $DEFAULT_CONF;
 	$h{genome} //= $DEFAULT_GENOME;
 	$h{outdir} //= ".";
 
 	die $usage if $h{help};
 
-	if ( !$h{region} or !$h{crispr} or !$h{filemap} or !$h{sitemap} ) {
+	if ( !$h{conf} or !$h{region} or !$h{crispr} or !$h{filemap} or !$h{sitemap} ) {
 		die "$usage\n\nMissing required options.\n";
 	}	
 

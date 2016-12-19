@@ -1,5 +1,5 @@
 [hg19]
-ref_fasta	= ../hg19/hg19.fa
+ref_fasta = ../hg19/hg19.fa
 bwa_idx	= ../hg19/hg19.fa 
 refGene = ../hg19/UCSCrefGene.txt
 
@@ -28,10 +28,10 @@ remove_duplicate = N
 realign_flag = Y
 
 # require BWA mapping quality score when selecting mapped reads
-min_mapq = 30
+min_mapq = 20
 
-# number of bases on each side of sgRNA to see snp
-wing_length = 50
+# number of bases on each side of sgRNA to examine base changes 
+wing_length = 40
 
 ## tmp directory for picard sorting 
 tmpdir = /scratch

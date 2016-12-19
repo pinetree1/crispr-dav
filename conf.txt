@@ -40,7 +40,7 @@ realign_flag = Y
 # require BWA mapping quality score when selecting mapped reads
 min_mapq = 30
 
-# number of bases on each side of sgRNA to see snp
+# number of bases on each side of sgRNA to view SNP 
 wing_length = 40
 
 ## tmp directory for picard sorting 

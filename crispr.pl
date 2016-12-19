@@ -182,17 +182,18 @@ Usage: $0 [options]
 
 	Required:
 
-	--region <str> A bed file for amplicon.
-		The field values are for chr, start, end, genesym, refseqid, strand. No header.
+	--region <str> Required. A bed file for amplicon.
+		The tab-separated fields are chr, start, end, genesym, refseqid, strand. No header.
 		The coordinates are 1-based genomic coordinates.
 
-	--crispr <str> A bed file containing one or multiple CRISPR sgRNA sites.
-		The field values are for chr, start, end, crispr_name, sgRNA_sequence, strand, HDR mutations. 
-		HDR format: <Pos1><NewBase1>,<Pos2><NewBase2>,...
-		e.g. 101900208C,101900229G,101900232C,101900235A. No space. Bases must be on positive strand.
+	--crispr <str> Required. A bed file containing one or multiple CRISPR sgRNA sites. No header.
+		The tab-separated fields are chr, start, end, crispr_name, sgRNA_sequence, strand, HDR mutations. 
+		The coordinates start and end are 1-based. 
+		HDR format: <Pos1><NewBase1>,<Pos2><NewBase2>,... The bases are desired bases on positive strand.
+		e.g. 101900208C,101900229G,101900232C,101900235A. No space. 
 
-	--filemap <str> A file containing 2 or 3 columns separated by space or tab.
-		The fields are for Samplename, gzipped read1 fastq file, gizpped read2 fastq file.
+	--filemap <str> Required. A file containing 2 or 3 columns separated by space or tab. No header.
+		The tab-separated fields are Samplename, gzipped read1 fastq file, gizpped read2 fastq file.
 
 	--sitemap <str> Required. A file that associates sample name with crispr sites. 
 		Each line starts with sample name, followed by crispr sequences.. 

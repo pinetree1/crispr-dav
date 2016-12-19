@@ -2,11 +2,11 @@
 
 ## Installation 
 
-1. Clone the CRISPR pipeline repository:
+### Clone the CRISPR pipeline repository:
 
 git clone git@biogit.pri.bms.com:wangx112/crispr.git 
 
-2. Install required tools: 
+### Install required tools: 
 
 (1) Install tools
 
@@ -25,7 +25,7 @@ git clone git@biogit.pri.bms.com:wangx112/crispr.git
 	The perl modules etc must be installed as root.
 	sh ../Install/install_mod.sh 
 
-3. Prepare a genome of interest. 
+#### Prepare a genome of interest. 
 
 (1) Prepare fasta file. For example, to parepare human genome hg19, download the chromosome sequence files from UCSC browser, combine them (excluding the haplotype and chrUn) into one file, hg19.fa.
 
@@ -35,20 +35,21 @@ git clone git@biogit.pri.bms.com:wangx112/crispr.git
 
 ## Run pipeline
 
-An example run is in the Example directory. The fastq directory contains fastq files. The hg19 directory is where the genome files are. You'll need prepare those only once as described above. The hg19.fa.fai will be automatically created by pipeline. 
+An example run is in the Example directory. The fastq directory contains fastq files that must be gzipped. The hg19 directory contains the genome files. You'll need prepare genome files only once as described above. The hg19.fa.fai will be automatically created by pipeline. 
 
 In the 'run' directory, there are 5 files to prepare:
 
-	conf.txt: Use the conf.txt in crispr.pl script directory as template, modify the paths and settings to reflect your installation environment. 
+	conf.txt: Use the conf.txt in crispr.pl script directory as template, modify the paths and settings according to your installation and project requirement.  
 
 	amplicon.bed: a tab-delimited text file with 6 columns: chr, start, end, genesymbol, refseq_accession, strand. Only one amplicon is allowed in a pipeline. 1-based start and end.
  
 	site.bed: a tab-delimited text file with 7 columns: chr, start, end, crispr_name, sgRNA_sequence, strand, HDR_new_bases_and_positions. This file can contain multiple records, but crispr_name and sgRNA_sequence must be unique. 1-based start and end.
 
-	file.map: a tab-delimited text file with 2 or 3 columns: sample name, read1 file, optional read 2 file
+	samples.txt: a tab-delimited text file with 2 or 3 columns: sample name, read1 file, optional read 2 file.
 
-	sample.site: a tab-delimited text file with 2 columns: sample name, sgRNA_sequence 
+	sample.site: a tab-delimited text file with 2 columns: sample name, sgRNA_sequence.
 
+	None of the files should have column header.
 
 	The script run_crispr.sh starts the pipeline: 
 	sh run_script.sh &> r.log &

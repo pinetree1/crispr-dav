@@ -82,9 +82,14 @@ sub tabcat {
 =cut
 
 sub run {
-	my ($cmd, $fail_msg, $verbose) = @_;
+	my ($cmd, $fail_msg, $verbose, $fail_flag_file) = @_;
 	print STDERR "$cmd\n" if $verbose;
-	croak "$fail_msg\n" if system($cmd);
+	if ( system($cmd) ){
+		if ( $fail_flag_file ) {
+			qx(touch $fail_flag_file);
+		}
+		croak "$fail_msg\n";
+	}
 } 
 
 =head2 getJobName 

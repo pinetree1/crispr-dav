@@ -1,5 +1,6 @@
 # Given a vector x, and a value y, find the indexes 
 # of the first and last vector element >= y, and return the sequence  
+# Author: X. Wang
 ge_range <- function (x, y) {
 	idx1 = which(x>=y)[1]
 	idx2 = tail(which(x>=y), n=1)
@@ -46,7 +47,7 @@ customize_title_axis <- function(angle=0, color="black", face="bold", family="Ti
 		)
 }
 
-exit <- function(msg="", status=0) {
+exit <- function(msg="", status=1) {
 	cat(msg, "\n")
 	quit("no", status=status)
 }

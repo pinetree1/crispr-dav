@@ -1,6 +1,6 @@
 #!/bin/env perl
 # Process one sample
-# xwang
+# Author: X. Wang
 
 use strict;
 use Getopt::Long;
@@ -25,14 +25,20 @@ my $bamfile = "$outdir/$sample.bam";
 my $readcount = "$outdir/$sample.cnt";  # to combine into readcount.txt  
 my $readchr = "$outdir/$sample.chr";
 my $varstat = "$outdir/$sample.var"; # to use for amplicon-wide plots, snp plots
+my $fail_flag =  "$outdir/$sample.failed";
 
 ## filter fastq files
-$ngs->filter_reads(read1_inf=>$h{read1fastq},
+my $status = $ngs->filter_reads(read1_inf=>$h{read1fastq},
 	read2_inf=>$h{read2fastq},
 	read1_outf=>$read1_outfile,
 	read2_outf=>$read2_outfile,
 	prinseq=>$h{prinseq}
 	);
+
+if ( $status ) {
+	qx(touch $fail_flag);
+	die "Failed in filtering $sample\n";
+}
 
 ## Alignment and processing to create bam file
 
@@ -55,6 +61,11 @@ my @bamstats = $ngs->create_bam(sample=>$sample,
 	chromCount_outfile=>$readchr
 	);
 
+if ( scalar(@bamstats) == 1 ) {
+	qx(touch $fail_flag);		
+	die "Failed in aligning $sample or gathering its read stats\n"; 
+}
+
 ## Count reads in processing stages
 $ngs->readStats(bamstat_aref=>\@bamstats, 
 	r1_fastq_inf=>$h{read1fastq}, r2_fastq_inf=>$h{read2fastq}, gz=>1,
@@ -65,6 +76,11 @@ $ngs->readStats(bamstat_aref=>\@bamstats,
 $ngs->variantStat (bam_inf=>$bamfile, ref_fasta=>$h{ref_fasta}, 
 	outfile=>$varstat, chr=>$h{chr}, start=>$h{amplicon_start}, 
 	end=>$h{amplicon_end});
+
+if ( !-f $varstat ) {
+	qx(touch $fail_flag);
+	die "Failed in gathering variant stats\n";
+}
 
 ## Determine indel pct and length in each CRISPR site
 for my $target_name ( sort split(/,/, $h{target_names}) ) {
@@ -98,29 +114,31 @@ for my $target_name ( sort split(/,/, $h{target_names}) ) {
 		my $cmd= "$Bin/cxdata.pl --ref_fasta $h{ref_fasta}";
 		$cmd .= " --refGene $h{refGene} --geneid $h{geneid}"; 
 		$cmd .= " --samtools $h{samtools} $lenfile $canvasfile";
-		Util::run($cmd, "Failed to create data for Canvas Xpress", $h{verbose});
+		Util::run($cmd, "Failed to create data for Canvas Xpress", $h{verbose}, $fail_flag);
 	}
 
 	## create plots of coverage, insertion and deletion on amplicon
 	my $cmd = "$h{rscript} $Bin/Rscripts/amplicon.R --inf=$varstat --outf=$outdir/$sample.$target_name";
 	$cmd .= " --sub=$sample --hname=$target_name --hstart=$target_start --hend=$target_end";
-	$cmd .= " --chr=$h{genome} $chr";	
-	Util::run($cmd, "Failed to generate amplicon-wide plots", $h{verbose});
+	$cmd .= " --chr=$h{genome} $chr --min_depth=$h{min_depth}";	
+	Util::run($cmd, "Failed to generate amplicon-wide plots", $h{verbose}, $fail_flag);
 
 	## create a plot of base changes in crispr site and surronding regions
 	$cmd = "$h{rscript} $Bin/Rscripts/snp.R --inf=$varstat --outf=$outdir/$sample.$target_name.snp.png";
 	$cmd .= " --outtsv=$outdir/$sample.$target_name.snp";
 	$cmd .= " --sample=$sample --hname=$target_name --hstart=$target_start --hend=$target_end";
 	$cmd .= " --chr=$h{genome} $chr";
-	Util::run($cmd, "Failed to generate base-change plot", $h{verbose});
+	Util::run($cmd, "Failed to generate base-change plot", $h{verbose}, $fail_flag);
  
 	## create plots of indel length distributions (with and without WT)
 	$cmd = "$h{rscript} $Bin/Rscripts/indel_length.R $lenfile $outdir/$sample.$target_name.len.png";
 	$cmd .= " $outdir/$sample.$target_name.len2.png";
-	Util::run($cmd, "Failed to generate indel length distribution plots", $h{verbose}); 
+	Util::run($cmd, "Failed to generate indel length distribution plots", $h{verbose}, $fail_flag); 
 }
 
-qx(touch $outdir/$sample.done);
+if ( !-f $fail_flag ) {
+	qx(touch $outdir/$sample.done);
+}
 
 sub get_input {
 	my $usage = "$0 [options] sampleName read1FastqFile outdir
@@ -143,7 +161,7 @@ sub get_input {
 	--read2fastq     <str> Optional. Fastq file of read2
 
 	--min_qual_mean  <int> prinseq parameter. Default: 30
-	--min_len        <int> prinseq parameter. Default: 50
+	--min_len        <int> prinseq parameter. Default: 40
 	--ns_max_p       <int> prinseq parameter. Default: 3
 
 	--unique         Optional. Remove duplicate reads from bam file. 
@@ -165,7 +183,7 @@ sub get_input {
 
 	--wing_length    <int> Number of bases on each side of CRISPR to show SNP. Default: 50
 	--nocx           Do not create canvasXpress alignment data 
-	
+	--min_depth      min depth marking the boundaries in amplicon plots. Default: 1000 	
 	--verbose        Optional. For debugging.	
 	--help           Optional. To show this message
 ";
@@ -178,14 +196,14 @@ sub get_input {
 		'genome=s', 'idxbase=s', 'ref_fasta=s', 'refGene=s', 'geneid=s',
 		'chr=s', 'amplicon_start=i', 'amplicon_end=i',
 		'target_bed=s', 'target_names=s', 
-		'wing_length=s', 'nocx', 'verbose', 'help');
+		'wing_length=s', 'min_depth=i', 'nocx', 'verbose', 'help');
 
 	die $usage if @ARGV != 3 or $h{help};		
 	($h{sample}, $h{read1fastq}, $h{outdir}) = @ARGV;
 
 	# check required options
 	my @required = ('picard', 'abra', 'prinseq', 
-		'genome', 'idxbase', 'ref_fasta', 'refGene', 'geneid', 
+		'genome', 'idxbase', 'ref_fasta',  
 		'chr', 'amplicon_start', 'amplicon_end', 
 		'target_bed', 'target_names');
 
@@ -196,7 +214,7 @@ sub get_input {
 	## set defaults
 	my %defaults = (samtools=>'samtools', java=>'java', bwa=>'bwa', 
 		bedtools=>'bedtools', rscript=>'Rscript', tmpdir=>'/scratch', 
-		min_qual_mean=>30, min_len=>50, ns_max_p=>3, wing_length=>50);
+		min_qual_mean=>30, min_len=>50, ns_max_p=>3, wing_length=>40, min_depth=>1000);
 
 	foreach my $opt ( keys %defaults ) {
 		$h{$opt} = $defaults{$opt} if !defined $h{$opt};

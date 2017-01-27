@@ -1,5 +1,6 @@
 ## Survey the amplicon: coverage, insertion, deletion  
 ## Locate sgRNA coordinates if available.
+## Author: X. Wang
 suppressMessages(library(ggplot2))
 options(scipen=999)
 
@@ -25,6 +26,7 @@ if("--help" %in% args) {
       --type=type of data: coverage, insertion, deletion. Optional. All types will be plotted by default. 
       --chr=chromosome name, e.g. 'hg19 chr3'. Optional.
       --outf=ouput png file prefix. Required. Extension(.cov.png, .ins.png, .del.png) will be added. 
+      --min_depth=min depth marking the start and end of amplicon region. Default: 1000
       --help 	Print this message
 	"))
 }
@@ -58,18 +60,20 @@ if (!is.null(argsL$hstart)) {
 ## read data
 dat <- read.table(infile, header=TRUE, sep="\t")
 if ( nrow(dat)== 0 ) { 
-	exit("No data in input file")
+	exit("No data in input file", 0)
 }
 
-mindepth<-1000  # min depth marking the start and end of amplicon region
+# min depth marking the start and end of amplicon region
+min_depth <- ifelse ( is.null(argsL$min_depth), 1000, as.numeric(argsL$min_depth) ) 
+
 h=1
 t=nrow(dat)
 
-h <- which(dat$reads_all>mindepth)[1]
-if (is.na(h)) exit(paste("No position has depth >=", mindepth))
-t <- tail(which(dat$reads_all>mindepth), n=1)
+h <- which(dat$reads_all>min_depth)[1]
+if (is.na(h)) exit(paste("No position has depth >=", min_depth), 0)
+t <- tail(which(dat$reads_all>min_depth), n=1)
 if ( t > nrow(dat) ) {
-	exit("There is not enough data for plotting")
+	exit("There is not enough data for plotting", 0)
 }
 
 dat2 <- dat[h:t, ]

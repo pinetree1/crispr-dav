@@ -1,4 +1,5 @@
 ## Create plot of read counts at different processing stages
+## Author: X. Wang
 suppressMessages(library(ggplot2))
 library(reshape2)
 options(scipen=999)
@@ -46,7 +47,7 @@ if (!remove_dup %in% c('Y', 'N')) {
 
 
 ## create the plot
-readTypes <- c("RawReads", "QualityReads", "MappedReads", "UniqueReads", "RegionReads")
+readTypes <- c("RawReads", "QualityReads", "MappedReads", "UniqueReads", "AmpliconReads")
 labels<- c("Raw Reads", "Quality Reads", "Mapped Reads", "Unique Reads", "Amplicon Reads")
 if ( remove_dup == 'N' ) {
 	readTypes = readTypes[readTypes != "UniqueReads"]
@@ -54,7 +55,7 @@ if ( remove_dup == 'N' ) {
 }
 
 dat <- read.table(file=infile, sep="\t", header=TRUE)
-if (nrow(dat)==0) exit("No data in input file")
+if (nrow(dat)==0) exit("No data in input file", 0)
 dat.m <- melt(dat, id.vars="Sample", measure.vars=readTypes)
 
 # number of samples
@@ -64,7 +65,7 @@ w<- ifelse(n>10, 50*n, h)
 png(filename=outfile, height=h, width=w)
 
 ggplot(dat.m, aes(x=Sample, y=value, fill=variable)) + 
-	geom_bar(stat='identity', position=position_dodge()) +
+	geom_bar(stat='identity', position=position_dodge(), width=0.5) +
 	labs(x="Sample", y="Number of reads", title="Reads at Preprocessing Stages") + 
 	scale_fill_discrete(breaks=readTypes, labels=labels) +
 	guides(fill=guide_legend(title=NULL)) +

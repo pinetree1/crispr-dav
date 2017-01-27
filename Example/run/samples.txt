@@ -1,2 +1,0 @@
-sample1	../fastq/A_20160907HM1_B01_Run1_S2_R1_001.fastq.gz	../fastq/A_20160907HM1_B01_Run1_S2_R2_001.fastq.gz
-sample2	../fastq/A_20160907HM1_D01_Run1_S4_R1_001.fastq.gz	../fastq/A_20160907HM1_D01_Run1_S4_R2_001.fastq.gz

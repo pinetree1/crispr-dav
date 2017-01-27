@@ -1,4 +1,5 @@
-## Create a read count plot of indel
+## Create plots of indel read count and pct 
+## Author: X. Wang
 suppressMessages(library(ggplot2))
 library(reshape2)
 options(scipen=999)

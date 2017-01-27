@@ -95,17 +95,19 @@ sub getExonsSeq {
 	my $exonseq = "";
 	my @coords; # 0-based
 	my $offset = $starts[0];
+
+	print STDERR "Exon#(positive_strand)\tStart(1-based)\tEnd(1-based)\n" if $self->{verbose};
 	for (my $i=0; $i<@starts; $i++) {
-		$exonseq .= substr($seq, $starts[$i]-$offset, $ends[$i]-$starts[$i]);	
+		$exonseq .= substr($seq, $starts[$i]-$offset, $ends[$i]-$starts[$i]);
+		print STDERR join("\t", $i+1, $starts[$i]+1,  $ends[$i]) ."\n" if $self->{verbose};
 		for (my $j=$starts[$i]; $j<$ends[$i]; $j++) {
 			push(@coords, $j);	
 		}
 	}	
-	
-	# set coord to 0 if it is outside the range of start-end
+	# set coord to -1 if it is outside the range of start-end
 	for (my $i=0; $i<@coords; $i++) {
 		if ( $coords[$i] < $h{start} or $coords[$i] >= $h{end} ) {
-			$coords[$i]=0;
+			$coords[$i]=-1;
 		}
 	}
 	
@@ -114,7 +116,7 @@ sub getExonsSeq {
 	$exonseq='';	
 	my @new_coords;
 	for (my $i=0; $i<@coords; $i++) {
-		if ( $coords[$i] > 0 ) {
+		if ( $coords[$i] >= 0 ) {
 			$exonseq .= $bases[$i];
 			push(@new_coords, $coords[$i]);
 		}
@@ -165,12 +167,13 @@ sub getMutantExonsSeq {
 		} elsif ( $type eq "D" ) {
 			## Mark off the affected positions from the wt 
 			$q = $ind[$i+1]-1;
+			print STDERR "Processing indelstr $ind[$i] ...\n" if $self->{verbose};
 			for (my $j=$p; $j<=$q; $j++){
 				if ( $hcoord{$j} ) {
+					print STDERR "DELETION: Base $hcoord{$j} at coord index $j in exon is deleted.\n" if $self->{verbose};
 					$hcoord{$j} = '';
-					print STDERR "Marked off base at 0-based coord $j.\n" if $self->{verbose};
 				} else {
-					print STDERR "Deletion base at 0-based coord $j is in intron\n" if $self->{verbose};
+					print STDERR "DELETION: Base at coord index $j in intron is deleted.\n" if $self->{verbose};
 					$intron_bases++;
 				}	
 			}	
@@ -236,7 +239,7 @@ sub getMutantExonsSeq {
 		}
 	}	 
 
-
+	print "In CDS + strand, segments: @segments\n" if $self->{verbose};
 	return ($newseq, \@segments, $intron_bases);
 }
 
@@ -264,6 +267,7 @@ sub locateGuideInCDS {
 	my @coords = @$cds_chr_coords; # 0-based
 	## @coords contains coordinates of each CDS base.
 	my $cds_len = scalar(@coords);
+	print STDERR "CDS exon sequence length: $cds_len\n" if $self->{verbose};
 
 	my %hash; # cds coord=>base
 	for (my $i=0; $i< @coords; $i++) {
@@ -276,7 +280,7 @@ sub locateGuideInCDS {
 	my $intron_bases = 0;
 	for (my $i=$h{guide_start}-1; $i<$h{guide_end}; $i++) {
 		if (!$hash{$i}) {
-			print STDERR "Guide position ". ($i+1) . " is not in CDS.\n";
+			print STDERR "Guide position(1-based) ". ($i+1) . " is not in CDS.\n";
 			$intron_bases ++;
 			next;	
 		}
@@ -305,7 +309,7 @@ sub locateGuideInCDS {
 
 	} else {
 		# Guide is completely inside intron. Find the nearest exon coordinate.
-	
+		print STDERR "Guide is completely inside intron\n";	
 		my $guide_len = $h{guide_end} - $h{guide_start} + 1;	
 
 		my $guide_start_idx = $h{guide_start} -1;	
@@ -317,18 +321,26 @@ sub locateGuideInCDS {
 			for (my $i=0; $i< @coords-1; $i++) {
 				if ( $guide_start_idx > $coords[$i] && $guide_start_idx < $coords[$i+1] ) {
 					push(@segments, "[" . ($i+1) . "," . ($i+1) . "]");
-					print STDERR "Guide is near between CDS bases #$i and # " . ($i+1) . "\n" if $self->{verbose};
+					print STDERR "Guide is near between CDS bases #$i and # " . ($i+1) . "\n";
 					last;
 				} 
 			}			
 		}
 	}
 
+	if ( $self->{verbose} ) {
+		print STDERR "In CDS + strand, guide seq: $guide_cds_seq\n";
+		print STDERR "In CDS + strand, guide segments: @segments\n";
+	}
+	
 	if ( $h{strand} eq '-' ) {
-		print STDERR "In CDS - strand, reversing sequence and segments.\n" if $self->{verbose};
 		$guide_cds_seq = $self->revcom($guide_cds_seq) if $guide_cds_seq;
 		my $aref = $self->reverse_segments(segment_aref=>\@segments, total_length=>$cds_len);
 		@segments = @$aref;
+		if ( $self->{verbose} ) {
+			print STDERR "In CDS - strand, guide seq: $guide_cds_seq\n";
+			print STDERR "In CDS - strand, guide segments: @segments\n";
+		}
 	}
 
 	return (join(",", @segments), $guide_cds_seq, $intron_bases);

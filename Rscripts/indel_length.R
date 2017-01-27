@@ -1,4 +1,5 @@
 ## Create a plot of indel length vs count
+## Author: X. Wang
 suppressMessages(library(ggplot2))
 options(scipen=999)
 
@@ -25,7 +26,7 @@ dat <- read.table(file=infile, sep="\t", header=TRUE )
 
 dat1 <- dat[dat$IndelLength !=0, ]   # remove the WT
 if ( nrow(dat1)==0 ) {
-	exit("No data in input file")
+	exit("No data in input file", 0)
 }
 
 xlabel = "Indel Length (<0:Deletion, >0:Insertion)"
@@ -40,7 +41,7 @@ create_plot <- function(data, xlab, pngfile) {
 
 	if (rows == 1 ) {
 		if ( ag[1,2]==0 ) {
-			exit("No reads")
+			exit("No reads", 0)
 		}
 	} 
 
@@ -57,7 +58,7 @@ create_plot <- function(data, xlab, pngfile) {
 	on.exit(dev.off())
 
 	p<-ggplot(ag, aes(x=factor(bin), y=freq)) +
-		geom_bar(stat="identity", width=0.2) + 
+		geom_bar(stat="identity", position="dodge", width=0.2) + 
 		labs(x=xlab, y="Reads", title=paste("Sample:", samplename)) +
 		customize_title_axis(angle=90) 
 

@@ -1,0 +1,2 @@
+sample1	rawfastq/sample1_R1.fastq.gz	rawfastq/sample1_R2.fastq.gz
+sample2	rawfastq/sample2_R1.fastq.gz	rawfastq/sample2_R2.fastq.gz

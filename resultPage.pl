@@ -1,6 +1,6 @@
 #!/bin/env perl
 # Creates html page
-# xwang
+# Author: X. Wang
 
 use strict;
 use File::Basename;
@@ -8,18 +8,19 @@ use Getopt::Long;
 use File::Path qw(make_path);
 use FindBin qw($Bin);
 
-my $usage = "$0 [option] indir outdir
+my $usage = "Usage: $0 [option] indir outdir
 	--ref     <str> reference name, e.g. hg19. Required.	
 	--gene    <str> Gene name, e.g. FPR2. Required.
 	--region  <str> a bed file of amplicon. Required.
 	--crispr  <str> a bed file containing sgRNA region. Required.
 	--cname   <str> Name of CRISPR site. Optional. 
+	--min_depth  min depth marking the boundaries in amplicon plots. Default: 1000
 	--nocx    Do not to create canvasXpress alignment view 
 	indir	input directory where result files (e.g. png files) are. 
 	outdir	output directory 
 ";
 my %h;
-GetOptions(\%h, 'ref=s', 'region=s',  'crispr=s', 'gene=s', 'cname=s', 'nocx');
+GetOptions(\%h, 'ref=s', 'region=s',  'crispr=s', 'gene=s', 'cname=s', 'min_depth=i', 'nocx');
 	
 die $usage if ( @ARGV != 2);
 my ($indir, $outdir)=@ARGV;
@@ -31,6 +32,8 @@ my $gene = $h{gene};
 my ($amp_chr, $amp_start, $amp_end, $amp_name, $amp_seq, $amp_strand) = getTarget($h{region});
 my ($chr, $start, $end, $site_name, $seq, $strand, $hdr) = getTarget($h{crispr}, $h{cname});
 die "Incorrect crispr name $h{cname}.\n" if ($h{cname} && $h{cname} ne $site_name);
+
+$h{min_depth} //= 1000;
 
 ## set up assets
 my $sitedir="$outdir/$site_name";
@@ -92,7 +95,7 @@ print $fh "</select>
 ";
 
 ## categories with each plot for individual sample
-my $note="(min depth at plot boundaries: 1000)";
+my $note="(min depth at plot boundaries: $h{min_depth})";
 my %category_header=("len"=>"Indel Length at CRISPR Site", 
 	"cov"=>"Amplicon Coverage $note", 
 	"ins"=>"Insertion Locations in Amplicon $note", 
@@ -187,6 +190,7 @@ sub getTarget {
 	open(F, $bedfile) or die "cannot open target file $bedfile\n";
 	my $line;
 	while($line=<F>){
+		next if ( $line =~ /^\#/ or $line !~ /\w/ );
 		chomp $line;
 		my @a = split(/\s+/, $line);
 		if ( !$name or $a[3] eq $name ) {

@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 ## prepare data for alignment view using canvass xpress.
+## Author: X. Wang
 use strict;
 use File::Basename;
 use Config::Tiny;
@@ -59,6 +60,11 @@ my $ex = new Exon(fasta_file=>$ref_fasta, seqid=>$chr,
 ## Full CDS sequence of WT
 my ($wt_chr_seq, $wt_chr_coords) = $ex->getExonsSeq(start=>$start-1, end=>$end,
 	exonStarts=>$exonStarts, exonEnds=>$exonEnds);
+
+if ( $h{verbose} ) {
+	print STDERR "Exons sequence on positive strand:\n$wt_chr_seq\n";
+}
+
 my $wt_seq = $strand eq '+' ? $wt_chr_seq : $ex->revcom($wt_chr_seq);
 
 ## Guide sequence's segment
@@ -97,7 +103,7 @@ while ($line=<$ifh>) {
 		$segment = $wt_segment;
 		$wt_added = 1;
 	} else {
-		print STDERR "\nBegin to process indel $indelstr\n" if $verbose;
+		print STDERR "\nBegin to process sample: $a[0], reads: $reads, indel: $indelstr\n" if $verbose;
 		my $segment_aref;
 		($ntseq, $segment_aref) = $ex->getMutantExonsSeq( wt_seq=>$wt_chr_seq, 
 			wt_coords=>$wt_chr_coords, indelstr=>$indelstr);

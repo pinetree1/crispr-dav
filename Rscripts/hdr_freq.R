@@ -1,4 +1,5 @@
 ## Create a plot of HDR frequencies 
+## Author: X. Wang
 args <- commandArgs(trailingOnly=FALSE)
 script.name <- sub("--file=", "", args[grep("--file=",args)])
 script.path <- dirname(script.name)
@@ -48,7 +49,7 @@ if ( !is.null(argsL$sub) ) {
 dat <- read.table(file=infile, sep="\t", header=TRUE )
 n<- nrow(dat)
 if ( n==0 ) {
-	exit("No data in input file")
+	exit("No data in input file", 0)
 }
 
 vnames <- c('PctPerfectOligo', 'PctEditedOligo', 'PctPartialOligo', 'PctNonOligo')

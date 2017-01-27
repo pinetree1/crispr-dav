@@ -83,8 +83,8 @@ sub filter_reads {
 		$cmd= "(gunzip -c $f1 | $h{prinseq} -fastq stdin";
 		$cmd .= " -out_good $read1_outf -out_bad null $param) &>$log";
 		$cmd .= " && gzip -c $read1_outf.fastq > $read1_outf && rm $read1_outf.fastq";
-		print STDERR "Filtering fastq: $cmd\n";
-		croak "Error: Failed to filter $f1" if system($cmd);
+		print STDERR "Filtering fastq: $cmd\n" if $self->{verbose};
+		run($cmd);
 	} else {
 		$cmd = "gunzip -c $f1 > $read1_outf && gunzip -c $f2 > $read2_outf";
 		$cmd .=" && ($h{prinseq} -fastq $read1_outf -fastq2 $read2_outf";
@@ -93,7 +93,7 @@ sub filter_reads {
 		$cmd .=" && gzip -c ${read1_outf}_2.fastq > $read2_outf";
 		$cmd .=" && rm -f ${read1_outf}_[12]*.fastq";
 		print STDERR "Filtering fastq: $cmd\n" if $self->{verbose};
-		croak "Error: Failed to filter $f1 and $f2" if system($cmd);
+		run($cmd);
 	}
 }
 
@@ -138,14 +138,14 @@ sub trim_reads {
 	$cmd .= " > $h{trim_logf}" if $h{trim_logf};
 	$cmd .= " && rm -f $h{singles_outf}" if $h{singles_outf};
 	print STDERR "$cmd\n" if $self->{verbose};
-	return system($cmd);
+	run($cmd);
 }
 
 =head2 create_bam
 
  Usage   : $obj->create_bam(sample=>, read1_inf=>, idxbase=>, bam_outf=> )
  Function: a wrapper function to create bam file, etc from fastq file.
- Returns : array of read counts by bamReadCount().
+ Returns : array of read counts by bamReadCount(), or array of single element of failure status code.
  Args    : sample, read1_inf, idxbase, bam_outf, and many optional/default args 
 
 =cut
@@ -176,19 +176,28 @@ sub create_bam {
     	idxbase=>$h{idxbase},
     	bam_outf=>$h{bam_outf});
 
-	croak "Failed in BWA aligning $h{sample}\n" if $status;
+	if ( $status ) {
+		print STDERR "Failed in BWA aligning $h{sample}\n";
+		return ($status);
+	}
 
 	## Indel realignment 
 	if ( $h{realign_indel} && $h{abra} && $h{target_bed} && $h{ref_fasta} ) {
 		$status = $self->ABRA_realign(bam_inf=>$h{bam_outf}, abra=>$h{abra},
         	target_bed=>$h{target_bed}, ref_fasta=>$h{ref_fasta});
-		croak "Failed in ABRA realigning $h{sample}\n" if $status;
+		if ( $status ) {
+			print STDERR "Failed in ABRA realigning $h{sample}\n";
+			return ($status);
+		}
 	}
 
 	## Mark duplicates
 	if ( $h{mark_duplicate} or $h{remove_duplicate} ) {
 		$status = $self->mark_duplicate(bam_inf=>$h{bam_outf}, picard=>$h{picard});
-		croak "Failed in marking duplicates for $h{sample}\n" if $status;
+		if ( $status ) {
+			print STDERR "Failed in marking duplicates for $h{sample}\n";
+			return ($status);
+		}
 	}
 
 	my @bam_stats = $self->bamReadCount($h{bam_outf});	
@@ -223,6 +232,7 @@ sub bwa_align {
 		id=>'', # read group ID
 		sm=>'', # read group sample name
 		pl=>'ILLUMINA', # read group platform
+		primary_only=>1, # 1-keep only primary aligned reads 
 		@_
 	);	
 
@@ -242,8 +252,13 @@ sub bwa_align {
 		$cmd .= " -R \'\@RG\tID:$h{id}\tSM:$h{sm}\tPL:$h{pl}\'";
 	}
 
-	$cmd .= " |$samtools view -S -b -F 256 -";
-	$cmd .= " |$samtools view -b -F 2048 -"; 
+	if ( $h{primary_only} ) {
+		$cmd .= " |$samtools view -S -b -F 256 -";
+		$cmd .= " |$samtools view -b -F 2048 -"; 
+	} else {
+		$cmd .= " |$samtools view -S -b -";
+	}
+
 	#$cmd .= " |$samtools sort -f - $h{bam_outf} && $samtools index $h{bam_outf}"; # samtools 0.1.9
 	$cmd .= " |$samtools sort -o $h{bam_outf} -O BAM - && $samtools index $h{bam_outf}"; # samtools 1.3.1
 	$cmd = "($cmd) &> $h{bam_outf}.bwa.log";
@@ -417,6 +432,7 @@ sub remove_duplicate {
 	if ( $status == 0 && $replace== 1 ) {
 		rename($outbam, $inbam);
 	}
+	return $status;
 }
 
 =head2 fastqReadCount
@@ -479,13 +495,13 @@ sub regionReadCount {
  
 	my $cnt = 0;
 	if ( $h{min_overlap}==1 ) {
-		$cnt = qx($self->{samtools} view -c $h{bam_inf} $h{chr}:$h{start}-$h{end} 2>/dev/null);
+		$cnt = qx($self->{samtools} view -F 4 -c $h{bam_inf} $h{chr}:$h{start}-$h{end} 2>/dev/null);
 	} else {
 		my $ratio = $h{min_overlap}/($h{end} - $h{start} + 1);
 		my $bedfile="$h{bam_inf}.tmp.region.bed";
 		$self->makeBed($h{chr}, $h{start}, $h{end}, $bedfile);
 		my $cmd = "$self->{bedtools} intersect -a $h{bam_inf} -b $bedfile -F $ratio -u";
-		$cmd .= " | $self->{samtools} view -c - "; 
+		$cmd .= " | $self->{samtools} view -F 4 -c - "; 
 		$cnt = qx($cmd);
 		unlink $bedfile;
 	}
@@ -533,7 +549,7 @@ sub readStats {
 
 	open(my $cntf, ">$h{outfile}") or croak $!;
 	print $cntf join("\t", "Sample", "RawReads", "QualityReads", "MappedReads", 
-			"PctMap", "Duplicates", "PctDup", "UniqueReads", "RegionReads") . "\n";
+			"PctMap", "Duplicates", "PctDup", "UniqueReads", "AmpliconReads") . "\n";
 
 	my $raw_reads = $self->fastqReadCount($h{r1_fastq_inf}, $h{gz});
 	if ( $h{r2_fastq_inf} ) {
@@ -615,8 +631,7 @@ sub variantStat {
 	
 	print STDERR "$cmd\n" if $self->{verbose};
 	
-	my $status = system($cmd);		
-	croak "Failed in gathering coverage and variant stats from $h{bam_inf}\n" if $status;
+	run($cmd);
 }
 
 =head2 required_args
@@ -706,7 +721,6 @@ sub targetSeq {
 		print $seqf join("\t", @info)  . "\n";
 	} # end while
 
-	#unlink $bedfile;
 	return if !$overlap_reads; 
 
 	## Output read counts
@@ -784,7 +798,7 @@ sub extractReadRange {
 			# keep the deletion if it overlaps the target region by 1 base.
 			if ( _isOverlap($start, $end, $del_start, $chr_pos, 1)) {
 				$indelstr .= "$del_start:$chr_pos:D:-:";
-				$indel_length += -$len;
+				$indel_length -= $len;
 			}
 		} elsif ( $letter eq "I" ) {
 			my $inserted_seq = substr($seq, $seq_pos, $len);
@@ -792,7 +806,7 @@ sub extractReadRange {
 
 			# keep the insertion if it overlaps the target region by 1 base. 
 			if ( _isOverlap($start, $end, $chr_pos, $chr_pos+1, 1) ) {
-				$indelstr .= $chr_pos . ":" . ($chr_pos+1) . ":I:$inserted_seq:";
+				$indelstr .= ($chr_pos+1) . ":" . ($chr_pos+2) . ":I:$inserted_seq:";
 				$indel_length += $len;
 			}			
 		} # end if 
@@ -1014,6 +1028,7 @@ sub getRecord {
 	my ($self, $bedfile, $region_name) = @_;	
 	open(my $fh, $bedfile) or croak $!;
 	while (<$fh>) {
+		next if ( $_ =~ /^\#/ or $_ !~ /\w/ );
 		chomp;
 		my @a = split /\t/;
 		if ( !$region_name or $region_name eq $a[3]) {
@@ -1021,6 +1036,24 @@ sub getRecord {
 		}	
 	}
 	close $fh;
+}
+
+=head2 run
+
+ Usage   : run($cmd, $err_msg)
+ Function: Run command, print error message if any   
+ Returns : Job status code 
+ Args    : cmd,  error string 
+
+=cut
+
+sub run {
+	my ($cmd, $err_msg)= @_;
+	my $status = system($cmd);
+	if ( $status ) {
+		print STDERR $err_msg if $err_msg;
+	}
+	return $status;
 }
 
 1;

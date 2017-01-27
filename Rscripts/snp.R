@@ -1,3 +1,5 @@
+## Create a plot of point mutations around crispr site
+## Author: X. Wang
 suppressMessages(library(ggplot2))
 suppressMessages(library(reshape2))
 options(scipen=999)
@@ -67,7 +69,7 @@ if ( t-wingLength > nrow(dat) ) {
 }
 dat <- dat[h:t, ]
 if (nrow(dat) == 0) {
-	exit("No data in CRISPR site")
+	exit("No data in CRISPR site", 0)
 }
 
 bases=c('A', 'C', 'G', 'T')

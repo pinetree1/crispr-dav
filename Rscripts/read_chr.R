@@ -1,4 +1,6 @@
-## ## Create plot of read counts on different chromosomes
+## Create plot of read counts on chromosomes
+## Author: X. Wang
+
 suppressMessages(library(ggplot2))
 suppressMessages(library(naturalsort))
 options(scipen=999)
@@ -23,18 +25,19 @@ if (file.exists(infile)==FALSE) exit(paste("Could not find", infile))
 
 ## create the plot
 dat <- read.table(file=infile, sep="\t", header=TRUE, stringsAsFactors=FALSE)
-dat$Chromosome<- factor(dat$Chromosome, levels=naturalsort(unique(dat$Chromosome)))
 
+dat$Chromosome<- factor(dat$Chromosome, levels=naturalsort(unique(dat$Chromosome)))
 p<-ggplot(dat, aes(x=Chromosome, y=ReadCount, fill=Sample)) +
-	geom_bar(stat='identity', position=position_dodge()) +
+	geom_bar(stat='identity', position=position_dodge(), width=0.5 ) +
 	labs(x="Chromosome", y="Number of reads", title="Reads Mapped on Chromosomes") + 
 	theme_bw() + customize_title_axis(angle=90) 
 
 # number of samples
-n <- nlevels(dat$Sample)
+n <- length(unique(dat$Sample))
 h<-500
 w<-ifelse(n>5, 100*n, h)
-w <- w * length(unique(dat$Chr)) / 25
+max_w=1000
+w <- ifelse(w>max_w, max_w, w)
 
 png(filename=outfile, height=h, width=w)
 print(p)

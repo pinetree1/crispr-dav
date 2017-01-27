@@ -1,5 +1,6 @@
 #!/bin/env perl
 ##!/usr/bin/perl -w
+## Author: Charles Tilford
 
 use strict;
 use JSON;

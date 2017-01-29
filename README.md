@@ -32,7 +32,7 @@ As root, install perl and python modules
 For example, to parepare human genome hg19, download the chromosome sequence files from UCSC browser, combine them (excluding the haplotype and chrUn) into one file, hg19.fa.
 
 #### B. Create bwa index:
-bwa index hg19.fa 
+	bwa index hg19.fa 
 
 #### C. Download refGene table: 
 Go to UCSC Genome Broser (http://genome.ucsc.edu/cgi-bin/hgBlat), then click on Tools and select TableBrowser. Select assembly hg19, group: Genes and Gene Predictions, track: RefSeq Genes, table: refGene. Download the file in plain text to the same directory as the genome file.
@@ -42,7 +42,7 @@ Go to UCSC Genome Broser (http://genome.ucsc.edu/cgi-bin/hgBlat), then click on 
 There are two example runs in the Examples directory. 
 
 ### 1. example1: 
-This example shows how to run the pipeline when a genome is used as reference. The genome is in exmaple1/genome directory. See the above on how to prepare a genome. In addition , there are several input files to prepare:
+This example shows how to run the pipeline when a genome is used as reference. The genome is in exmaple1/genome directory. See the above on how to prepare a genome. In addition, there are several input files to prepare:
 
 #### conf.txt: 
 Use the conf.txt in crispr.pl script directory as template, modify the paths and settings according to your installation and project requirement.  
@@ -73,12 +73,12 @@ This will create 2 directories:
 
 * align: this contains the intermediate files.  
 
-* deliverables: this contains the results. Each crispr name will have a sub-directory under it, and contains index.html file for viewing the results. 
+* deliverables: this contains the results. Each crispr name will have a sub-directory under it. The subdirectory contains index.html file for viewing the results. 
 
 ### 2. example2: 
 This example shows how to run the pipeline when an amplicon sequence is used as reference. 
 
-When an amplicon sequence is used as reference sequence, use --amp_fasta to specify amplicon fasta file. The --genome option must not be used. The pipeline will create the bwa index of the amplicon sequence, and create the refGene equivalent table based on translation frame provided, assuming translation occurs on the positive strand and there is no intron in the amplicon sequence. Otherwise, then the refGene table must be pre-created and example1 should be followed. 
+To use an amplicon sequence as reference, use --amp_fasta to specify an amplicon fasta file. The --genome option must not be used. The pipeline will create the bwa index of the amplicon sequence, and create the refGene equivalent table based on translation frame provided, assuming translation occurs on the positive strand and there is no intron in the amplicon sequence. Otherwise, then the refGene table must be pre-created and example1 should be followed. 
 
 --amp_fasta: specify a reference sequence for the amplicon. The file must be a fasta file with an ID and only one sequence. 
 
@@ -90,7 +90,7 @@ All other files and steps are similar to those in example1.
 
 ## Results
 
-Results are available in 'deliverables' directory. Each subdirectory is for a CRISPR site. Results for a CRISPR site are accessable via index.html in the subdirectory. There are several sections:
+Results are available in 'deliverables' directory. Each subdirectory is for a CRISPR site. Results for a CRISPR site are accessable via index.html in the subdirectory. These are the result sections:
 
 #### 1. Gene: 
 Brief description about the amplicon and CRISPR target.
@@ -120,11 +120,11 @@ Two plots are shown for each sample. The first plot does not include WT read cou
 #### 8. SNP Locations around CRISPR site: 
 In a plot, the X axis shows the position and reference base, the bars indicate the point mutation frequencies. sgRNA region is marked with a horizontal bar. The number of bases on the sides of the sgRNA is determined by wing_length in the conf.txt file.
 
-#### 9. Homology Directed Repair Rates: 
-This section appears when HDR base changes are specified in crispr bed file (site.bed). The desired new bases supplied must be on positive strand.
+#### 9. Homology Directed Repair (HDR) Rates: 
+This section shows the HDR rates. Oligos were categorized into 4 types. The fractions and total reads were plotted. This section appears only when HDR base changes are specified in crispr bed file (site.bed). The desired new bases supplied must be on positive strand.
 
 #### 10. Visual Alignment of Indel Alleles: 
-This section appears when gene/cds/exon coordinates were provided via refGene parameter in conf.txt or in case of amplicon as reference the amp_frame option was supplied. The image was created with Canvas Xpress (http://canvasxpress.org/html/index.html). It shows insertion and deletion locations in the context of coding sequence (CDS) and sgRNA guide sequence. The bars can be zoomed in and out by rolling middle mouse key, and moved to the left or right. If the shown guide sequence is not full length, that is because the missed bases happen to be in intronic region. Likewise, if some indel bases are inside intron, they will not be shown in the bars either. Deletion is shown as a curved line bridging intact bases. Insertion is shown as a little line between two bases.  
+This section appears only when gene/cds/exon coordinates were provided via refGene parameter in conf.txt or in case of amplicon as reference the amp_frame option was supplied. The image was created with Canvas Xpress (http://canvasxpress.org/html/index.html). It shows insertion and deletion locations in the context of coding sequence (CDS) and sgRNA guide sequence. The bars can be zoomed in and out by rolling middle mouse key, and moved to the left or right. If the shown guide sequence is not full length, that is because the missed bases happen to be in intronic region. Likewise, if some indel bases are inside intron, they will not be shown in the bars either. Deletion is shown as a curved line bridging intact bases. Insertion is shown as a little line between two bases.  
 
 #### 11. Spreadsheet data: 
 This section presents the data in Excel files for download. The plots in previous sections were generated using the spreadsheet data. 	

@@ -12,7 +12,7 @@ use Util;
 use Data::Dumper;
 
 my %h = get_input();
-
+print STDERR Dumper(\%h) if $h{verbose};
 my $ngs = new NGS(java=>$h{java}, samtools=>$h{samtools},
 		bedtools=>$h{bedtools}, bwa=>$h{bwa},
 		tmpdir=>$h{tmpdir}, verbose=>$h{verbose});
@@ -32,7 +32,10 @@ my $status = $ngs->filter_reads(read1_inf=>$h{read1fastq},
 	read2_inf=>$h{read2fastq},
 	read1_outf=>$read1_outfile,
 	read2_outf=>$read2_outfile,
-	prinseq=>$h{prinseq}
+	prinseq=>$h{prinseq},
+	min_qual_mean=>$h{min_qual_mean},
+	min_len=>$h{min_len},
+	ns_max_p=>$h{ns_max_p}
 	);
 
 if ( $status ) {
@@ -56,7 +59,6 @@ my @bamstats = $ngs->create_bam(sample=>$sample,
 	ref_fasta=>$h{ref_fasta},
 	realign=>$h{realign},
 	picard=>$h{picard},
-	mark_duplicate=>1,
 	remove_duplicate=>$h{unique},
 	chromCount_outfile=>$readchr
 	);
@@ -65,6 +67,7 @@ if ( scalar(@bamstats) == 1 ) {
 	qx(touch $fail_flag);		
 	die "Failed in aligning $sample or gathering its read stats\n"; 
 }
+unlink $ampbed;
 
 ## Count reads in processing stages
 $ngs->readStats(bamstat_aref=>\@bamstats, 
@@ -74,7 +77,8 @@ $ngs->readStats(bamstat_aref=>\@bamstats,
 
 ## Gather variant stats in amplicon.
 $ngs->variantStat (bam_inf=>$bamfile, ref_fasta=>$h{ref_fasta}, 
-	outfile=>$varstat, chr=>$h{chr}, start=>$h{amplicon_start}, 
+	outfile=>$varstat, pysamstats=>$h{pysamstats}, 
+	chr=>$h{chr}, start=>$h{amplicon_start}, 
 	end=>$h{amplicon_end});
 
 if ( !-f $varstat ) {
@@ -95,6 +99,7 @@ for my $target_name ( sort split(/,/, $h{target_names}) ) {
 	$ngs->targetSeq (bam_inf=>$bamfile, min_overlap=>$target_end-$target_start+1, 
 		sample=>$sample, ref_name=>$h{genome}, target_name=>$target_name, 
 		chr=>$chr, target_start=>$target_start, target_end=>$target_end,
+		min_mapq=>$h{min_mapq},
 		outfile_targetSeq=>$tseqfile, 
 		outfile_indelPct=>$pctfile,
 		outfile_indelLen=>$lenfile);
@@ -127,7 +132,7 @@ for my $target_name ( sort split(/,/, $h{target_names}) ) {
 	$cmd = "$h{rscript} $Bin/Rscripts/snp.R --inf=$varstat --outf=$outdir/$sample.$target_name.snp.png";
 	$cmd .= " --outtsv=$outdir/$sample.$target_name.snp";
 	$cmd .= " --sample=$sample --hname=$target_name --hstart=$target_start --hend=$target_end";
-	$cmd .= " --chr=$h{genome} $chr";
+	$cmd .= " --chr=$h{genome} $chr --wing=$h{wing_length}";
 	Util::run($cmd, "Failed to generate base-change plot", $h{verbose}, $fail_flag);
  
 	## create plots of indel length distributions (with and without WT)
@@ -141,7 +146,7 @@ if ( !-f $fail_flag ) {
 }
 
 sub get_input {
-	my $usage = "$0 [options] sampleName read1FastqFile outdir
+	my $usage = "\nUsage: $0 [options] sampleName read1FastqFile outdir
 
 	Fastq files must be gzipped.
 
@@ -201,6 +206,12 @@ sub get_input {
 	die $usage if @ARGV != 3 or $h{help};		
 	($h{sample}, $h{read1fastq}, $h{outdir}) = @ARGV;
 
+	for my $f ( $h{read1fastq}, $h{read2fastq} ) {
+		if ( $f && $f !~ /\.gz$/ ) {
+			die "$f must be gzipped and with .gz extension.\n";
+		}
+	}
+
 	# check required options
 	my @required = ('picard', 'abra', 'prinseq', 
 		'genome', 'idxbase', 'ref_fasta',  
@@ -214,7 +225,8 @@ sub get_input {
 	## set defaults
 	my %defaults = (samtools=>'samtools', java=>'java', bwa=>'bwa', 
 		bedtools=>'bedtools', rscript=>'Rscript', tmpdir=>'/scratch', 
-		min_qual_mean=>30, min_len=>50, ns_max_p=>3, wing_length=>40, min_depth=>1000);
+		pysamstats=>'pysamstats', min_qual_mean=>30, min_len=>50, 
+		ns_max_p=>3, wing_length=>40, min_depth=>1000);
 
 	foreach my $opt ( keys %defaults ) {
 		$h{$opt} = $defaults{$opt} if !defined $h{$opt};

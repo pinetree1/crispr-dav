@@ -180,27 +180,31 @@ sub create_bam {
 		print STDERR "Failed in BWA aligning $h{sample}\n";
 		return ($status);
 	}
-
+	print STDERR "BWA align was sucessful.\n";
+	
 	## Indel realignment 
-	if ( $h{realign_indel} && $h{abra} && $h{target_bed} && $h{ref_fasta} ) {
+	if ( $h{realign} && $h{abra} && $h{target_bed} && $h{ref_fasta} ) {
 		$status = $self->ABRA_realign(bam_inf=>$h{bam_outf}, abra=>$h{abra},
         	target_bed=>$h{target_bed}, ref_fasta=>$h{ref_fasta});
 		if ( $status ) {
 			print STDERR "Failed in ABRA realigning $h{sample}\n";
 			return ($status);
-		}
+		} 
+		print STDERR "ABRA realign was sucessful.\n";
 	}
 
+	my $dupStat = 0;
 	## Mark duplicates
 	if ( $h{mark_duplicate} or $h{remove_duplicate} ) {
+		$dupStat = 1;
 		$status = $self->mark_duplicate(bam_inf=>$h{bam_outf}, picard=>$h{picard});
 		if ( $status ) {
 			print STDERR "Failed in marking duplicates for $h{sample}\n";
 			return ($status);
 		}
 	}
-
-	my @bam_stats = $self->bamReadCount($h{bam_outf});	
+	
+	my @bam_stats = $self->bamReadCount($h{bam_outf}, $dupStat);	
 
 	if ( $h{chromCount_outfile} ) {
 		$self->chromCount(sample=>$h{sample}, bam_inf=>$h{bam_outf}, 
@@ -260,12 +264,51 @@ sub bwa_align {
 	}
 
 	#$cmd .= " |$samtools sort -f - $h{bam_outf} && $samtools index $h{bam_outf}"; # samtools 0.1.9
-	$cmd .= " |$samtools sort -o $h{bam_outf} -O BAM - && $samtools index $h{bam_outf}"; # samtools 1.3.1
+	$cmd .= " |$samtools sort -o $h{bam_outf} -O BAM - "; # samtools 1.3.1
 	$cmd = "($cmd) &> $h{bam_outf}.bwa.log";
 	print STDERR "$cmd\n" if $self->{verbose};
-	return system($cmd);	
+
+	my $status = system($cmd);	
+	if ( $status == 0 ) {
+		$status = $self->clean_header($h{bam_outf});
+	}
+
+	return $status;
 }
 
+=head2 clean_header
+
+ Usage   : clean_header(bam_inf)
+ Function: remove the '-R @RG	ID: ...' from the '@PG	ID:bwa' line as the two IDs clash and caused problem
+           for Picard and ABRA
+ Returns : 
+ Args    : input bam file. The resulting bam file is the same.
+
+=cut
+
+sub clean_header {
+	my ($self, $inbam)=@_;
+	my $header = "$inbam.header";
+	my $samtools = $self->{samtools};
+	qx($samtools view -H $inbam > $header);
+	open(my $inf, $header) or die $!;
+	open(my $outf, ">$header.new") or die $!;
+	while (my $line=<$inf>) {
+		if ( $line =~ /^(\@PG\tID:bwa\tPN:bwa\tVN:\S+)/ ) {
+			print $outf "$1\n";
+		} else {
+			print $outf $line;	
+		}
+	}
+	close $outf;
+
+	# reheader
+	my $cmd = "$samtools reheader $header.new $inbam > $inbam.tmp";
+	$cmd .= " && mv $inbam.tmp $inbam && $samtools index $inbam";
+	$cmd .= " && rm $header && rm $header.new";
+	return system($cmd);
+}
+ 
 =head2 sort_index_bam
 
  Usage   : sort_index_bam(bam_inf=>'x.bam')
@@ -282,18 +325,16 @@ sub sort_index_bam {
 	my $samtools = $self->{samtools};
 	my $cmd;
 	if ( $h{bam_outf} ) {
-		#$cmd = "$samtools sort -f $h{bam_inf} $h{bam_outf}"; # samtools 0.1.9
 		$cmd = "$samtools sort $h{bam_inf} -o $h{bam_outf} -O BAM"; #samtools 1.3.1
 		$cmd .= " && $samtools index $h{bam_outf}"; 
 	} else {
-		$cmd = "mv $h{bam_inf} $h{bam_inf}.tmp";
-		#$cmd .= " && $samtools sort -f $h{bam_inf}.tmp $h{bam_inf}"; #samtools 0.1.9
-		$cmd .= " && $samtools sort -o $h{bam_inf}.tmp -O BAM $h{bam_inf}"; #samtools 1.3.1
+		$cmd = "mv $h{bam_inf} $h{bam_inf}.sort.in";
+		$cmd .= " && $samtools sort -o $h{bam_inf} -O BAM $h{bam_inf}.sort.in"; #samtools 1.3.1
 		$cmd .= " && $samtools index $h{bam_inf}";
-		$cmd .= " && rm $h{bam_inf}.tmp";
+		$cmd .= " && rm $h{bam_inf}.sort.in";
 	}
 
-	print STDERR "$cmd\n" if $self->{verbose};
+	print STDERR "Sort $h{bam_inf}: $cmd\n" if $self->{verbose};
 	return system($cmd);
 }
 
@@ -385,7 +426,7 @@ sub ABRA_realign {
 	my $replace_flag = 0;
 	if ( !$h{bam_outf} ) {
 		$replace_flag = 1;
-		$h{bam_outf} = "$h{bam_inf}.tmp.bam";
+		$h{bam_outf} = "$h{bam_inf}.realign.bam";
 	}
 
 	# ABRA requires that tmpdir does not exist and input bam file is already indexed.
@@ -396,7 +437,11 @@ sub ABRA_realign {
 	$cmd .= " && rm -r $workdir";
 
 	if ( $replace_flag) {
-		$cmd .= " && mv $h{bam_outf} $h{bam_inf}";
+		my $prev_bam = $h{bam_inf};
+		$prev_bam =~ s/\.bam/.preRealign.bam/;
+			 
+		$cmd .= " && mv -f $h{bam_inf} $prev_bam && mv -f $h{bam_inf}.bai $prev_bam.bai";
+		$cmd .= " && mv -f $h{bam_outf} $h{bam_inf}";
 	}
 	
 	$cmd = "($cmd) &> $h{bam_inf}.abra.log";
@@ -463,17 +508,20 @@ sub fastqReadCount {
 =cut
 
 sub bamReadCount {
-	my ($self, $bamfile) = @_;
+	my ($self, $bamfile, $dupStat) = @_;
 	my $cmd = $self->{samtools} . " view -c $bamfile";
 		
 	my $bam_reads = qx($cmd 2>/dev/null);
 	my $mapped_reads = qx($cmd -F 4 2>/dev/null);
-	my $duplicate_reads = qx($cmd -f 1024 2>/dev/null);
 	chomp $bam_reads;
 	chomp $mapped_reads;
-	chomp $duplicate_reads;
-	my $uniq_reads = $mapped_reads - $duplicate_reads;
-
+	my $duplicate_reads = "NA";
+	my $uniq_reads = "NA";
+	if ( $dupStat ) {
+		$duplicate_reads = qx($cmd -f 1024 2>/dev/null);
+		chomp $duplicate_reads;
+		$uniq_reads = $mapped_reads - $duplicate_reads;
+	}
 	return ($bam_reads, $mapped_reads, $duplicate_reads, $uniq_reads);
 }
 
@@ -558,7 +606,8 @@ sub readStats {
 
 	my ($bam_reads, $mapped_reads, $duplicate_reads, $uniq_reads)= @{$h{bamstat_aref}};
 	my $pct_map = $bam_reads > 0 ? sprintf("%.2f", 100*$mapped_reads/$bam_reads) : "NA";
-	my $pct_dup = $bam_reads > 0 ? sprintf("%.2f", 100*$duplicate_reads/$bam_reads) : "NA";
+	my $pct_dup = $bam_reads > 0 && $duplicate_reads ne 'NA'? sprintf("%.2f", 
+		100*$duplicate_reads/$bam_reads) : "NA";
 
 	my $region_reads = "NA";
 	if ( $h{chr} && $h{start} && $h{end} && $h{bam_inf} ) {
@@ -720,6 +769,8 @@ sub targetSeq {
 
 		print $seqf join("\t", @info)  . "\n";
 	} # end while
+	
+	unlink $bedfile;
 
 	return if !$overlap_reads; 
 
@@ -767,7 +818,10 @@ sub extractReadRange {
 	my ($qname, $flag, $refchr, $align_start, $mapq, $cigar, 
 		$mate_chr, $mate_start, $tlen, $seq, $qual ) = split(/\t/, $sam_record);
 
-	return if ($min_mapq && $mapq < $min_mapq);  
+	if ($min_mapq && $mapq < $min_mapq) {
+		print STDERR "Failed min_mapq: $qname, $flag, $refchr, mapq:$mapq.\n";
+		return;
+	} 
 
 	# 101900216:101900224:D:-:101900224:101900225:I:G
 	my $indelstr='';  # position are 1-based. 

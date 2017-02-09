@@ -22,9 +22,6 @@ min_len	= 50
 ns_max_p = 3
 
 [other]
-# Remove duplicates from bam file
-remove_duplicate = N 
-
 # realign for large indel detection
 realign_flag = Y
 

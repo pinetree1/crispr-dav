@@ -119,7 +119,7 @@ The +/- circle image can be clicked to open or close the section.
 
 
 #### 3. Charts for individual sample. 
-Select a sample from the drop-down menu to see related charts for the sample. 
+The allows to show charts of only one sample. 
 
 #### 4. Amplicon coverage: 
 The plots show the read depth in the amplicon range, with grey bar indicating the location of the CRISPR sgRNA region. The minimum depth at boundaries is shown. This value is set in the conf.txt file.

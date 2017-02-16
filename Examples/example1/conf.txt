@@ -1,9 +1,9 @@
 # configuration file template
 
 [genomex]
-ref_fasta = /path/to/genomex.fa
-bwa_idx = /path/to/genomex.fa
-refGene = /path/to/refgenex.txt
+ref_fasta = genome/genomex.fa
+bwa_idx = genome/genomex.fa
+refGene = genome/refgenex.txt
  
 [app]
 prinseq = /path/to/prinseq-lite-0.20.4/prinseq-lite.pl 

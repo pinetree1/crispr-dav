@@ -28,14 +28,23 @@ As root, install perl and python modules
 
 ### 3. Prepare a genome  
 
+In the Examples/example1 provided in the pipeline package, a test genome is already prepared. 
+
+The general steps for preparing a genome are: 
+
 #### A. Prepare fasta file:
 For example, to parepare human genome hg19, download the chromosome sequence files from UCSC browser, combine them (excluding the haplotype and chrUn) into one file, hg19.fa.
 
 #### B. Create bwa index:
+For example, to create bwa index for hg19.fa:  	
+	
 	bwa index hg19.fa 
 
 #### C. Download refGene table: 
 Go to UCSC Genome Broser (http://genome.ucsc.edu/cgi-bin/hgBlat), then click on Tools and select TableBrowser. Select assembly hg19, group: Genes and Gene Predictions, track: RefSeq Genes, table: refGene. Download the file in plain text to the same directory as the genome file.
+
+If the sequence of an amplicon is used as reference, only a fasta file needs to be created if the sequence is all in exons. See the 'Run pipeline' section for more details.  An example is in Examples/example2 in the pipeline package.
+
 
 ## Run pipeline
 

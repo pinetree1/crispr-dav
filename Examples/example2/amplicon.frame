@@ -1,2 +1,0 @@
-#bin	name	chrom	strand	txStart	txEnd	cdsStart	cdsEnd	exonCount	exonStarts	exonEnds
-0	amplicon	amplicon	+	0	738	0	738	1	0	738

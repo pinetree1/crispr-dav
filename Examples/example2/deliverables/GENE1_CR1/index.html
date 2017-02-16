@@ -1,0 +1,71 @@
+<html lang='en'>
+	<head>
+		<meta charset='utf-8'>
+		<script src=assets/crispr.js></script>
+	<body>
+		<h2>Gene: amplicon_CR</h2><p>
+		<table border=1 cellpadding=0 cellspacing=0 style='border-collapse:collapse' width=800>
+			<tr align=center><th>Region</th><th>Reference Version</th><th>Chr</th>
+				<th>Start</th><th>End</th><th>Strand</th><th>CRISPR Sequence</th>
+				<th>HDR Base Changes on + Strand</th></tr>
+			<tr align=center><td>Amplicon</td><td>amplicon</td><td>amplicon</td>
+				<td>1</td><td>738</td><td>+</td><td></td>
+				<td></td></tr>
+			<tr align=center><td>GENE1_CR1</td><td>amplicon</td><td>amplicon</td>
+				<td>563</td> <td>582</td><td>-</td><td>AAGCGATTGCGGCGGCTCAG</td>
+				<td></td></tr>
+		</table>
+
+		<p><b>Read Counts and Percentages at CRISPR Site:</b><a href="javascript:hideshow('rc.div');toggleImg('rc.img')"><img src=assets/minus.jpg width=15 height=15 id='rc.img'></a>
+<div id="rc.div" style="display:block">
+		<table><tr>
+			<td><img src=assets/GENE1_CR1.indelcnt.png /></td>
+			<td><img src=assets/GENE1_CR1.indelpct.png /></td>
+		</tr></table>
+		</div>
+
+		<!--select box for individual sample-->
+		<p><b>Charts for individual sample</b>
+		<select id='select1' onchange='showCharts("GENE1_CR1")'>
+			<option value=''>Select a sample to view</option>
+<option value='s1'>s1</option><option value='s2'>s2</option></select>
+	<p id='charts'></p>
+	<p><b>Preprocessing of Reads: </b><a href="javascript:hideshow('pp.div');toggleImg('pp.img')"><img src=assets/plus.jpg width=15 height=15 id='pp.img'></a>
+<div id="pp.div" style="display:none">
+	<table><tr>
+		<td><img src=assets/GENE1_CR1.readcnt.png></td>
+		<td><img src=assets/GENE1_CR1.readchr.png></td>
+	</tr></table>
+	</div>
+<p><b>Amplicon Coverage (min depth at plot boundaries: 1000):</b><a href="javascript:hideshow('cov.div');toggleImg('cov.img')"><img src=assets/plus.jpg width=15 height=15 id='cov.img'></a>
+<div id="cov.div" style="display:none">
+<table border=0><tr><td><img src=assets/s1.GENE1_CR1.cov.png></td><td><img src=assets/s2.GENE1_CR1.cov.png></td></tr></table></div>
+
+<p><b>Insertion Locations in Amplicon (min depth at plot boundaries: 1000):</b><a href="javascript:hideshow('ins.div');toggleImg('ins.img')"><img src=assets/plus.jpg width=15 height=15 id='ins.img'></a>
+<div id="ins.div" style="display:none">
+<table border=0><tr><td><img src=assets/s1.GENE1_CR1.ins.png></td><td><img src=assets/s2.GENE1_CR1.ins.png></td></tr></table></div>
+
+<p><b>Deletion Locations in Amplicon (min depth at plot boundaries: 1000):</b><a href="javascript:hideshow('del.div');toggleImg('del.img')"><img src=assets/plus.jpg width=15 height=15 id='del.img'></a>
+<div id="del.div" style="display:none">
+<table border=0><tr><td><img src=assets/s1.GENE1_CR1.del.png></td><td><img src=assets/s2.GENE1_CR1.del.png></td></tr></table></div>
+
+<p><b>Indel Length at CRISPR Site:</b><a href="javascript:hideshow('len.div');toggleImg('len.img')"><img src=assets/plus.jpg width=15 height=15 id='len.img'></a>
+<div id="len.div" style="display:none">
+<table border=0><tr><td><img src=assets/s1.GENE1_CR1.len.png></td><td><img src=assets/s1.GENE1_CR1.len2.png></td></tr><tr><td><img src=assets/s2.GENE1_CR1.len.png></td><td><img src=assets/s2.GENE1_CR1.len2.png></td></tr></table></div>
+
+<p><b>SNP Locations around CRISPR Site:</b><a href="javascript:hideshow('snp.div');toggleImg('snp.img')"><img src=assets/plus.jpg width=15 height=15 id='snp.img'></a>
+<div id="snp.div" style="display:none">
+<table border=0><tr><td><img src=assets/s1.GENE1_CR1.snp.png></td></tr><tr><td><img src=assets/s2.GENE1_CR1.snp.png></td></tr></table></div>
+
+<p><b>Visual Alignment of Indel Alleles</b><p>
+
+	  <a href=GENE1_CR1_cx1.html>Alleles with indel &ge; 1%</a><br>
+
+	  <a href=GENE1_CR1_cx0.html>All Alleles</a>
+<p><b>Spreadsheet data:</b><p>
+	<table>
+		<tr><td><a href=assets/GENE1_CR1_cnt.xlsx>Read stats</a></td></tr>
+		<tr><td><a href=assets/GENE1_CR1_pct.xlsx>Indel summary</a></td></tr>
+		<tr><td><a href=assets/GENE1_CR1_len.xlsx>Allele data</a></td></tr>
+		<tr><td><a href=assets/GENE1_CR1_snp.xlsx>SNP data</a></td></tr>
+</table></body></html>

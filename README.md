@@ -99,7 +99,11 @@ All other files and steps are similar to those in example1.
 
 ## Results
 
-Results are available in 'deliverables' directory. Each subdirectory is for a CRISPR site. Results for a CRISPR site are accessable via index.html in the subdirectory. These are the result sections:
+Results are available in 'deliverables' directory. Each subdirectory is for a CRISPR site. Results for a CRISPR site are accessable via index.html in the subdirectory. The html page looks like this:
+![](readme_images/resultpage.png?raw=true)
+
+
+Below are the descriptions for the result sections:
 
 #### 1. Gene: 
 Brief description about the amplicon and CRISPR target.
@@ -111,29 +115,53 @@ The Percentage plot shows the percentage of read types out of total reads, i.e. 
 
 The +/- circle image can be clicked to open or close the section.
 
+![](readme_images/percent.png?raw=true)
+
+
 #### 3. Charts for individual sample. 
 Select a sample from the drop-down menu to see related charts for the sample. 
 
 #### 4. Amplicon coverage: 
 The plots show the read depth in the amplicon range, with grey bar indicating the location of the CRISPR sgRNA region. The minimum depth at boundaries is shown. This value is set in the conf.txt file.
 
+![](readme_images/coverage.png?raw=true)
+
+
 #### 5. Insertion Location in Amplicon: 
 The plots show the insertion rates across the amplicon range. When there is a significant percentage of insertion, the peak should overlap with the location of CRISRP site.
+
+![](readme_images/insertion_survey.png?raw=true)
+
 
 #### 6. Deletion Location in Amplicon: 
 The plots show the deletion rates across the amplicon range. When there is a significant percentage of deletion, the peak should overlap with the location of CRISRP site.
 
+![](readme_images/deletion_survey.png?raw=true)
+
+
 #### 7. Indel Length at CRISPR site: 
 Two plots are shown for each sample. The first plot does not include WT read count, in order to see the reads of insertion and deletion in higher scale. The second plot includes WT. 
+
+![](readme_images/indel_length.png?raw=true)
+
 
 #### 8. SNP Locations around CRISPR site: 
 In a plot, the X axis shows the position and reference base, the bars indicate the point mutation frequencies. sgRNA region is marked with a horizontal bar. The number of bases on the sides of the sgRNA is determined by wing_length in the conf.txt file.
 
+![](readme_images/snp.png?raw=true)
+
+
 #### 9. Homology Directed Repair (HDR) Rates: 
 This section shows the HDR rates. Oligos were categorized into 4 types. The fractions and total reads were plotted. This section appears only when HDR base changes are specified in crispr bed file (site.bed). The desired new bases supplied must be on positive strand.
 
+![](readme_images/hdr.png?raw=true)
+
+
 #### 10. Visual Alignment of Indel Alleles: 
-This section appears only when gene/cds/exon coordinates were provided via refGene parameter in conf.txt or in case of amplicon as reference the amp_frame option was supplied. The image was created with Canvas Xpress (http://canvasxpress.org/html/index.html). It shows insertion and deletion locations in the context of coding sequence (CDS) and sgRNA guide sequence. The bars can be zoomed in and out by rolling middle mouse key, and moved to the left or right. If the shown guide sequence is not full length, that is because the missed bases happen to be in intronic region. Likewise, if some indel bases are inside intron, they will not be shown in the bars either. Deletion is shown as a curved line bridging intact bases. Insertion is shown as a little line between two bases.  
+This section appears only when gene/cds/exon coordinates were provided via refGene parameter in conf.txt or in case of amplicon as reference the amp_frame option was supplied. The image was created with Canvas Xpress (http://canvasxpress.org/html/index.html). It shows insertion and deletion locations in the context of coding sequence (CDS) and sgRNA guide sequence. The bars can be zoomed in and out (by rolling middle mouse key), and moved to the left or right. If the shown guide sequence is not full length, that is because the missed bases happen to be in intronic region. Likewise, if some indel bases are inside intron, they will not be shown in the bars either. Deletion is shown as a curved line bridging intact bases. Insertion is shown as a little line between two bases.  
+
+![](readme_images/allele_view.png?raw=true)
+
 
 #### 11. Spreadsheet data: 
 This section presents the data in Excel files for download. The plots in previous sections were generated using the spreadsheet data. 	

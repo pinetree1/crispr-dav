@@ -140,7 +140,7 @@ The plots show the deletion rates across the amplicon range. When there is a sig
 
 
 #### 7. Indel Length at CRISPR site: 
-Two plots are shown for each sample. The first plot does not include WT read count, in order to see the reads of insertion and deletion in higher scale. The second plot includes WT. 
+Two plots are shown for each sample. The first plot does not include WT read count, in order to see the reads of insertion and deletion in higher scale when the reads are predominantly WT. The second plot includes WT. 
 
 ![](readme_images/indel_length.png?raw=true)
 

@@ -282,14 +282,14 @@ Usage: $0 [options]
         $h{refGene}   = $cfg->{ $h{genome} }{refGene};
     } elsif ( $h{amp_fasta} ) {
         $h{ref_fasta} = "$h{outdir}/amplicon.fa";
-        $h{bwa_idx} = $h{ref_fasta};
+        $h{bwa_idx}   = $h{ref_fasta};
         $h{region}    = "$h{outdir}/amplicon.bed";
 
         # copy to $outdir
         qx(cp $h{amp_fasta} $h{ref_fasta}) if ( !-f $h{ref_fasta} );
 
         # create bwa index
-        qx(bwa index $h{ref_fasta});
+        qx($h{bwa} index $h{ref_fasta});
 
         my ( $seqid, $len ) = getSeqInfo( $h{ref_fasta} );
 		$h{genome} = $seqid;

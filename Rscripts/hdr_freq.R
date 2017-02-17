@@ -66,9 +66,9 @@ p<- ggplot(datm, aes(x=Sample, y=value, fill=variable)) +
 	theme(legend.position="bottom", legend.direction="horizontal",	
 		legend.title = element_text(size=12, face="bold"),
 		legend.text = element_text(size=12, face="bold")) +
-	geom_text(aes(label=ifelse(variable=="PctNonOligo", TotalReads, ''), ymax=100),
+	geom_text(aes(label=ifelse(variable=="PctNonOligo", TotalReads, ' ')),
 		size=4, vjust = -0.5, position = "stack") +
-	geom_text(aes(label=ifelse(variable=="PctPerfectOligo" & value>0.01, value, ''), ymax=value),
+	geom_text(aes(label=ifelse(variable=="PctPerfectOligo" & value>0.01, value, ' ')),
 		size=4, vjust=1, position='stack') +
 	annotate(geom='text', x=1, y=110, label=annot, 
 		family='Times', fontface="plain", hjust=0, vjust=0) +

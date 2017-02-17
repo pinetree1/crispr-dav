@@ -569,8 +569,3 @@ sub checkBedCoord {
 	}
 }
 
-sub check_SGE_setup {
-	if ( !(qx(which qsub 2>/dev/null) && qx(env|grep SGE_ROOT)) ) {
-		die "SGE was not setup. Could not use --sge option.";
-	}	
-}

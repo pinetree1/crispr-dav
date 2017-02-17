@@ -267,6 +267,12 @@ Usage: $0 [options]
         }
     }
 
+	if ( $h{sge} ) {
+		if ( !(qx(which qsub 2>/dev/null) && qx(env|grep SGE_ROOT)) ) {
+			die "SGE was not set up. Could not use --sge option.\n";
+		}	
+	}
+
     $h{canvasXpress} = 1;  # whether to create canvasXpress view of sgRNA on cDNA
 
     if ( $h{genome} ) {
@@ -561,4 +567,10 @@ sub checkBedCoord {
 	if (@errs) {
 		die "$msg:\n" . join("\n", @errs);
 	}
+}
+
+sub check_SGE_setup {
+	if ( !(qx(which qsub 2>/dev/null) && qx(env|grep SGE_ROOT)) ) {
+		die "SGE was not setup. Could not use --sge option.";
+	}	
 }

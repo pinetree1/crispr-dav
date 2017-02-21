@@ -4,7 +4,7 @@
 
 ### 1. Clone the CRISPR pipeline repository:
 
-    git clone git@biogit.pri.bms.com:wangx112/crispr.git 
+    git clone https://biogit.pri.bms.com/wangx112/crispr.git 
 
 ### 2. Install required tools: 
 

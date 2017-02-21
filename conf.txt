@@ -22,7 +22,7 @@ min_len	= 50
 ns_max_p = 3
 
 [other]
-# realign for large indel detection
+# realign for large indel detection: Y or N
 realign_flag = Y
 
 # require BWA mapping quality score when selecting mapped reads

@@ -36,3 +36,6 @@ wing_length = 40
 
 ## tmp directory for picard sorting 
 tmpdir = /tmp
+
+## number of cores in SGE per job 
+cores_per_job = 2

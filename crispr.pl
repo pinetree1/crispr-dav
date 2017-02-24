@@ -35,7 +35,7 @@ sub process_samples {
         my $cmd = prepareCommand($sample);
         if ( $h{sge} ) {
             my $jobname = Util::getJobName( $sample, "CR", "$i" );
-            $cmd = "qsub -cwd -V -o $h{align_dir}/$sample.log -j y -b y -N $jobname $cmd";
+            $cmd = "qsub -cwd -pe orte $h{cores_per_job} -V -o $h{align_dir}/$sample.log -j y -b y -N $jobname $cmd";
             print STDERR "$cmd\n" if $h{verbose};
             if ( system($cmd) != 0 ) {
 				die "Failed to submit job for $sample\n";
@@ -346,6 +346,7 @@ Usage: $0 [options]
 	$h{min_depth}        = $cfg->{other}{min_depth};
     $h{tmpdir}           = $cfg->{other}{tmpdir};
     $h{wing_length}      = $cfg->{other}{wing_length};
+	$h{cores_per_job}    = $cfg->{other}{cores_per_job};
 
     # Defaults:
     $h{remove_duplicate} //= "N";
@@ -354,6 +355,7 @@ Usage: $0 [options]
 	$h{min_depth}        //= 1000;
     $h{tmpdir}           //= "/tmp";
     $h{wing_length}      //= 40;
+	$h{cores_per_job}    //= 2;
 
     ## Directories
     $h{align_dir} = "$h{outdir}/align";

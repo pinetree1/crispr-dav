@@ -70,7 +70,7 @@ p<- ggplot(datm, aes(x=Sample, y=value, fill=variable)) +
 		size=4, vjust = -0.5, position = "stack") +
 	geom_text(aes(label=ifelse(variable=="PctPerfectOligo" & value>0.01, value, ' ')),
 		size=4, vjust=1, position='stack') +
-	annotate(geom='text', x=1, y=110, label=annot, 
+	annotate(geom='text', x=1, y=110, label=annot, size=4, 
 		family='Times', fontface="plain", hjust=0, vjust=0) +
 	labs(x='Sample', y='% Reads', title=mtitle) +
 	customize_title_axis(angle=45)

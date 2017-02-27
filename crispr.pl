@@ -155,7 +155,7 @@ sub prepareCommand {
     my $cmd = "$Bin/sample.pl $sample $fastqs[0] $h{align_dir}";
     $cmd .= " --read2fastq $fastqs[1]" if $fastqs[1];
 
-    $cmd .= " --picard $h{picard} --abra $h{abra} --prinseq $h{prinseq}";
+    $cmd .= " --abra $h{abra} --prinseq $h{prinseq}";
 	$cmd .= " --samtools $h{samtools} --bwa $h{bwa} --java $h{java} --bedtools $h{bedtools}";
 	$cmd .= " --pysamstats $h{pysamstats} --rscript $h{rscript} --tmpdir $h{tmpdir}";
 	$cmd .= " --min_qual_mean $h{min_qual_mean} --min_len $h{min_len}"; 
@@ -255,7 +255,7 @@ Usage: $0 [options]
 
     ## tools
     foreach my $tool (
-        "picard", "abra", "prinseq",  "samtools",
+        "abra", "prinseq",  "samtools",
         "bwa",    "java", "bedtools", "pysamstats",
         "rscript"
       )

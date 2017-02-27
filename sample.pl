@@ -213,7 +213,7 @@ sub get_input {
 	}
 
 	# check required options
-	my @required = ('picard', 'abra', 'prinseq', 
+	my @required = ('abra', 'prinseq', 
 		'genome', 'idxbase', 'ref_fasta',  
 		'chr', 'amplicon_start', 'amplicon_end', 
 		'target_bed', 'target_names');

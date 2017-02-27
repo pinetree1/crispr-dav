@@ -37,17 +37,6 @@ else
 	echo "Successfully installed prinseq"
 fi
 
-## Picard
-echo Installing Picard ...
-url=https://sourceforge.net/projects/picard/files/picard-tools/1.119/picard-tools-1.119.zip/download
-(cd $dir && wget $url $opt && unzip picard-tools-1.119.zip) &>picard.log
-
-if [ ! -s "picard-tools-1.119/MarkDuplicates.jar" ]; then 
-	echo "Failed to install Picard"
-else
-	echo "Successfully installed Picard"
-fi
-
 ## R
 echo Installing R ...
 url=https://cran.r-project.org/src/base/R-3/R-3.2.1.tar.gz

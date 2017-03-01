@@ -154,7 +154,7 @@ sub prepareCommand {
 
     my $cmd = "$Bin/sample.pl $sample $fastqs[0] $h{align_dir}";
     $cmd .= " --read2fastq $fastqs[1]" if $fastqs[1];
-
+	$cmd .= " --picard $h{picard}" if $h{picard};
     $cmd .= " --abra $h{abra} --prinseq $h{prinseq}";
 	$cmd .= " --samtools $h{samtools} --bwa $h{bwa} --java $h{java} --bedtools $h{bedtools}";
 	$cmd .= " --pysamstats $h{pysamstats} --rscript $h{rscript} --tmpdir $h{tmpdir}";
@@ -266,6 +266,10 @@ Usage: $0 [options]
             die "Could not find $tool info in configuration file!\n";
         }
     }
+
+	if ( $cfg->{app}{picard} ) {
+		$h{picard} = $cfg->{app}{picard};
+	}
 
 	if ( $h{sge} ) {
 		if ( !(qx(which qsub 2>/dev/null) && qx(env|grep SGE_ROOT)) ) {

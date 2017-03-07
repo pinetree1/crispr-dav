@@ -61,9 +61,16 @@ annot <- 'Total number of reads spanning HDR mutations'
 
 datm <- melt(dat, id.vars=c('Sample', 'TotalReads'), measure.vars=vnames)
 
+limit_y=115
+annot_y=111
+if (high_res) {
+	limit_y=120
+	annot_y=115
+}
+
 p<- ggplot(datm, aes(x=Sample, y=value, fill=variable)) + 
 	theme_bw() + 
-	scale_y_continuous(breaks=c(0,25,50,75,100), limits=c(0,110)) +
+	scale_y_continuous(breaks=c(0,25,50,75,100), limits=c(0,limit_y)) +
 	geom_bar(stat='identity', width=0.3) +
 	scale_fill_discrete(name="Oligo Type: ", breaks=vnames, labels=vlabels) +
 	theme(legend.position="bottom", legend.direction="horizontal",	
@@ -73,7 +80,7 @@ p<- ggplot(datm, aes(x=Sample, y=value, fill=variable)) +
 		size=4, vjust = -0.5, position = "stack") +
 	geom_text(aes(label=ifelse(variable=="PctPerfectOligo" & value>0.01, value, ' ')),
 		size=4, vjust=1, position='stack') +
-	annotate(geom='text', x=1, y=107, label=annot, size=5, 
+	annotate(geom='text', x=1, y=annot_y, label=annot, size=5, 
 		family='Times', fontface="plain", hjust=0, vjust=0) +
 	labs(x='Sample', y='% Reads', title=mtitle) +
 	customize_title_axis(angle=45)

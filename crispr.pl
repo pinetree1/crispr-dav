@@ -75,6 +75,7 @@ sub crispr_data {
     my $dir       = $h{align_dir};
     my $hasHeader = 1;
     my @crisprs   = sort keys %{ $h{crispr_samples} };
+	my $plot_ext  = $h{high_res} ? "tif" : "png";
 
     foreach my $crispr (@crisprs) {
         my $dest = "$h{deliv_dir}/$crispr/assets";
@@ -105,19 +106,24 @@ sub crispr_data {
             }
 
             if ( $ext eq 'cnt' ) {
-                my $cmd = "$h{rscript} $Bin/Rscripts/read_stats.R --inf=$outfile --outf=$dest/$crispr.readcnt.png";
-                $cmd .= " --rmd=$h{remove_duplicate}";
+                my $cmd = "$h{rscript} $Bin/Rscripts/read_stats.R --inf=$outfile";
+				$cmd .= " --outf=$dest/$crispr.readcnt.$plot_ext --rmd=$h{remove_duplicate}";
+				$cmd .= " --high_res=$h{high_res}";
                 Util::run( $cmd, "Failed to create plot of read stats", $h{verbose} );
             } elsif ( $ext eq 'chr' ) {
-                my $cmd = "$h{rscript} $Bin/Rscripts/read_chr.R $outfile $dest/$crispr.readchr.png";
+                my $cmd = "$h{rscript} $Bin/Rscripts/read_chr.R --inf=$outfile";
+				$cmd .= " --high_res=$h{high_res} --outf=$dest/$crispr.readchr.$plot_ext";
                 Util::run( $cmd, "Failed to create plot of read count on chromosomes", $h{verbose} );
             } elsif ( $ext eq "pct" ) {
                 # create plots for indel count and pct
-                my $cmd = "$h{rscript} $Bin/Rscripts/indel.R $outfile $dest/$crispr.indelcnt.png $dest/$crispr.indelpct.png";
+                my $cmd = "$h{rscript} $Bin/Rscripts/indel.R --inf=$outfile ";
+				$cmd .=" --high_res=$h{high_res} --cntf=$dest/$crispr.indelcnt.$plot_ext";
+				$cmd .= " --pctf=$dest/$crispr.indelpct.$plot_ext";
                 Util::run( $cmd, "Failed to create indel count/pct plots", $h{verbose} );
             } elsif ( $ext eq "hdr" and $hdr_bases ) {
                 # create HDR plot
-                my $cmd = "$h{rscript} $Bin/Rscripts/hdr_freq.R --inf=$outfile --sub=$crispr --outf=$dest/$crispr.hdr.png";
+                my $cmd = "$h{rscript} $Bin/Rscripts/hdr_freq.R --inf=$outfile --sub=$crispr";
+				$cmd .= " --high_res=$h{high_res} --outf=$dest/$crispr.hdr.$plot_ext";
                 Util::run( $cmd, "Failed to create HDR plot", $h{verbose} );
             } elsif ( $ext eq "can" ) {
                 # create canvasXpress alignment html file
@@ -128,11 +134,11 @@ sub crispr_data {
             }
         } # ext
 
-        ## move the png files for individual sample to dest
+        ## move the image files for individual sample to dest
         foreach my $s (@samp) {
-            my @pngs = glob("$h{align_dir}/$s.$crispr.*.png");
-            next if !@pngs;
-            my $str = join( " ", @pngs );
+            my @plots = glob("$h{align_dir}/$s.$crispr.*.$plot_ext");
+            next if !@plots;
+            my $str = join( " ", @plots );
             qx(mv -f $str $dest);
         }
 
@@ -140,6 +146,7 @@ sub crispr_data {
         my $cmd = "$Bin/resultPage.pl --ref $h{genome} --gene $h{gene_sym}";
         $cmd .= " --region $h{region} --crispr $h{crispr} --cname $crispr";
         $cmd .= " --nocx" if !$h{canvasXpress};
+		$cmd .= " --high_res" if $h{high_res};
         $cmd .= " --min_depth $h{min_depth} $h{align_dir} $h{deliv_dir}";
         Util::run( $cmd, "Failed to create results html page", $h{verbose} );
     } # crispr
@@ -174,7 +181,8 @@ sub prepareCommand {
 	$cmd .= " --amplicon_end $h{amplicon_end} --target_bed $h{crispr}"; 
 	$cmd .= " --target_names $crispr_names --wing_length $h{wing_length}";
 	$cmd .= " --min_depth $h{min_depth}";
-    $cmd .= " --nocx"    if !$h{canvasXpress};
+    $cmd .= " --nocx" if !$h{canvasXpress};
+	$cmd .= " --high_res" if $h{high_res};
     $cmd .= " --verbose" if $h{verbose};
 
     return $cmd;
@@ -351,6 +359,7 @@ Usage: $0 [options]
     $h{tmpdir}           = $cfg->{other}{tmpdir};
     $h{wing_length}      = $cfg->{other}{wing_length};
 	$h{cores_per_job}    = $cfg->{other}{cores_per_job};
+	$h{high_res}         = $cfg->{other}{high_res};
 
     # Defaults:
     $h{remove_duplicate} //= "N";
@@ -360,6 +369,7 @@ Usage: $0 [options]
     $h{tmpdir}           //= "/tmp";
     $h{wing_length}      //= 40;
 	$h{cores_per_job}    //= 2;
+	$h{high_res}         //= 0;
 
     ## Directories
     $h{align_dir} = "$h{outdir}/align";

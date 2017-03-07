@@ -6,6 +6,8 @@ options(scipen=999)
 
 args<- commandArgs(trailingOnly=FALSE)
 script.name<- sub("--file=", "", args[grep("--file=", args)])
+script.path <- dirname(script.name)
+source(file.path(script.path, "func.R"))
 
 args <- commandArgs(trailingOnly=TRUE)
 if(length(args) < 1) {
@@ -22,7 +24,8 @@ if ( "--help" %in% args ) {
 	--hend=highlight region end position, e.g. sgRNA end position. Required.
 	--hname=name of highlight region, e.g. sgRNA. Required 
 	--wing=number of bases on each site of sgRNA to see snp. Default: 50
-	--outf=output png file. Required.
+    --high_res=1 or 0. 1-create high resolution .tif image. 0-create png file.
+	--outf=output plot file. Required.
 	--outtsv=output tsv file. Required.
 	--help Print this message
 	"))
@@ -58,6 +61,7 @@ if (!is.null(argsL$wing)) {
 
 #cat(infile, "hstart:", hstart, "hend:", hend, "chr:", chr)
 if (file.exists(infile)==FALSE) exit(paste("Can not find", infile))
+high_res = ifelse(is.null(argsL$high_res), 0, as.numeric(argsL$high_res))
 
 dat <- read.table(infile, sep="\t", header=TRUE, stringsAsFactors=FALSE)
 
@@ -140,9 +144,17 @@ p<- p + geom_segment(aes(x=hstart_x, y=guide_y, xend=hend_x, yend=guide_y)) +
 	family='Times', fontface="bold")
 
 
-wt <- 12*nrow(dat)
-ht <- 500
-png(filename=outfile, width=wt, height=ht)
+if ( high_res ) {
+	ht <- 4
+	wt <- 0.1*nrow(dat)
+	if (wt < 5) { wt = 5 }
+	tiff(filename=outfile, width=wt, height=ht, units='in', res=1200)
+} else {
+	wt <- 12*nrow(dat)
+	ht <- 400
+	png(filename=outfile, width=wt, height=ht)
+}
+
 print(p)
 invisible(dev.off())
 

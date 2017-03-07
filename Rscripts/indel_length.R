@@ -9,16 +9,36 @@ script.path <- dirname(script.name)
 source(file.path(script.path, "func.R"))
 
 args <- commandArgs(trailingOnly=TRUE)
+if(length(args) < 1) {
+  args <- c("--help")
+}
 
-if (length(args) != 3) {
-	exit(paste("Usage:", script.name, "{input indel detail file for single sample, e.g, <sample>.<site>.len}", 
-		"{output image png filename}", "{output image png filename2 with WT shown}"))
+## Help section
+if("--help" %in% args) {
+  exit(cat( script.name, "
+      Arguments:
+      --inf=input indel detail file for single sample, e.g, <sample>.<site>.len. Required.
+      --high_res=1 or 0. 1-create high resolution .tif image. 0-create png file.
+      --outf=output image file. Required.
+      --outf2=output image file with WT shown. Required.
+      --help    Print this message
+  "))
+}
+
+## Parse arguments (we expect the form --arg=value)
+parseArgs <- function(x) strsplit(sub("^--", "", x), "=")
+argsDF <- as.data.frame(do.call("rbind", parseArgs(args)))
+argsL <- as.list(as.character(argsDF$V2))
+names(argsL) <- argsDF$V1
+if ( is.null(argsL$inf) | is.null(argsL$outf) | is.null(argsL$outf2) ) {
+    exit("Missing required argument")
 }
 
 ## set the output file name and path
-infile<-args[1]
-outfile <- args[2]
-outfile2 <- args[3]
+infile<- argsL$inf
+outfile <- argsL$outf 
+outfile2 <- argsL$outf2 
+high_res = ifelse(is.null(argsL$high_res), 0, as.numeric(argsL$high_res))
 
 if (file.exists(infile)==FALSE) exit(paste("Could not find", infile))
 ## create the plot
@@ -32,7 +52,7 @@ if ( nrow(dat1)==0 ) {
 xlabel = "Indel Length (<0:Deletion, >0:Insertion)"
 xlabel2 = "Indel Length (<0:Deletion, 0:WT, >0:Insertion)"
 
-create_plot <- function(data, xlab, pngfile) {
+create_plot <- function(data, xlab, imgfile) {
 	samplename <- data$Sample[1]  
 
 	ag <- aggregate(data$ReadCount, by=list(data$IndelLength), FUN=sum)
@@ -51,10 +71,16 @@ create_plot <- function(data, xlab, pngfile) {
 	ag <- ag[with(ag, order(freq, decreasing=TRUE)), ][(1:n),]	
 
 	# number of indel lengths
-	h<-500
-	w<- ifelse(n>40, 13*n, h)
+	if ( high_res ) {
+        h<-4
+        w<-ifelse(n>40, 0.13*n, h*1.25)
+        tiff(filename=imgfile, width=w, height=h, units='in', res=1200)
+	} else {
+		h<-400
+		w<- ifelse(n>40, 13*n, h*1.25)
+		png(filename=imgfile, height=h, width=w)
+	}
 
-	png(filename=pngfile, height=h, width=w)
 	on.exit(dev.off())
 
 	p<-ggplot(ag, aes(x=factor(bin), y=freq)) +

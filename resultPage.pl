@@ -16,11 +16,12 @@ my $usage = "Usage: $0 [option] indir outdir
 	--cname   <str> Name of CRISPR site. Optional. 
 	--min_depth  min depth marking the boundaries in amplicon plots. Default: 1000
 	--nocx    Do not to create canvasXpress alignment view 
-	indir	input directory where result files (e.g. png files) are. 
+	--high_res	High resolution tiff image was created.	
+	indir	input directory where result files (e.g. plot image files) are. 
 	outdir	output directory 
 ";
 my %h;
-GetOptions(\%h, 'ref=s', 'region=s',  'crispr=s', 'gene=s', 'cname=s', 'min_depth=i', 'nocx');
+GetOptions(\%h, 'ref=s', 'region=s',  'crispr=s', 'gene=s', 'cname=s', 'min_depth=i', 'nocx', 'high_res');
 	
 die $usage if ( @ARGV != 2);
 my ($indir, $outdir)=@ARGV;
@@ -50,6 +51,8 @@ open(my $fh, ">$page") or die $!;
 my $rc_tog = getToggleLink("rc");  ## read count
 my $pp_tog = getToggleLink("pp", 1); ## preprocessing
 
+my $plot_ext = $h{high_res} ? "tif" : "png";
+
 print $fh "<html lang='en'>
 	<head>
 		<meta charset='utf-8'>
@@ -67,11 +70,11 @@ print $fh "<html lang='en'>
 				<td>$start</td> <td>$end</td><td>$strand</td><td>$seq</td>
 				<td>$hdr</td></tr>
 		</table>
-
+		<div id='high_res' style='display:none'>$h{high_res}</div>
 		<p><b>Read Counts and Percentages at CRISPR Site:</b>$rc_tog
 		<table><tr>
-			<td><img src=assets/$site_name.indelcnt.png /></td>$rowsep
-			<td><img src=assets/$site_name.indelpct.png /></td>
+			<td><img src=assets/$site_name.indelcnt.$plot_ext /></td>$rowsep
+			<td><img src=assets/$site_name.indelpct.$plot_ext /></td>
 		</tr></table>
 		</div>
 
@@ -88,8 +91,8 @@ print $fh "</select>
 	<p id='charts'></p>
 	<p><b>Preprocessing of Reads: </b>$pp_tog
 	<table><tr>
-		<td><img src=assets/$site_name.readcnt.png></td>$rowsep
-		<td><img src=assets/$site_name.readchr.png></td>
+		<td><img src=assets/$site_name.readcnt.$plot_ext></td>$rowsep
+		<td><img src=assets/$site_name.readchr.$plot_ext></td>
 	</tr></table>
 	</div>
 ";
@@ -105,7 +108,7 @@ my %category_header=("len"=>"Indel Length at CRISPR Site",
 	
 my @cats=("cov", "ins", "del", "len", "snp");
 foreach my $cat (@cats) {
-	my $tab = getCategoryTable($cat);
+	my $tab = getCategoryTable($cat, $plot_ext);
 	my $tog = getToggleLink($cat, 1);
 	print $fh "<p><b>$category_header{$cat}:</b>$tog\n$tab</div>\n\n";
 }
@@ -124,7 +127,7 @@ if ( $hdr ) {
         <tr><td>Non-Oligo: None of the intended base changes occurs, regardless of indel.</td></tr>
 
 		<tr>
-			<td><img src=assets/$site_name.hdr.png /></td>$rowsep
+			<td><img src=assets/$site_name.hdr.$plot_ext /></td>$rowsep
 		</tr>
 		</table>
 	</div>
@@ -157,22 +160,22 @@ close $fh;
 ## return a category's html table of assets of all samples
 # input: extension of plots, like len.png for length distribution plot
 sub getCategoryTable { 
-	my $cat = shift;
+	my ($cat, $plot_ext) = @_;
 	my $i=0;
 	my $CELLS =  $cat eq "snp" ? 1 : 2; # number of cells per row
 	my $tab="<table border=0>";
 	foreach my $s ( @samples ) {
-		my $img = "$sitedir/assets/$s.$site_name.$cat.png";
+		my $img = "$sitedir/assets/$s.$site_name.$cat.$plot_ext";
 		next if !-f $img;
 		if ( $i % $CELLS == 0 ) {
 			$tab .="</tr>" if ($i);
 			$tab .="<tr>";
 		} 
 		
-		$tab .= "<td><img src=assets/$s.$site_name.$cat.png></td>";
+		$tab .= "<td><img src=assets/$s.$site_name.$cat.$plot_ext></td>";
 		$i++;
 		if ( $cat eq "len" ) {
-			$tab .= "<td><img src=assets/$s.$site_name.${cat}2.png></td>";
+			$tab .= "<td><img src=assets/$s.$site_name.${cat}2.$plot_ext></td>";
 			$i++;
 		}
 	}

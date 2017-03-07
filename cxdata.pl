@@ -158,6 +158,8 @@ sub getCrisprInfo {
 	my $site_name = $a[1];
 	my ($chr, $guide_start, $guide_end) = split(/[:-]/, $a[2]);
 	close $fh;
+	
+	die "Error: No data in $file\n" if !$sample;
 
 	return ( $sample, $site_name, $chr, $guide_start, $guide_end);	
 }

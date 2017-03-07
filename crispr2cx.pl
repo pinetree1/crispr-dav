@@ -436,6 +436,7 @@ sub cx_panel {
             # $track->{trackNameFontColor} = $tc;
             my $alpha = $perc ? (0.15 + 0.017 * $perc) : 1;
             $alpha = 1 if ($alpha > 1);
+			$alpha = 1;	# xw disabled gradient
             $bar->{featureNameFontColor} = sprintf("rgba(%s,%0.2f)", $tc, $alpha);
         }
         # push @{$tracks}, $track;

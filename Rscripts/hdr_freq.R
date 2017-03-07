@@ -17,7 +17,8 @@ if("--help" %in% args) {
       Arguments:
       --inf=HDR stat file, e.g. TGFBR1_CR1_hdr_stat.txt. Required.
       --sub=subtitle. Use quote if there are spaces.Optional.
-      --outf=ouput png file. Required.
+      --high_res=1 or 0. 1-create high resolution .tif image. 0-create png file.
+      --outf=ouput image file. Required.
       --help    Print this message
     "))
 }
@@ -44,6 +45,8 @@ mtitle <- 'HDR Oligo Frequencies'
 if ( !is.null(argsL$sub) ) {
     mtitle <- paste0(mtitle, "\n", argsL$sub)
 }
+
+high_res = ifelse(is.null(argsL$high_res), 0, as.numeric(argsL$high_res))
  
 ## read data file 
 dat <- read.table(file=infile, sep="\t", header=TRUE )
@@ -70,16 +73,22 @@ p<- ggplot(datm, aes(x=Sample, y=value, fill=variable)) +
 		size=4, vjust = -0.5, position = "stack") +
 	geom_text(aes(label=ifelse(variable=="PctPerfectOligo" & value>0.01, value, ' ')),
 		size=4, vjust=1, position='stack') +
-	annotate(geom='text', x=1, y=110, label=annot, size=4, 
+	annotate(geom='text', x=1, y=107, label=annot, size=5, 
 		family='Times', fontface="plain", hjust=0, vjust=0) +
 	labs(x='Sample', y='% Reads', title=mtitle) +
 	customize_title_axis(angle=45)
 
 
-h<-500
-barspace=60
-w<- ifelse( n*barspace<h, h, n*barspace)
+if ( high_res ) {
+	h <- 4.5
+	w <- ifelse(n<10, h*1.25, n*h*0.125)
+	tiff(filename=outfile, width=w, height=h, units='in', res=1200)
+} else {
+	h<-400
+	barspace=60
+	w<- ifelse( n*barspace<h, h, n*barspace)
+	png(filename=outfile, width=w, height=h)
+}
 
-png(filename=outfile, height=h, width=w)
 print(p)
 invisible(dev.off())

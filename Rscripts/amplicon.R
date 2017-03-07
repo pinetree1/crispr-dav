@@ -25,7 +25,8 @@ if("--help" %in% args) {
       --hend=highlight region end position, e.g. sgRNA end position. Optional.
       --type=type of data: coverage, insertion, deletion. Optional. All types will be plotted by default. 
       --chr=chromosome name, e.g. 'hg19 chr3'. Optional.
-      --outf=ouput png file prefix. Required. Extension(.cov.png, .ins.png, .del.png) will be added. 
+      --outf=ouput image file prefix. Required. Extension, e.g. .cov.png/tif will be added. 
+      --high_res=1 or 0. 1-create high resolution .tif image. 0-create png file.
       --min_depth=min depth marking the start and end of amplicon region. Default: 1000
       --help 	Print this message
 	"))
@@ -57,6 +58,9 @@ if (!is.null(argsL$hstart)) {
 	}
 }
 
+high_res = ifelse( is.null(argsL$high_res), 0, as.numeric(argsL$high_res))
+plot_ext = ifelse( high_res==1, ".tif", ".png")
+
 ## read data
 dat <- read.table(infile, header=TRUE, sep="\t")
 if ( nrow(dat)== 0 ) { 
@@ -86,9 +90,6 @@ create_plot <- function (dat, ycol, xtitle, ytitle, mtitle, outfile,
 	hstart, hend, hname ) {
 
 	## create the plot
-	wt <- 500
-	ht <- 600
-
 	p<- ggplot(dat, aes(x=pos, y=dat[,ycol]), environment = environment() ) + 
 		geom_line(color="blue") + 
 		theme_bw() +
@@ -107,7 +108,11 @@ create_plot <- function (dat, ycol, xtitle, ytitle, mtitle, outfile,
 			)	
 	}
 
-	png(filename=outfile, width=wt, height=ht)
+	if ( high_res ) {
+		tiff(filename=outfile, width=5, height=4, units='in', res=1200)	
+	} else {
+		png(filename=outfile, width=500, height=400)
+	}
 	on.exit(dev.off())
 	print(p)
 }
@@ -120,7 +125,7 @@ if ( type %in% c("all", "coverage") ) {
 	mtitle <- getMainTitle("Depth of Coverage", sub_title)
 	ytitle <- "Read Depths"
 	ycol <- "reads_all"   # y column name
-	outfile <- paste0(prefix, '.cov.png') 
+	outfile <- paste0(prefix, '.cov', plot_ext) 
 	create_plot (dat2, ycol, xtitle, ytitle, mtitle, outfile, hstart, hend, hname) 
 }
 
@@ -129,7 +134,7 @@ if (type %in% c('all', 'insertion')){
 	ytitle <- "Insertion Read %"
 	ycol <- "PctInsertion"
 	dat2[[ycol]] <- dat2$insertions/dat2$reads_all * 100
-	outfile <- paste0(prefix, '.ins.png')
+	outfile <- paste0(prefix, '.ins', plot_ext)
 	create_plot (dat2, ycol, xtitle, ytitle, mtitle, outfile, hstart, hend, hname)
 } 
 
@@ -138,7 +143,7 @@ if ( type %in% c('all', 'deletion') ) {
 	ytitle <- "Deletion Read %"
 	ycol <- "PctDeletion"
 	dat2[[ycol]] <- dat2$deletions/dat2$reads_all * 100
-	outfile <- paste0(prefix, '.del.png')
+	outfile <- paste0(prefix, '.del', plot_ext)
 	create_plot (dat2, ycol, xtitle, ytitle, mtitle, outfile, hstart, hend, hname)
 } 
 

@@ -86,6 +86,7 @@ if ( !-f $varstat ) {
 	die "Failed in gathering variant stats\n";
 }
 
+my $plot_ext = $h{high_res} ? "tif" : "png";
 ## Determine indel pct and length in each CRISPR site
 for my $target_name ( sort split(/,/, $h{target_names}) ) {
 	## For target and indels
@@ -125,19 +126,20 @@ for my $target_name ( sort split(/,/, $h{target_names}) ) {
 	## create plots of coverage, insertion and deletion on amplicon
 	my $cmd = "$h{rscript} $Bin/Rscripts/amplicon.R --inf=$varstat --outf=$outdir/$sample.$target_name";
 	$cmd .= " --sub=$sample --hname=$target_name --hstart=$target_start --hend=$target_end";
-	$cmd .= " --chr=$h{genome} $chr --min_depth=$h{min_depth}";	
+	$cmd .= " --chr=$h{genome} $chr --min_depth=$h{min_depth} --high_res=$h{high_res}";	
 	Util::run($cmd, "Failed to generate amplicon-wide plots", $h{verbose}, $fail_flag);
 
 	## create a plot of base changes in crispr site and surronding regions
-	$cmd = "$h{rscript} $Bin/Rscripts/snp.R --inf=$varstat --outf=$outdir/$sample.$target_name.snp.png";
+	$cmd = "$h{rscript} $Bin/Rscripts/snp.R --inf=$varstat --outf=$outdir/$sample.$target_name.snp.$plot_ext";
 	$cmd .= " --outtsv=$outdir/$sample.$target_name.snp";
 	$cmd .= " --sample=$sample --hname=$target_name --hstart=$target_start --hend=$target_end";
-	$cmd .= " --chr=$h{genome} $chr --wing=$h{wing_length}";
+	$cmd .= " --chr=$h{genome} $chr --wing=$h{wing_length} --high_res=$h{high_res}";
 	Util::run($cmd, "Failed to generate base-change plot", $h{verbose}, $fail_flag);
  
 	## create plots of indel length distributions (with and without WT)
-	$cmd = "$h{rscript} $Bin/Rscripts/indel_length.R $lenfile $outdir/$sample.$target_name.len.png";
-	$cmd .= " $outdir/$sample.$target_name.len2.png";
+	$cmd = "$h{rscript} $Bin/Rscripts/indel_length.R --inf=$lenfile --high_res=$h{high_res}";
+	$cmd .= " --outf=$outdir/$sample.$target_name.len.$plot_ext";
+	$cmd .= " --outf2=$outdir/$sample.$target_name.len2.$plot_ext";
 	Util::run($cmd, "Failed to generate indel length distribution plots", $h{verbose}, $fail_flag); 
 }
 
@@ -189,6 +191,7 @@ sub get_input {
 	--wing_length    <int> Number of bases on each side of CRISPR to show SNP. Default: 50
 	--nocx           Do not create canvasXpress alignment data 
 	--min_depth      min depth marking the boundaries in amplicon plots. Default: 1000 	
+    --high_res       Create high resolution tiff file.
 	--verbose        Optional. For debugging.	
 	--help           Optional. To show this message
 ";
@@ -201,11 +204,11 @@ sub get_input {
 		'genome=s', 'idxbase=s', 'ref_fasta=s', 'refGene=s', 'geneid=s',
 		'chr=s', 'amplicon_start=i', 'amplicon_end=i',
 		'target_bed=s', 'target_names=s', 
-		'wing_length=s', 'min_depth=i', 'nocx', 'verbose', 'help');
+		'wing_length=s', 'min_depth=i', 'nocx', 'high_res', 'verbose', 'help');
 
 	die $usage if @ARGV != 3 or $h{help};		
 	($h{sample}, $h{read1fastq}, $h{outdir}) = @ARGV;
-
+	
 	for my $f ( $h{read1fastq}, $h{read2fastq} ) {
 		if ( $f && $f !~ /\.gz$/ ) {
 			die "$f must be gzipped and with .gz extension.\n";
@@ -231,6 +234,8 @@ sub get_input {
 	foreach my $opt ( keys %defaults ) {
 		$h{$opt} = $defaults{$opt} if !defined $h{$opt};
 	}	
+
+	$h{high_res} //= 0;
 
 	return %h;
 }

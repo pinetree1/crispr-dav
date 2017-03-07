@@ -11,16 +11,35 @@ script.path <- dirname(script.name)
 source(file.path(script.path, "func.R"))
 
 args <- commandArgs(trailingOnly=TRUE)
+if(length(args) < 1) {
+  args <- c("--help")
+}
 
-if (length(args) != 2) {
-	cat(paste("Usage:", script.name, "{chr count file} {output image png file}\n"))
-	cat("\tThe input file is a tsv file with header: Sample, Chromosome, ReadCount\n")
-	q()
+## Help section
+if("--help" %in% args) {
+  exit(cat( script.name, "
+      Arguments:
+      --inf=chr count tsv file with header: Sample, Chromosome, ReadCount. Required.
+      --high_res=1 or 0. 1-create high resolution .tif image. 0-create png file.
+      --outf=output image file. Required.
+      --help    Print this message
+  "))
+}
+
+## Parse arguments (we expect the form --arg=value)
+parseArgs <- function(x) strsplit(sub("^--", "", x), "=")
+argsDF <- as.data.frame(do.call("rbind", parseArgs(args)))
+argsL <- as.list(as.character(argsDF$V2))
+names(argsL) <- argsDF$V1
+if ( is.null(argsL$inf) | is.null(argsL$outf) ) {
+    exit("Missing required argument")
 }
 
 ## set the output file name and path
-infile<-args[1]
-outfile <- args[2]
+infile<- argsL$inf
+outfile <- argsL$outf
+high_res = ifelse(is.null(argsL$high_res), 0, as.numeric(argsL$high_res))
+
 if (file.exists(infile)==FALSE) exit(paste("Could not find", infile))
 
 ## create the plot
@@ -34,11 +53,17 @@ p<-ggplot(dat, aes(x=Chromosome, y=ReadCount, fill=Sample)) +
 
 # number of samples
 n <- length(unique(dat$Sample))
-h<-500
-w<-ifelse(n>5, 100*n, h)
-max_w=1000
-w <- ifelse(w>max_w, max_w, w)
+if ( high_res ) {
+	h<-4
+	w<-ifelse(n>5, h*1.25+(n-5)*0.3, h*1.25)
+	tiff(filename=outfile, width=w, height=h, units='in', res=1200)
+} else {
+	h<-400
+	w<-ifelse(n>5, 100*n, h)
+	max_w=1000
+	w <- ifelse(w>max_w, max_w, w)
+	png(filename=outfile, height=h, width=w)
+}
 
-png(filename=outfile, height=h, width=w)
 print(p)
 invisible(dev.off())

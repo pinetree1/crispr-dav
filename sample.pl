@@ -120,27 +120,31 @@ for my $target_name ( sort split(/,/, $h{target_names}) ) {
 		my $cmd= "$Bin/cxdata.pl --ref_fasta $h{ref_fasta}";
 		$cmd .= " --refGene $h{refGene} --geneid $h{geneid}"; 
 		$cmd .= " --samtools $h{samtools} $lenfile $canvasfile";
-		Util::run($cmd, "Failed to create data for Canvas Xpress", $h{verbose}, $fail_flag);
+		#Util::run($cmd, "Failed to create data for Canvas Xpress", $h{verbose}, $fail_flag);
+		system($cmd);
 	}
 
 	## create plots of coverage, insertion and deletion on amplicon
 	my $cmd = "$h{rscript} $Bin/Rscripts/amplicon.R --inf=$varstat --outf=$outdir/$sample.$target_name";
 	$cmd .= " --sub=$sample --hname=$target_name --hstart=$target_start --hend=$target_end";
 	$cmd .= " --chr=$h{genome} $chr --min_depth=$h{min_depth} --high_res=$h{high_res}";	
-	Util::run($cmd, "Failed to generate amplicon-wide plots", $h{verbose}, $fail_flag);
+	#Util::run($cmd, "Failed to generate amplicon-wide plots", $h{verbose}, $fail_flag);
+	system($cmd);
 
 	## create a plot of base changes in crispr site and surronding regions
 	$cmd = "$h{rscript} $Bin/Rscripts/snp.R --inf=$varstat --outf=$outdir/$sample.$target_name.snp.$plot_ext";
 	$cmd .= " --outtsv=$outdir/$sample.$target_name.snp";
 	$cmd .= " --sample=$sample --hname=$target_name --hstart=$target_start --hend=$target_end";
 	$cmd .= " --chr=$h{genome} $chr --wing=$h{wing_length} --high_res=$h{high_res}";
-	Util::run($cmd, "Failed to generate base-change plot", $h{verbose}, $fail_flag);
+	#Util::run($cmd, "Failed to generate base-change plot", $h{verbose}, $fail_flag);
+	system($cmd);
  
 	## create plots of indel length distributions (with and without WT)
 	$cmd = "$h{rscript} $Bin/Rscripts/indel_length.R --inf=$lenfile --high_res=$h{high_res}";
 	$cmd .= " --outf=$outdir/$sample.$target_name.len.$plot_ext";
 	$cmd .= " --outf2=$outdir/$sample.$target_name.len2.$plot_ext";
-	Util::run($cmd, "Failed to generate indel length distribution plots", $h{verbose}, $fail_flag); 
+	#Util::run($cmd, "Failed to generate indel length distribution plots", $h{verbose}, $fail_flag); 
+	system($cmd);
 }
 
 if ( !-f $fail_flag ) {

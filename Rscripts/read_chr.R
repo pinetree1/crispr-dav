@@ -59,7 +59,7 @@ if ( high_res ) {
 	tiff(filename=outfile, width=w, height=h, units='in', res=1200)
 } else {
 	h<-400
-	w<-ifelse(n>5, 100*n, h)
+	w<-ifelse(n>5, 100*n, 550)
 	max_w=1000
 	w <- ifelse(w>max_w, max_w, w)
 	png(filename=outfile, height=h, width=w)

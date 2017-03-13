@@ -4,33 +4,63 @@
 
 ### 1. Clone the CRISPR pipeline repository:
 
+In a directory where you want the pipeline to be installed, type:
+
     git clone https://biogit.pri.bms.com/wangx112/crispr.git 
 
 ### 2. Install required tools: 
 
 #### A. Install tools
 
-Details are in Install/required_tools.txt.  
+The following tools are required. See details are in Install/required_tools.txt.  
 
-The tools can be installed in appropriate directory as non-root user. If some tools are already installed in your system, you may not need to re-install. 
+    bwa, samtools 1.x, bedtools2, prinseq, ABRA, R, R packages ggplots and naturalsort.
+    
+The tools can be installed in appropriate directory as non-root user or root. If some tools are already installed in your system, you may not need to re-install. 
 
-Here are the steps to install all the tools in crispr base directory.
  
-    cd crispr && mkdir app && cd app  (or install in some other directory) 
+    cd <app directory> 
 
-	sh ../Install/install_app.sh 
+	sh <crispr directory>/Install/install_app.sh 
+	
+	If an app failed to install, you need to install it manually. Check the details in the script for steps.
+	
+	After R is installed, you need to start R and install two packages manually:
+	    <app directory>/R-3.2.1/bin/R
+	    >install.packages("naturalsort")
+	    >install.packages("ggplot2")
 
 #### B. Install perl and python modules
 
-As root, install perl and python modules 
+The required modules are listed in <crispr directory>/Install/install_mod.sh.
+    
+Install them as **root**:
 
-	sh ../Install/install_mod.sh 
+	sh <crispr directory>/Install/install_mod.sh 
+	
+This should install the modules in system-wide locations so that non-root user can access. 
+
+To check whether the perl modules are installed, run this as regular user:
+
+    sh <crispr directory>/Install/check_perlmod.pl
+
+If there is no output, the installation was successful.
+
+To check whether python modules are accessible, do this as regular user:
+
+    $python
+    >>>import pysam
+    >>>import pysamstats
+    >>>exit()
+
+Again, if there is no output, the installation is successful.
+	
 
 ### 3. Prepare a genome  
 
-In the Examples/example1 provided in the pipeline package, a test genome is already prepared. 
+In the Examples/example1 provided in the pipeline package, a test genome is already prepared. To run the examples, you can skip this step. 
 
-The general steps for preparing a genome are: 
+Below are general steps for preparing a genome: 
 
 #### A. Prepare fasta file:
 For example, to parepare human genome hg19, download the chromosome sequence files from UCSC browser, combine them (excluding the haplotype and chrUn) into one file, hg19.fa.
@@ -48,7 +78,7 @@ If the sequence of an amplicon is used as reference, only a fasta file needs to 
 
 ## Run pipeline
 
-There are two example runs in the Examples directory. 
+There are two example runs in the "Examples" directory. 
 
 ### 1. example1: 
 This example shows how to run the pipeline when a genome is used as reference. The genome is in exmaple1/genome directory. See the above on how to prepare a genome. In addition, there are several input files to prepare:
@@ -72,9 +102,15 @@ None of the files should have column header.
 
 #### To start the pipeline: 
 
-Copy the template script run_crispr.sh to your analysis directory.  Edit the script accordingly. If --sge option is added to the command line, the pipeline will submit jobs to SGE default queue, provided it's set up for your system. Without this option, jobs will be processed in serial fashion on local host. 
+    cd <crispr directory>/Examples/example1
+    
+    Edit conf.txt: change the paths to genome and applications accordingly.
+    
+    cp ../run_script.sh .
 
-Run the pipeline by issuing this command:
+    Edit the script accordingly. If --sge option is added to the command line, the pipeline will submit jobs to SGE default queue, provided it's set up for your system. Without this option, jobs will be processed in serial fashion on local host. 
+
+    Run the pipeline in background by issuing this command:
 
     sh run_script.sh &> r.log &
 
@@ -100,6 +136,7 @@ All other files and steps are similar to those in example1.
 ## Results
 
 Results are available in 'deliverables' directory. Each subdirectory is for a CRISPR site. Results for a CRISPR site are accessable via index.html in the subdirectory. The html page looks like this:
+
 ![](readme_images/resultpage.png?raw=true)
 
 

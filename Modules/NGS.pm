@@ -704,9 +704,12 @@ sub required_args {
 
  Usage   : $obj->targetSeq(args)
  Function: Find reads that overlap with the target region. 
- Args    : bam_inf, chr, target_start, target_end, 
+ Args    : bam_inf, chr, target_start, target_end,
+           amplicon_seq, amplicon_start, 
 			outfile_targetSeq, outfile_indelPct, outfile_indelLen
 	target_start and target_end are 1-based and inclusive.
+	amplicon_seq is genomic sequence on positive strand.
+	amplicon_start uses the 1-based coordinate.
 
 =cut
 
@@ -721,7 +724,8 @@ sub targetSeq {
 		@_	
 	);
 
-	required_args(\%h, 'bam_inf', 'chr', 'target_start', 'target_end', 
+	required_args(\%h, 'bam_inf', 'chr', 'target_start', 'target_end',
+		'amplicon_seq', 'amplicon_start', 
 		'outfile_targetSeq', 'outfile_indelPct', 'outfile_indelLen');
 
 	open(my $seqf, ">$h{outfile_targetSeq}") or croak $!;
@@ -733,7 +737,7 @@ sub targetSeq {
 	print $pctf join("\t", "Sample", "CrisprSite", "Reference", "CrisprRegion", "TargetReads", 
 			"WtReads", "IndelReads", "PctWt", "PctIndel", "InframeIndel", "PctInframeIndel") . "\n";
 	print $lenf join("\t", "Sample", "CrisprSite", "CrisprRegion", "IndelStr", 
-		"ReadCount", "ReadPct", "IndelLength", "FrameShift") . "\n"; 
+		"ReadCount", "ReadPct", "IndelLength", "FrameShift", "FlankingSeq") . "\n"; 
 
 	my $ratio = $h{min_overlap}/($h{target_end} - $h{target_start} + 1);
 	my $bedfile="$h{bam_inf}.tmp.target.bed";
@@ -798,9 +802,12 @@ sub targetSeq {
 			$frame_shift = $indel_len%3 ? "Y" : "N";
 		} 
 
+		my $flank_seq = $self->getFlankingSeq($h{amplicon_seq}, $h{amplicon_start}, 
+			$h{target_start}, $h{target_end}, $key); 
+
 		print $lenf join("\t", $h{sample}, $h{target_name}, 
 			"$h{chr}:$h{target_start}-$h{target_end}", 
-			$key, $reads, $pct, $indel_len, $frame_shift) . "\n";
+			$key, $reads, $pct, $indel_len, $frame_shift, $flank_seq) . "\n";
 	}
 }
 
@@ -1108,6 +1115,79 @@ sub run {
 		print STDERR $err_msg if $err_msg;
 	}
 	return $status;
+}
+
+=head2 getFlankingSeq
+ 
+ Usage   : getFlankingSeq($amplicon_seq, $amplicon_start, $target_start, $target_end, $indelstr)
+           amplicon_start is where the 1st base of amplicon_seq is in genomic chromosome, 1-based.
+           indelstr is 1-based, e.g. 52272278:52272279:I:ATTTCA:52272290:52272291:D:.
+ Function: Find the flanking sequence witout the deleted bases but with inserted bases, if any   
+ Returns : sequence string 
+ Args    : amplicon_seq, amplicon_start, indelstr 
+
+=cut
+
+sub getFlankingSeq {
+	my ($self, $amplicon_seq, $amplicon_start, $target_start, $target_end, $indelstr) = @_;
+	# indelstr is WT for wild type. For indels, it has D or I as described above. 
+	my $flank_seq = "";
+
+	# WT. No indelstr. Extract sequence from $target_start-$FLANK_LEN to $target_end+$FLANK_LEN
+	# Has indel. Extract Left most indel pos - $FLANK_LEN to right most indel pos + $FLANK_LEN
+	# Remove deleted bases and add inserted bases. 
+
+	my %indels; # {loc=>1 for deletion, loc=>inserted_seq for insertion}
+	my $left_pos = $target_start;
+	my $right_pos = $target_end;
+
+	my $FLANK_LEN = 60;
+	if ( $indelstr =~ /[DI]/ ) {
+		$FLANK_LEN = 30;
+		my @tmp = split(/:/, $indelstr);
+		$left_pos = $tmp[0];
+		$right_pos=$tmp[$#tmp-2];
+
+		for (my $i=0; $i<@tmp; $i += 4) {
+			if ( $tmp[$i+2] eq "I" ) {
+				# insertion
+				$indels{$tmp[$i]}=$tmp[$i+3];
+			} else {
+				# deletions
+				for (my $p=$tmp[$i]; $p<=$tmp[$i+1]; $p++) {
+					$indels{$p}=1;
+				}
+			}
+		} 
+	}	
+
+
+	$left_pos -= $FLANK_LEN;
+	$right_pos += $FLANK_LEN;
+	if ( $left_pos < $amplicon_start ) {
+		$left_pos = $amplicon_start;
+	}
+
+	my $amplicon_end = $amplicon_start + length($amplicon_seq) - 1;
+	if ( $right_pos > $amplicon_end ) {
+		$right_pos = $amplicon_end;
+	}	
+
+	my @bases = split(//, $amplicon_seq);
+	my @flank_bases;
+	for ( my $p=$left_pos; $p<= $right_pos; $p++ ) {
+		# Include non-deleted bases
+		if ( !$indels{$p} or $indels{$p} != 1 ) {
+			push(@flank_bases, $bases[$p-$amplicon_start]);
+		} 	
+
+		# Add inserted bases
+		if ( $indels{$p} =~ /[ATCGN]/i ) {
+			push(@flank_bases, $indels{$p});	
+		}
+	}
+
+	return join('', @flank_bases);
 }
 
 1;

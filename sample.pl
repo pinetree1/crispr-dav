@@ -87,6 +87,11 @@ if ( !-f $varstat ) {
 }
 
 my $plot_ext = $h{high_res} ? "tif" : "png";
+
+# amplicon sequence on positive strand
+my $obj = new Exon('fasta_file'=>$h{ref_fasta}, 'seqid'=>$h{chr}, 'samtools'=>$h{samtools});
+my $amplicon_seq = $obj->getSeq('start'=>$h{amplicon_start}, 'end'=>$h{amplicon_end});
+
 ## Determine indel pct and length in each CRISPR site
 for my $target_name ( sort split(/,/, $h{target_names}) ) {
 	## For target and indels
@@ -97,10 +102,12 @@ for my $target_name ( sort split(/,/, $h{target_names}) ) {
 
 	my ($chr, $target_start, $target_end, $t1, $t2, $strand, 
 		$hdr_changes) = $ngs->getRecord($h{target_bed}, $target_name);
+
 	$ngs->targetSeq (bam_inf=>$bamfile, min_overlap=>$target_end-$target_start+1, 
 		sample=>$sample, ref_name=>$h{genome}, target_name=>$target_name, 
 		chr=>$chr, target_start=>$target_start, target_end=>$target_end,
-		min_mapq=>$h{min_mapq},
+		min_mapq=>$h{min_mapq}, 
+		amplicon_seq=>$amplicon_seq, amplicon_start=>$h{amplicon_start},
 		outfile_targetSeq=>$tseqfile, 
 		outfile_indelPct=>$pctfile,
 		outfile_indelLen=>$lenfile);

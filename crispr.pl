@@ -108,22 +108,25 @@ sub crispr_data {
             if ( $ext eq 'cnt' ) {
                 my $cmd = "$h{rscript} $Bin/Rscripts/read_stats.R --inf=$outfile";
 				$cmd .= " --outf=$dest/$crispr.readcnt.$plot_ext --rmd=$h{remove_duplicate}";
-				$cmd .= " --high_res=$h{high_res}";
+				$cmd .= " --high_res=$h{high_res}" if $h{high_res};
                 Util::run( $cmd, "Failed to create plot of read stats", $h{verbose} );
             } elsif ( $ext eq 'chr' ) {
                 my $cmd = "$h{rscript} $Bin/Rscripts/read_chr.R --inf=$outfile";
-				$cmd .= " --high_res=$h{high_res} --outf=$dest/$crispr.readchr.$plot_ext";
+				$cmd .= " --outf=$dest/$crispr.readchr.$plot_ext";
+				$cmd .= " --high_res=$h{high_res}" if $h{high_res};
                 Util::run( $cmd, "Failed to create plot of read count on chromosomes", $h{verbose} );
             } elsif ( $ext eq "pct" ) {
                 # create plots for indel count and pct
                 my $cmd = "$h{rscript} $Bin/Rscripts/indel.R --inf=$outfile ";
-				$cmd .=" --high_res=$h{high_res} --cntf=$dest/$crispr.indelcnt.$plot_ext";
+				$cmd .=" --cntf=$dest/$crispr.indelcnt.$plot_ext";
 				$cmd .= " --pctf=$dest/$crispr.indelpct.$plot_ext";
+				$cmd .= " --high_res=$h{high_res}" if $h{high_res};
                 Util::run( $cmd, "Failed to create indel count/pct plots", $h{verbose} );
             } elsif ( $ext eq "hdr" and $hdr_bases ) {
                 # create HDR plot
                 my $cmd = "$h{rscript} $Bin/Rscripts/hdr_freq.R --inf=$outfile --sub=$crispr";
-				$cmd .= " --high_res=$h{high_res} --outf=$dest/$crispr.hdr.$plot_ext";
+				$cmd .= " --outf=$dest/$crispr.hdr.$plot_ext";
+				$cmd .= " --high_res=$h{high_res}" if $h{high_res};
                 Util::run( $cmd, "Failed to create HDR plot", $h{verbose} );
             } elsif ( $ext eq "can" ) {
                 # create canvasXpress alignment html file

@@ -1,6 +1,7 @@
 ## Create plots of indel read count and pct 
 ## Author: X. Wang
 suppressMessages(library(ggplot2))
+suppressMessages(library(naturalsort))
 library(reshape2)
 options(scipen=999)
 
@@ -49,6 +50,7 @@ create_plot <- function (data, imgfile, cols, ytitle, maintitle, high_res) {
 	n<- length(unique(data$Sample))
 	legends <- c("WT", "All Indel", "Inframe Indel")
 
+	data$Sample<- factor(data$Sample, levels=naturalsort(unique(data$Sample)))
 	p <-ggplot(data, aes(x=Sample, y=value, fill=variable)) + 
 		geom_bar(stat='identity', position=position_dodge(), width=0.35) +
 		labs(y=ytitle, title=maintitle) + 

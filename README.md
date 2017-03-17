@@ -1,4 +1,4 @@
-# CRISPR Analysis Pipeline 
+# CRISPR-DAV: CRISPR NGS Data Analysis and Visualization Pipeline 
 
 ## Installation 
 

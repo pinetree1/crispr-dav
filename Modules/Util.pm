@@ -13,7 +13,7 @@ Xuning Wang
 =cut
 
 use strict;
-use Carp qw(croak);
+use Carp qw(carp croak);
 use Excel::Writer::XLSX;
 
 =head2 tab2xlsx
@@ -74,21 +74,28 @@ sub tabcat {
 
 =head2 run 
 
- Usage   : Util::run($cmd, $fail_msg, $verbose)
+ Usage   : Util::run($cmd, $fail_msg, $verbose, fail_flag_file, warn_on_error)
  Function: run a command 
  Returns :
- Args    : cmd, fail_msg, verbose
-
+ Args    : cmd, fail_msg, verbose, die_on_error, fail_flag_file 
+           warn_on_error: 1-warn, 0-die.
+           fail_flag_file: if provided, the file will be created.
+			
 =cut
 
 sub run {
-	my ($cmd, $fail_msg, $verbose, $fail_flag_file) = @_;
+	my ($cmd, $fail_msg, $verbose, $fail_flag_file, $warn_on_error) = @_;
 	print STDERR "$cmd\n" if $verbose;
 	if ( system($cmd) ){
 		if ( $fail_flag_file ) {
 			qx(touch $fail_flag_file);
 		}
-		croak "$fail_msg\n";
+
+		if ( $warn_on_error ) {
+			carp "$fail_msg\n";
+		} else {
+			croak "$fail_msg\n";	
+		}
 	}
 } 
 

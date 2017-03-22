@@ -92,7 +92,8 @@ $source will end up bing a hash structured as:
 
 my @samples = sort keys %{$source};
 if ($#samples == -1) {
-    $args->msg("[?]","Provide input file with -input");
+    #$args->msg("[?]","Provide input file with -input");
+	$args->msg("No data in input file");
     exit;
 }
 

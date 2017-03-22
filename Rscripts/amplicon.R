@@ -63,9 +63,7 @@ plot_ext = ifelse( high_res==1, ".tif", ".png")
 
 ## read data
 dat <- read.table(infile, header=TRUE, sep="\t")
-if ( nrow(dat)== 0 ) { 
-	exit("No data in input file", 0)
-}
+if (nrow(dat)==0) exit(paste("No data in input file", infile), 0)
 
 # min depth marking the start and end of amplicon region
 min_depth <- ifelse ( is.null(argsL$min_depth), 1000, as.numeric(argsL$min_depth) ) 

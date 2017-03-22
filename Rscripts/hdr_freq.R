@@ -51,9 +51,7 @@ high_res = ifelse(is.null(argsL$high_res), 0, as.numeric(argsL$high_res))
 ## read data file 
 dat <- read.table(file=infile, sep="\t", header=TRUE )
 n<- nrow(dat)
-if ( n==0 ) {
-	exit("No data in input file", 0)
-}
+if (n==0) exit(paste("No data in input file", infile), 0)
 
 vnames <- c('PctPerfectOligo', 'PctEditedOligo', 'PctPartialOligo', 'PctNonOligo')
 vlabels <- c("Perfect  ", "Edited  ", "Partial  ", 'Non-Oligo  ')

@@ -44,6 +44,7 @@ if (file.exists(infile)==FALSE) exit(paste("Could not find", infile))
 
 ## create the plot
 dat <- read.table(file=infile, sep="\t", header=TRUE, stringsAsFactors=FALSE)
+if (nrow(dat)==0) exit(paste("No data in input file", infile), 0)
 
 dat$Chromosome<- factor(dat$Chromosome, levels=naturalsort(unique(dat$Chromosome)))
 p<-ggplot(dat, aes(x=Chromosome, y=ReadCount, fill=Sample)) +

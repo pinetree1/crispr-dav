@@ -57,7 +57,8 @@ if ( remove_dup == 'N' ) {
 }
 
 dat <- read.table(file=infile, sep="\t", header=TRUE)
-if (nrow(dat)==0) exit("No data in input file", 0)
+if (nrow(dat)==0) exit(paste("No data in input file", infile), 0)
+
 dat.m <- melt(dat, id.vars="Sample", measure.vars=readTypes)
 dat.m$Sample<- factor(dat.m$Sample, levels=naturalsort(unique(dat.m$Sample)))
 

@@ -45,9 +45,7 @@ if (file.exists(infile)==FALSE) exit(paste("Could not find", infile))
 dat <- read.table(file=infile, sep="\t", header=TRUE )
 
 dat1 <- dat[dat$IndelLength !=0, ]   # remove the WT
-if ( nrow(dat1)==0 ) {
-	exit("No data in input file", 0)
-}
+if (nrow(dat1)==0) exit(paste("No data in input file", infile), 0)
 
 xlabel = "Indel Length (<0:Deletion, >0:Insertion)"
 xlabel2 = "Indel Length (<0:Deletion, 0:WT, >0:Insertion)"

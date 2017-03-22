@@ -64,6 +64,7 @@ if (file.exists(infile)==FALSE) exit(paste("Can not find", infile))
 high_res = ifelse(is.null(argsL$high_res), 0, as.numeric(argsL$high_res))
 
 dat <- read.table(infile, sep="\t", header=TRUE, stringsAsFactors=FALSE)
+if (nrow(dat)==0) exit(paste("No data in input file", infile), 0)
 
 h2 = hstart - wingLength - dat$pos[1];
 h = ifelse(h2>1, h2, 1) 

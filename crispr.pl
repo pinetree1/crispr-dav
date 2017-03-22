@@ -52,14 +52,18 @@ sub process_samples {
 	my $max_time = $max_days *24*60*60; # seconds
 	my $elapsed_time = 0;
 	while ( $elapsed_time < $max_time ) {
-		my $finished=0;
+		my $success=0;
+		my $failure=0;
 		foreach my $sample (@samples) {
 			if ( -f "$h{align_dir}/$sample.done" ) {
-				$finished++;
+				$success++;
 			} elsif ( -f "$h{align_dir}/$sample.failed" ) {
-				die "Failed in processing sample $sample.";
+				$failure++;
+				warn "Failed in processing sample $sample\n";
 			}
 		}
+		
+		my $finished = $success + $failure;
 		if ($finished == $total_samples) {
 			last;
 		} elsif ( $total_samples - $finished <= 2 ) {
@@ -109,12 +113,12 @@ sub crispr_data {
                 my $cmd = "$h{rscript} $Bin/Rscripts/read_stats.R --inf=$outfile";
 				$cmd .= " --outf=$dest/$crispr.readcnt.$plot_ext --rmd=$h{remove_duplicate}";
 				$cmd .= " --high_res=$h{high_res}" if $h{high_res};
-                Util::run( $cmd, "Failed to create plot of read stats", $h{verbose} );
+                Util::run( $cmd, "Failed to create plot of read stats", $h{verbose});
             } elsif ( $ext eq 'chr' ) {
                 my $cmd = "$h{rscript} $Bin/Rscripts/read_chr.R --inf=$outfile";
 				$cmd .= " --outf=$dest/$crispr.readchr.$plot_ext";
 				$cmd .= " --high_res=$h{high_res}" if $h{high_res};
-                Util::run( $cmd, "Failed to create plot of read count on chromosomes", $h{verbose} );
+                Util::run( $cmd, "Failed to create plot of read count on chromosomes", $h{verbose});
             } elsif ( $ext eq "pct" ) {
                 # create plots for indel count and pct
                 my $cmd = "$h{rscript} $Bin/Rscripts/indel.R --inf=$outfile ";
@@ -127,12 +131,13 @@ sub crispr_data {
                 my $cmd = "$h{rscript} $Bin/Rscripts/hdr_freq.R --inf=$outfile --sub=$crispr";
 				$cmd .= " --outf=$dest/$crispr.hdr.$plot_ext";
 				$cmd .= " --high_res=$h{high_res}" if $h{high_res};
-                Util::run( $cmd, "Failed to create HDR plot", $h{verbose} );
+                Util::run( $cmd, "Failed to create HDR plot", $h{verbose});
             } elsif ( $ext eq "can" ) {
                 # create canvasXpress alignment html file
                 foreach my $pct ( 0 .. 1 ) {
                     my $cmd = "$Bin/crispr2cx.pl -input $outfile -perc $pct > $h{deliv_dir}/$crispr/${crispr}_cx$pct.html";
                     Util::run( $cmd, "Failed to create canvasXpress alignment view", $h{verbose} );
+					system($cmd);
                 }
             }
         } # ext
@@ -151,10 +156,10 @@ sub crispr_data {
         $cmd .= " --nocx" if !$h{canvasXpress};
 		$cmd .= " --high_res" if $h{high_res};
         $cmd .= " --min_depth $h{min_depth} $h{align_dir} $h{deliv_dir}";
-        Util::run( $cmd, "Failed to create results html page", $h{verbose} );
+        Util::run( $cmd, "Failed to create results html page", $h{verbose});
     } # crispr
 
-	print STDERR "All done!\n";
+	print STDERR "\nAll done!\n";
 }
 
 sub prepareCommand {
@@ -210,6 +215,7 @@ Usage: $0 [options]
 	--region <str> Required when --genome option is used. This is a bed file for amplicon region.
 		The tab-separated fields are chr, start, end, genesym, refseqid, strand. No header.
 		The coordinates are 1-based genomic coordinates. All fields are required.
+		Refseqid is used to identify transacript coordinates in refGene coordinate. If refseqid is '-', no alignment view will be created. 
 
 	--crispr <str> Required. A bed file containing one or multiple CRISPR sgRNA sites. No header.
 		Information for each site:
@@ -393,7 +399,7 @@ Usage: $0 [options]
     $h{sample_crisprs} = $sample_crisprs;
     $h{crispr_samples} = $crispr_samples;
 
-    if ( $h{geneid} eq "" or $h{geneid} eq "N.A." ) {
+    if ( $h{geneid} eq "-" ) {
         $h{canvasXpress} = 0;
     }
 
@@ -439,6 +445,8 @@ sub processBeds {
 	close $ampf;
 	if ( !@amp ) {
 		die "Could not find amplicon information $amp_bed.\n";	
+	} elsif ( @amp < 6 ) {
+		die "Error: $amp_bed did not have 6 columns.\n";
 	} else {
 		checkBedCoord($amp[1], $amp[2], "Error in $amp_bed");
 	}

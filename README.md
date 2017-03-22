@@ -8,7 +8,7 @@ In a directory where you want the pipeline to be installed, type:
 
     git clone https://biogit.pri.bms.com/wangx112/crispr.git 
 
-### 2. Install required tools: 
+### 2. Install required tools and modules: 
 
 #### A. Install tools
 
@@ -16,9 +16,8 @@ The following tools are required. See details are in Install/required_tools.txt.
 
     bwa, samtools 1.x, bedtools2, prinseq, ABRA, R, R packages ggplots and naturalsort.
     
-The tools can be installed in appropriate directory as non-root user or root. If some tools are already installed in your system, you may not need to re-install. 
+The tools can be installed in appropriate directory as non-root user or root. If some tools are already installed in your system, you may not need to re-install. Here is an example of how to install the tools: 
 
- 
     cd <app directory> 
 
 	sh <crispr directory>/Install/install_app.sh 
@@ -34,7 +33,7 @@ The tools can be installed in appropriate directory as non-root user or root. If
 
 The required modules are listed in <crispr directory>/Install/install_mod.sh.
     
-Install them as **root**:
+Install them as **root**, for example:
 
 	sh <crispr directory>/Install/install_mod.sh 
 	
@@ -42,7 +41,7 @@ This should install the modules in system-wide locations so that non-root user c
 
 To check whether the perl modules are installed, run this as regular user:
 
-    sh <crispr directory>/Install/check_perlmod.pl
+    <crispr directory>/Install/check_perlmod.pl
 
 If there is no output, the installation was successful.
 

@@ -77,6 +77,7 @@ create_plot <- function (data, imgfile, cols, ytitle, maintitle, high_res) {
 
 ## read input
 dat <- read.table(file=infile, sep="\t", header=TRUE)
+if (nrow(dat)==0) exit(paste("No data in input file", infile), 0)
 
 ## plot for read count
 cols <- c("WtReads", "IndelReads", "InframeIndel")

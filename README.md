@@ -105,13 +105,13 @@ None of the files should have column header.
     
     Edit conf.txt: change the paths to genome and applications accordingly.
     
-    cp ../run_script.sh .
+    cp ../run_crispr.sh .
 
     Edit the script accordingly. If --sge option is added to the command line, the pipeline will submit jobs to SGE default queue, provided it's set up for your system. Without this option, jobs will be processed in serial fashion on local host. 
 
     Run the pipeline in background by issuing this command:
 
-    sh run_script.sh &> r.log &
+    sh run_crispr.sh &> r.log &
 
 This will create 2 directories: 
 

@@ -1,7 +1,5 @@
+export PYTHONPATH=$PYTHONPATH:/home/wangx112/lib/python2.7/site-packages
 unset module
-## You may need to set PYTHONPATH to search for pysam module
-## export PYTHONPATH=$PYTHONPATH:/path/to/pysam-module (not including pysam in the path)
-
-../../crispr.pl --conf conf.txt --amp_fasta amplicon.fa --crispr site.bed \
+/home/wangx112/dev/crispr-dav/crispr.pl --conf conf.txt --amp_fasta amp.fa --crispr site.bed \
 	--sitemap sample.site \
 	--fastqmap sample.fastq --amp_frame 1 --verbose

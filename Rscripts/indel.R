@@ -46,28 +46,41 @@ if (file.exists(infile)==FALSE) exit(paste("Could not find", infile))
 high_res = ifelse(is.null(argsL$high_res), 0, as.numeric(argsL$high_res))
 
 ## function to create plot
-create_plot <- function (data, imgfile, cols, ytitle, maintitle, high_res) {	
+create_plot <- function (data, type, imgfile, cols, ytitle, maintitle, high_res) {	
 	n<- length(unique(data$Sample))
 	legends <- c("WT", "All Indel", "Inframe Indel")
 
-	data$Sample<- factor(data$Sample, levels=naturalsort(unique(data$Sample)))
-	p <-ggplot(data, aes(x=Sample, y=value, fill=variable)) + 
-		geom_bar(stat='identity', position=position_dodge(), width=0.35) +
-		labs(y=ytitle, title=maintitle) + 
-		scale_fill_discrete(name="Read Type", breaks=cols, labels=legends) +
-		customize_title_axis(angle=45) +
-		theme(axis.text.x=element_text(vjust=1, hjust=1)) +
-		theme(legend.text=element_text(size=13), legend.title=element_text(size=13)) +
-		geom_text(aes(label=value, ymax=value), position=position_dodge(width=0.5), 
-			check_overlap=TRUE, vjust=-0.5, size=3)
+	if ( n > 0 ) {
+		data$Sample<- factor(data$Sample, levels=naturalsort(unique(data$Sample)))
+		p <-ggplot(data, aes(x=Sample, y=value, fill=variable)) + 
+			geom_bar(stat='identity', position=position_dodge(), width=0.35) +
+			labs(y=ytitle, title=maintitle) + 
+			scale_fill_discrete(name=' ', breaks=cols, labels=legends) +
+			customize_title_axis(angle=45) +
+			theme(axis.text.x=element_text(vjust=1, hjust=1)) +
+			theme(legend.text=element_text(face='bold', size=13), 
+				legend.title=element_text(size=13),
+				legend.position='bottom', legend.direction='horizontal') +
+			geom_text(aes(label=value), position=position_dodge(width=0.5), 
+				check_overlap=TRUE, vjust=-0.5, size=3)
+	} else {
+		ymax <- ifelse(type=='count', 1000, 100)
+		p <- ggplot(data, aes(x=Sample, y=value, fill=variable)) +
+			labs(y=ytitle, title=maintitle) +
+			customize_title_axis(angle=45) + 
+			scale_y_continuous(limits=c(0, ymax)) +
+			annotate(geom='text', x=1, y=ymax/2, size=5,
+				label='No reads at CRISPR site', family='Times', fontface="bold") +
+			theme(axis.text.x = element_blank())
+	}
 
 	if ( high_res ) {
 		h<-4
-		w<-ifelse(n>10, 0.5*n, h*1.25)
+		w<-ifelse(n>10, 0.5*n, h)
 		tiff(filename=imgfile, width=w, height=h, units='in', res=1200)
 	} else {
 		h<-400
-		w<- ifelse(n>10, 50*n, h*1.25)
+		w<- ifelse(n>10, 50*n, h)
 		png(filename=imgfile, height=h, width=w)
 	}
 
@@ -77,18 +90,18 @@ create_plot <- function (data, imgfile, cols, ytitle, maintitle, high_res) {
 
 ## read input
 dat <- read.table(file=infile, sep="\t", header=TRUE)
-if (nrow(dat)==0) exit(paste("No data in input file", infile), 0)
+if (nrow(dat)==0) write(paste("Warning: No data in indel pct input file:", infile), stderr())
 
 ## plot for read count
 cols <- c("WtReads", "IndelReads", "InframeIndel")
 data <- melt(dat, id.vars="Sample", measure.vars=cols)
 ytitle<-"Number of Reads"
 maintitle<-"Read Counts at CRISPR Site"
-create_plot(data, cnt_outfile, cols, ytitle, maintitle, high_res) 
+create_plot(data, 'count', cnt_outfile, cols, ytitle, maintitle, high_res) 
 
 ## plot for indel pct
 cols <- c("PctWt", "PctIndel", "PctInframeIndel")
 data <- melt(dat, id.vars="Sample", measure.vars=cols)
 ytitle<-"Percentage of Reads"
 maintitle<-"Percentages of reads at CRISPR Site"
-create_plot(data, pct_outfile, cols, ytitle, maintitle, high_res) 
+create_plot(data, 'pct', pct_outfile, cols, ytitle, maintitle, high_res) 

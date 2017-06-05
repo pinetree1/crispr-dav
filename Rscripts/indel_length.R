@@ -50,29 +50,50 @@ if (nrow(dat)==0) {
 	NO_DATA = TRUE 
 }
 
-## Add dummy data if number of unique indel lengths < 11 
-vec=c(0)
-for (x in 1:5) { vec <- c(vec, x, -x) }
-for ( len in vec ) {
-	indLens = unique(dat$IndelLength)
-	if (length(indLens) > 11) 
-		break
+firstElement <- function(vec) vec[1]
+dat$Pos<-sapply(strsplit(dat$IndelStr, ":"), firstElement)
 
-	if ( len %in% indLens == FALSE ) {
-		dat[nrow(dat)+1, ] <- rep(0, 9) 
-		dat[nrow(dat), 'IndelLength'] <- len
-	} 		
+ag <- aggregate(dat$ReadCount, by=list(dat$Pos, dat$IndelLength), FUN=sum)
+colnames(ag)<- c('pos', 'len', 'freq')
+# pos is chr, len and freq are int
+
+## min rows of high frequencies data
+minRows = 11 
+
+## Add dummy data if number of unique alleles < minRows 
+## This would cause all columns to be character
+if ( nrow(ag) < minRows ) {
+	vec=c(0)
+	for (x in 1:floor(minRows/2)) { vec <- c(vec, x, -x) }
+	
+	present_lens = unique(ag$len)
+	for (x in vec) {
+		if ( x %in% present_lens == FALSE ) {
+			ag[nrow(ag)+1, ] <- c("any", x, 0)	
+			if (nrow(ag)==minRows) {
+				## The above would cause all columns to be character
+				ag$len <- as.numeric(ag$len)
+				ag$freq <- as.numeric(ag$freq)
+				break 
+			}
+		}
+	}
 }
 
-ag <- aggregate(dat$ReadCount, by=list(dat$IndelLength), FUN=sum)
-colnames(ag)<- c('bin', 'freq')
-rows <- nrow(ag)
-
 ## select max topN rows of high frequencies
-topN = 20
-n = ifelse(rows >=topN, topN, rows)	
-ag <- ag[with(ag, order(freq, decreasing=TRUE)), ][(1:n),]	
-ag$Type <- ifelse(ag$bin==0, "WT", ifelse(ag$bin>0, "Insertion", "Deletion"))
+topN = 21
+n = ifelse(nrow(ag) > topN, topN, nrow(ag))
+ag <- ag[with(ag, order(freq, decreasing=TRUE)), ][(1:n),] 
+
+## create allele with pads so they are the same length for neat display
+ag$len2 <- ifelse(ag$len>0, paste0('+', as.character(ag$len)), as.character(ag$len))  
+fmt1 <- paste0("%", max(nchar(ag$pos)), "s")
+fmt2 <- paste0("%", max(nchar(ag$len2)), "s")
+ag$allele <- paste0(sprintf(fmt1, ag$pos), ":", sprintf(fmt2, ag$len2))
+
+## indel type
+ag$type <- ifelse(ag$len==0, "WT", 
+	ifelse(ag$len>0, "Insertion", "Deletion"))
 
 # number of indel lengths
 if ( high_res ) {
@@ -87,13 +108,15 @@ if ( high_res ) {
 
 on.exit(dev.off())
 
-p<-ggplot(ag, aes(x=factor(bin), y=freq, fill=factor(Type, levels=c("Deletion", "WT", "Insertion")))) +
+p<-ggplot(ag, aes(x=factor(allele), y=freq, fill=factor(type, levels=c("Deletion", "Insertion", "WT")))) +
 	geom_bar(stat="identity", position="dodge", width=0.2) + 
 	scale_fill_manual(values=c("WT"="#e74c3c", "Deletion"="#229954", "Insertion"="#2e86c1")) +
-	labs(x="Indel Length", y="Reads", title=paste("Sample:", sample)) +
-	theme(legend.title=element_blank(), legend.text=element_text(size=13), 
+	labs(x="Allele position and indel length", y="Reads", 
+		title=paste("Allele frequencies\nSample:", sample)) +
+	theme(legend.title=element_blank(), legend.text=element_text(size=12, face="bold"), 
 		legend.position='bottom',legend.direction='horizontal' ) +
-	customize_title_axis(angle=90)
+	customize_title_axis(angle=90, size=13) +
+	theme(axis.text.x=element_text(angle=90, family="Courier", face="bold", size=11))
 
 if ( NO_DATA==TRUE ) {
 	p <- p + scale_y_continuous(limits=c(0,500)) + 

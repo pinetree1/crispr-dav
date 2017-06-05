@@ -494,7 +494,7 @@ Usage: $0 [options]
     print STDERR "\nCRISPR info:\n" . Dumper( $h{crisprs} ) if $h{verbose};
     print STDERR "\nCRISPR samples:\n" . Dumper( $h{crispr_samples} )
       if $h{verbose};
-	exit;
+
     return %h;
 }
 

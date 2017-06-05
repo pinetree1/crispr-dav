@@ -53,8 +53,8 @@ dat <- read.table(file=infile, sep="\t", header=TRUE )
 n<- nrow(dat)
 if (n==0) exit(paste("No data in input file", infile), 0)
 
-vnames <- c('PctPerfectOligo', 'PctEditedOligo', 'PctPartialOligo', 'PctNonOligo')
-vlabels <- c("Perfect  ", "Edited  ", "Partial  ", 'Non-Oligo  ')
+vnames <- c('PctNonOligo', 'PctPartialOligo', 'PctEditedOligo', 'PctPerfectOligo')
+vlabels <- c('Non-Oligo  ', 'Partial  ', 'Edited  ', 'Perfect  ')
 annot <- 'Total number of reads spanning HDR mutations' 
 
 datm <- melt(dat, id.vars=c('Sample', 'TotalReads'), measure.vars=vnames)
@@ -66,11 +66,13 @@ if (high_res) {
 	annot_y=115
 }
 
-p<- ggplot(datm, aes(x=Sample, y=value, fill=variable)) + 
+p<- ggplot(datm, aes(x=Sample, y=value, fill=factor(variable, levels=vnames))) + 
 	theme_bw() + 
 	scale_y_continuous(breaks=c(0,25,50,75,100), limits=c(0,limit_y)) +
 	geom_bar(stat='identity', width=0.3) +
-	scale_fill_discrete(name="Oligo Type: ", breaks=vnames, labels=vlabels) +
+	scale_fill_manual(name="Oligo Type: ", breaks=vnames, labels=vlabels, 
+		values=c('PctNonOligo'="#ec7063", 'PctPartialOligo'="#aab7b8", 
+			'PctEditedOligo'="#9b59b6", 'PctPerfectOligo'="#229954")) +
 	theme(legend.position="bottom", legend.direction="horizontal",	
 		legend.title = element_text(size=12, face="bold"),
 		legend.text = element_text(size=12, face="bold")) +

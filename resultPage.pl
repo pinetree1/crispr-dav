@@ -39,6 +39,8 @@ my ( $chr, $start, $end, $site_name, $seq, $strand, $hdr ) =
   getTarget( $h{crispr}, $h{cname} );
 die "Incorrect crispr name $h{cname}.\n"
   if ( $h{cname} && $h{cname} ne $site_name );
+$amp_start++;
+$start++;
 
 ## set up assets
 my $sitedir = "$outdir/$site_name";

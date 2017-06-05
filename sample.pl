@@ -156,7 +156,7 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
     if ( !$h{nocx} ) {
         my $canvasfile = "$outdir/$sample.$target_name.can";
         my $cmd        = "$Bin/cxdata.pl --ref_fasta $h{ref_fasta}";
-        $cmd .= " --refGene $h{refGene} --geneid $h{geneid}";
+        $cmd .= " --refGene $h{refGene} --refseqid $h{refseqid}";
         $cmd .= " --samtools $h{samtools} $lenfile $canvasfile";
         print STDERR
           "Preparing data for alignment visualization by Canvas Xpress:\n"
@@ -241,7 +241,7 @@ sub get_input {
 	--idxbase        <str> Base name of bwa index.
 	--ref_fasta      <str> Reference fasta file.
 	--refGene        <str> UCSC refGene formatted-file containing transcript/CDS/exon coordinates.
-	--geneid         <str> Refseq gene name which must exist in the refGene file.
+	--refseqid       <str> Refseq gene name which must exist in the refGene file.
 	
 	--chr            <str> chr sequence ID in genome fasta file
 	--amplicon_start <int> amplicon start position. 1-based
@@ -270,7 +270,7 @@ sub get_input {
         'min_len=i',        'ns_max_p=i',
         'genome=s',         'idxbase=s',
         'ref_fasta=s',      'refGene=s',
-        'geneid=s',         'chr=s',
+        'refseqid=s',       'chr=s',
         'amplicon_start=i', 'amplicon_end=i',
         'target_bed=s',     'target_names=s',
         'wing_length=s',    'nocx',

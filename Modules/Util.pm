@@ -149,4 +149,29 @@ sub getJobCount {
     return $n;
 }
 
+=head2 refGeneCoord
+
+ Usage   : Util::refGeneCoord(refGeneFile, refGeneID)
+ Function: Return coordinates from UCSC refGene table for a given refseq ID
+           refseq ID examples: NM_001005738. It's the 2nd column in the file.
+ Returns : an array: (name, chr, strand,  txStart, txEnd, cdsStart, cdsEnd, 
+           exonStarts, exonEnds)
+ Args    : refGene file, refGene ID
+
+=cut
+
+sub refGeneCoord {
+    my ( $refGene_file, $refseq_id ) = @_;
+    open(my $inf, $refGene_file) or croak "Could not open $refGene_file\n!";
+	while (my $line=<$inf>) {
+        chomp $line;
+        my @a = split( /\t/, $line);
+        if ( uc($a[1]) eq uc($refseq_id) ) {
+            return ($a[1], $a[2],$a[3],$a[4],$a[5],$a[6],$a[7],$a[9],$a[10]);
+        }
+    }
+    close $inf;
+    return ();
+}
+
 1;

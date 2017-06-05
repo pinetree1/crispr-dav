@@ -15,16 +15,16 @@ my $usage =
   "Usage: $0 [options] {crispr length distribution file .len} {outfile}
 	--ref_fasta <str> Required. Genomic reference fasta file
 	--refGene <str> Required. UCSC refGene formatted-file containing transcript/CDS/exon coordinates 
-	--geneid <str> Required. Refseq gene name which must exist in the refGene file.
+	--refseqid <str> Required. Refseq gene name which must exist in the refGene file.
 	--samtools <str> Path of samtools. Default: samtools (which is in PATH environment variable)
 	--verbose
 ";
 
 my %h;
-GetOptions( \%h, 'ref_fasta=s', 'geneid=s', 'refGene=s', 'samtools=s',
+GetOptions( \%h, 'ref_fasta=s', 'refseqid=s', 'refGene=s', 'samtools=s',
     'verbose' );
 die $usage if ( @ARGV != 2 );
-die $usage if ( !$h{ref_fasta} or !$h{geneid} or !$h{refGene} );
+die $usage if ( !$h{ref_fasta} or !$h{refseqid} or !$h{refGene} );
 
 my ( $infile, $outfile ) = @ARGV;
 my $ref_fasta = $h{ref_fasta};
@@ -45,20 +45,20 @@ my ( $sample, $site_name, $chr, $guide_start, $guide_end ) =
   getCrisprInfo($infile);
 
 ## Get information about the gene coordinates
-my @tmp        = refGeneCoord( $refGene, $h{geneid} );
+my @tmp        = refGeneCoord( $refGene, $h{refseqid} );
 my $strand     = $tmp[2];                               # strandness of the gene
 my $start      = $tmp[5] + 1;                           # cdsStart
 my $end        = $tmp[6];                               # cdsEnd
 my $exonStarts = $tmp[7];
 my $exonEnds   = $tmp[8];
 if ($verbose) {
-    print STDERR "$h{geneid}, $strand, cds:$start-$end\n";
+    print STDERR "$h{refseqid}, $strand, cds:$start-$end\n";
     print STDERR "exonStarts: $exonStarts\n";
     print STDERR "exonEnds:   $exonEnds\n";
 }
 
-die "Cannot find start or end of $h{geneid}.\n" if ( !$start or !$end );
-die "Cannot find strand of $h{geneid}.\n"
+die "Cannot find start or end of $h{refseqid}.\n" if ( !$start or !$end );
+die "Cannot find strand of $h{refseqid}.\n"
   if ( $strand ne "+" && $strand ne "-" );
 
 my $ex = new Exon(

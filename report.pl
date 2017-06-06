@@ -16,12 +16,19 @@ my $usage = "Usage: $0 [option] indir outdir
 	--cname   <str> Name of CRISPR site. Optional. 
 	--nocx    Do not to create canvasXpress alignment view 
 	--high_res	High resolution tiff image was created.	
+    --min_qual_mean  <int> minimum mean quality score of a read
+    --min_len  <int> minimum length of a read
+    --ns_max_p  <int> max percentage of Ns in read
+    --realign   Flag to turn on realignment with ABRA
+    --min_mapq  <int> Minimum mapping quality score
+    --wing_length  <int> Number of bases on each side of sgRNA to view SNP 
 	indir	input directory where result files (e.g. plot image files) are. 
 	outdir	output directory 
 ";
 my %h;
 GetOptions( \%h, 'ref=s', 'region=s', 'crispr=s', 'gene=s', 'cname=s', 'nocx',
-    'high_res' );
+    'high_res', 'min_qual_mean', 'min_len', 'ns_max_p', 'realign',
+    'min_mapq', 'wing_length' );
 
 die $usage if ( @ARGV != 2 );
 my ( $indir, $outdir ) = @ARGV;
@@ -148,14 +155,16 @@ if ( !$h{nocx} ) {
 
 ## Analysis parameters
 $tog = getToggleLink( "param", 1 ); 
-print $fh "<p><b>Analysis parameters:</b>$tog\n
+my $realign = $h{realign}? "Y" : "N";
+print $fh "<p><b>Parameters used in analysis:</b>$tog\n
     <table border=1 cellpadding=3 cellspacing=0 style='border-collapse:collapse'>
         <tr><th>Parameters</th><th>Value</th></tr>
-        <tr><td>Minimum mean quality score of read</td><td>$min_qual_mean</td></tr>
-        <tr><td>Minimum length of read</td><td>$min_len</td></tr>
-        <tr><td>Maximum percentage of non-called base N in read</td><td>$ns_max_p</td></tr>
-        <tr><td>Minimum mapping quality score of read</td><td>$min_mapq</td></tr>
-        <tr><td>
+        <tr><td>Minimum mean quality score of read</td><td>$h{min_qual_mean}</td></tr>
+        <tr><td>Minimum length of read</td><td>$h{min_len}</td></tr>
+        <tr><td>Maximum percentage of non-called base N in read</td><td>$h{ns_max_p}</td></tr>
+        <tr><td>Minimum mapping quality score of read</td><td>$h{min_mapq}</td></tr>
+        <tr><td>Perform realignment with ABRA after initial BWA alignment</td><td>$realign</td></tr>
+        <tr><td>Number of bases on each side of guide sequence to view SNP</td><td>$h{wing_length}</td></tr>
     </table>
   </div>
 ";

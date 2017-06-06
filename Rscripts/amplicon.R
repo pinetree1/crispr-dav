@@ -126,18 +126,18 @@ if ( type %in% c("all", "coverage") ) {
 	create_plot (ymax, ycol, xtitle, ytitle, mtitle, outfile) 
 }
 
-ymax=25
-if ( nrow(dat) > 0 ) {
-	ymax_ins = ceiling(max(dat$insertions/dat$reads_all * 100)) 
-	ymax_del = ceiling(max(dat$deletions/dat$reads_all * 100)) 
-	ymax = ifelse (ymax_ins > ymax, ymax_ins, ymax) 
-	ymax = ifelse (ymax_del > ymax, ymax_del, ymax) 	
-	for ( i in c(75, 50, 25) ) {
-		if (ymax > i) {
-			ymax = ifelse(i+25>100, 100, i+25)
-		}
-	}
-}
+#ymax=25
+#if ( nrow(dat) > 0 ) {
+#	ymax_ins = ceiling(max(dat$insertions/dat$reads_all * 100)) 
+#	ymax_del = ceiling(max(dat$deletions/dat$reads_all * 100)) 
+#	ymax = ifelse (ymax_ins > ymax, ymax_ins, ymax) 
+#	ymax = ifelse (ymax_del > ymax, ymax_del, ymax) 	
+#	for ( i in c(75, 50, 25) ) {
+#		if (ymax > i) {
+#			ymax = ifelse(i+25>100, 100, i+25)
+#		}
+#	}
+#}
  
 if (type %in% c('all', 'insertion')){
 	mtitle <- getMainTitle("Insertion Distribution", sub_title)
@@ -147,7 +147,7 @@ if (type %in% c('all', 'insertion')){
 		dat[[ycol]] <- dat$insertions/dat$reads_all * 100
 	}
 	outfile <- paste0(prefix, '.ins', plot_ext)
-	create_plot (ymax, ycol, xtitle, ytitle, mtitle, outfile) 
+	create_plot (100, ycol, xtitle, ytitle, mtitle, outfile) 
 } 
 
 if ( type %in% c('all', 'deletion') ) {
@@ -159,6 +159,6 @@ if ( type %in% c('all', 'deletion') ) {
 	}
 
 	outfile <- paste0(prefix, '.del', plot_ext)
-	create_plot (ymax, ycol, xtitle, ytitle, mtitle, outfile) 
+	create_plot (100, ycol, xtitle, ytitle, mtitle, outfile) 
 } 
 

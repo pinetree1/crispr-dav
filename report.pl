@@ -65,8 +65,8 @@ print $fh "<html lang='en'>
 		<script src=assets/crispr.js></script>
 	<body>
 		<h2>Gene: $gene</h2><p>
-		<table border=1 cellpadding=0 cellspacing=0 style='border-collapse:collapse' width=800>
-			<tr align=center><th>Region</th><th>Reference Version</th><th>Chr</th>
+		<table border=1 cellpadding=3 cellspacing=0 style='border-collapse:collapse' width=800>
+			<tr align=center><th>Region</th><th>Reference</th><th>Chr</th>
 				<th>Start</th><th>End</th><th>Strand</th><th>CRISPR Sequence</th>
 				<th>HDR Base Changes on + Strand</th></tr>
 			<tr align=center><td>Amplicon</td><td>$ref</td><td>$amp_chr</td>
@@ -105,7 +105,7 @@ print $fh "</select>
 
 ## categories with each plot for individual sample
 my %category_header = (
-    "len" => "Indel Length at CRISPR Site",
+    "len" => "Allele Frequencies at CRISPR Site",
     "cov" => "Amplicon Coverage",
     "ins" => "Insertion Locations in Amplicon",
     "del" => "Deletion Locations in Amplicon",

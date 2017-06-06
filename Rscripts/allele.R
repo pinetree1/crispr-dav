@@ -1,4 +1,4 @@
-## Create a plot of indel length vs count
+## Create a plot of allele frequencyt
 ## Author: X. Wang
 suppressMessages(library(ggplot2))
 options(scipen=999)

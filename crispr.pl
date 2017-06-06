@@ -2,6 +2,7 @@
 # Start processing of all samples and integrate them.
 # Author: X. Wang
 
+use 5.18.1;
 use strict;
 use File::Path qw(make_path);
 use File::Spec;
@@ -35,6 +36,7 @@ sub process_samples {
         unlink $fail_flag if -f $fail_flag;
 
         my $cmd = prepare_command($sample);
+        print STDERR "\nProcessing $sample ...\n";
         if ( $h{sge} ) {
             my $jobname = Util::getJobName( "C", "$i" );
             my $cores_per_job = 2;
@@ -108,13 +110,13 @@ sub crispr_data {
     my $plot_ext  = $h{high_res} ? "tif" : "png";
 
     foreach my $crispr (@crisprs) {
+        print STDERR "\nWorking on CRISPR site $crispr across all samples ...\n";
         my $dest = "$h{deliv_dir}/$crispr/assets";
         make_path($dest);
 
         # Does this crispr has HDR info?
         my @tmp = split( /,/, $h{crisprs}->{$crispr} );
         my $hdr_bases = $tmp[5];
-        print STDERR "hdr_bases:$hdr_bases\n" if $h{verbose};
 
         my @samp = sort keys %{ $h{crispr_samples}->{$crispr} };
         foreach my $ext ( "cnt", "chr", "snp", "pct", "len", "can", "hdr" ) {
@@ -154,7 +156,6 @@ sub crispr_data {
                     $h{verbose} );
             }
             elsif ( $ext eq "pct" ) {
-
                 # create plots for indel count and pct
                 my $cmd = "$h{rscript} $Bin/Rscripts/indel.R --inf=$outfile ";
                 $cmd .= " --cntf=$dest/$crispr.indelcnt.$plot_ext";
@@ -164,7 +165,6 @@ sub crispr_data {
                     $h{verbose} );
             }
             elsif ( $ext eq "hdr" and $hdr_bases ) {
-
                 # create HDR plot
                 my $cmd =
 "$h{rscript} $Bin/Rscripts/hdr_freq.R --inf=$outfile --sub=$crispr";
@@ -173,7 +173,6 @@ sub crispr_data {
                 Util::run( $cmd, "Failed to create HDR plot", $h{verbose} );
             }
             elsif ( $ext eq "can" ) {
-
                 # create canvasXpress alignment html file
                 foreach my $pct ( 0 .. 1 ) {
                     my $cmd =
@@ -185,6 +184,7 @@ sub crispr_data {
                 }
             }
         }    # ext
+        print STDERR "Combined data and created plots.\n"; 
 
         ## move the image files for individual sample to dest
         foreach my $s (@samp) {
@@ -195,12 +195,13 @@ sub crispr_data {
         }
 
         ## create results html page
-        my $cmd = "$Bin/resultPage.pl --ref $h{genome} --gene $h{gene_sym}";
+        my $cmd = "$Bin/report.pl --ref $h{genome} --gene $h{gene_sym}";
         $cmd .= " --region $h{region} --crispr $h{crispr} --cname $crispr";
         $cmd .= " --nocx" if !$h{canvasXpress};
         $cmd .= " --high_res" if $h{high_res};
         $cmd .= " $h{align_dir} $h{deliv_dir}";
         Util::run( $cmd, "Failed to create results html page", $h{verbose} );
+		print STDERR "Generated HTML report.\n";
     }    # crispr
 
     print STDERR "\nAll done!\n";
@@ -431,15 +432,19 @@ Usage: $0 [options]
     $h{ns_max_p}      //= 3;
 
     ## Other parameters in the config file
-    $h{remove_duplicate} = $cfg->{other}{remove_duplicate};
-    $h{realign_flag}     = $cfg->{other}{realign_flag};
+    $h{remove_duplicate} = uc($cfg->{other}{remove_duplicate});
+    $h{realign_flag}     = uc($cfg->{other}{realign_flag});
     $h{min_mapq}         = $cfg->{other}{min_mapq};
     $h{wing_length}      = $cfg->{other}{wing_length};
     $h{high_res}         = $cfg->{other}{high_res};
 
     # Defaults:
-    $h{remove_duplicate} //= "N";
-    $h{realign_flag}     //= "Y";
+    $h{remove_duplicate} ||= "N";
+    $h{realign_flag}     ||= "Y";
+	check_yn($h{remove_duplicate}, 
+      "remove_duplicate value ($h{remove_duplicate}) must be Y or N(default)");
+	check_yn($h{realign_flag}, 
+      "realign_flag ($h{realign_flag}) must be Y(default) or N");
     $h{min_mapq}         //= 20;
     $h{wing_length}      //= 40;
     $h{high_res}         //= 0;
@@ -496,6 +501,11 @@ Usage: $0 [options]
       if $h{verbose};
 
     return %h;
+}
+
+sub check_yn {
+	my ($value, $errmsg) = @_;
+	die "$errmsg\n" if ($value ne "Y" && $value ne "N");
 }
 
 sub process_beds {

@@ -84,7 +84,8 @@ sub filter_reads {
         $cmd .= " -out_good $read1_outf -out_bad null $param) &>$log";
         $cmd .=
           " && gzip -c $read1_outf.fastq > $read1_outf && rm $read1_outf.fastq";
-        print STDERR "Filtering single-end fastq: $cmd\n" if $self->{verbose};
+        print STDERR "\nFiltering single-end fastq.\n";
+        print STDERR "$cmd\n" if $self->{verbose};
         $status = system($cmd);
     }
     else {
@@ -94,7 +95,8 @@ sub filter_reads {
         $cmd .= " && gzip -c ${read1_outf}_1.fastq > $read1_outf";
         $cmd .= " && gzip -c ${read1_outf}_2.fastq > $read2_outf";
         $cmd .= " && rm -f ${read1_outf}_[12]*.fastq";
-        print STDERR "Filtering paired-end fastqs: $cmd\n" if $self->{verbose};
+        print STDERR "\nFiltering paired-end fastqs.\n";
+        print STDERR "$cmd\n" if $self->{verbose};
         $status = system($cmd);
     }
 
@@ -228,7 +230,8 @@ sub bwa_align {
     $cmd .= " -o $h{bam_outf}";
 
     $cmd = "($cmd) &> $h{bam_outf}.bwa.log";
-    print STDERR "Aligning with bwa: $cmd\n" if $self->{verbose};
+    print STDERR "\nAligning with BWA.\n";
+    print STDERR "$cmd\n" if $self->{verbose};
 
     my $status = system($cmd);
     if ( $status == 0 ) {
@@ -273,7 +276,7 @@ sub clean_header {
     my $cmd = "$samtools reheader $header.new $inbam > $inbam.tmp";
     $cmd .= " && mv $inbam.tmp $inbam";
     $cmd .= " && rm $header && rm $header.new";
-    print STDERR "Cleaning BAM header line.\n" if $self->{verbose};
+    print STDERR "\nCleaning BAM header line.\n";
     my $status = system($cmd);
     print STDERR "Failed in cleaning bam header.\n" if $status;
     return $status;
@@ -323,7 +326,7 @@ sub sort_bam {
 # The -o in old version is a switch for output to stdout: samtools sort -o inbam fake.outbam > real.outbam
 # The -o in new version accept file argument: samtools sort -o outbam -O BAM inbam
 
-    print STDERR "Sorting bam.\n" if $self->{verbose};
+    print STDERR "\nSorting bam.\n";
 
     # Old version samtools syntax
     my $cmd1 = "$samtools sort -f $inbam $outbam";
@@ -363,7 +366,7 @@ sub sort_bam {
 sub index_bam {
     my ( $self, $bamfile ) = @_;
     my $cmd = "$self->{samtools} index $bamfile";
-    print STDERR "Indexing bam.\n" if $self->{verbose};
+    print STDERR "\nIndexing bam.\n";
     my $status = system($cmd);
     print STDERR "Failed in indexing bam.\n" if $status;
     return $status;
@@ -417,7 +420,8 @@ sub mark_duplicate {
     }
 
     $cmd = "($cmd) &> $h{bam_inf}.md.log";
-    print STDERR "Marking duplicates: $cmd\n" if $self->{verbose};
+    print STDERR "\nMarking duplicates.\n";
+    print STDERR "$cmd\n" if $self->{verbose};
     my $status = system($cmd);
     print STDERR "Failed in marking duplicates.\n" if $status;
     return $status;
@@ -471,7 +475,8 @@ sub ABRA_realign {
     }
 
     $cmd = "($cmd) &> $h{bam_inf}.abra.log";
-    print STDERR "Realigning with ABRA: $cmd\n" if $self->{verbose};
+    print STDERR "\nRealigning with ABRA.\n";
+    print STDERR "$cmd\n" if $self->{verbose};
 
     my $status = system($cmd);
     if ($status) {
@@ -503,7 +508,7 @@ sub remove_duplicate {
         $outbam  = "$inbam.tmp";
         $replace = 1;
     }
-    print STDERR "Removing duplicates.\n" if $self->{verbose};
+    print STDERR "\nRemoving duplicates.\n";
     my $status = system("$self->{samtools} view -b -F 1024 $inbam > $outbam");
     if ( $status == 0 && $replace == 1 ) {
         rename( $outbam, $inbam );
@@ -736,8 +741,8 @@ sub variantStat {
     }
     $cmd .= " $h{bam_inf} --output $h{outfile}";
 
-    print STDERR "Calculating stats of variants using pysamstats: $cmd\n"
-      if $self->{verbose};
+    print STDERR "\nCalculating stats of variants using pysamstats.\n";
+    print STDERR "$cmd\n" if $self->{verbose};
 
     print STDERR "Failed in calculating variant stats!\n" if system($cmd);
 }
@@ -754,7 +759,7 @@ sub required_args {
     my $href = shift;
     foreach my $arg (@_) {
         if ( !defined $href->{$arg} ) {
-            print STDERR "Missing required argument: $arg";
+            print STDERR "Missing required argument: $arg\n";
         }
     }
 }
@@ -915,7 +920,6 @@ sub extractReadRange {
     ) = split( /\t/, $sam_record );
 
     if ( $min_mapq && $mapq < $min_mapq ) {
-
 #print STDERR "Removed due to min_mapq: $qname, $flag, $refchr, mapq:$mapq.\n" if $self->{verbose};
         return;
     }
@@ -1091,12 +1095,12 @@ sub categorizeHDR {
     my $snps  = scalar(@p);                    # number of intended base changes
     my $total = 0;                             # total reads
     my $perfect_oligo = 0;                     # perfect HDR reads.
-    my $edit_oligo =
-      0;    # reads with 1 or more desired bases, but also width indels
-    my $partial_oligo =
-      0;    # reads with some but not all desired bases, no indel.
-    my $non_oligo =
-      0;    # reads without any desired base changes, regardless of indel
+    my $edit_oligo = 0;    
+      # reads with 1 or more desired bases, but also width indels
+    my $partial_oligo = 0;    
+      # reads with some but not all desired bases, no indel.
+    my $non_oligo = 0;    
+      # reads without any desired base changes, regardless of indel
 
     open( my $inf, $hdr_seq_file );
     while ( my $line = <$inf> ) {

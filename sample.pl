@@ -159,8 +159,7 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
         $cmd .= " --refGene $h{refGene} --refseqid $h{refseqid}";
         $cmd .= " --samtools $h{samtools} $lenfile $canvasfile";
         print STDERR
-          "Preparing data for alignment visualization by Canvas Xpress:\n"
-          if $h{verbose};
+          "\nPreparing data for alignment visualization by Canvas Xpress.\n";
         Util::run( $cmd, "Failed to create data for Canvas Xpress",
             $h{verbose}, $fail_flag );
     }
@@ -174,8 +173,7 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
 " --chr=$h{genome} $chr --ampStart=$h{amplicon_start} --ampEnd=$h{amplicon_end}";
     $cmd .= " --high_res=$h{high_res}" if $h{high_res};
     print STDERR
-      "Plotting amplicon coverage and frequencies of insertion and deletion:\n"
-      if $h{verbose};
+      "\nPlotting amplicon coverage and indel frequencies.\n";
     Util::run( $cmd, "Failed to generate amplicon-wide plots",
         $h{verbose}, $fail_flag );
 
@@ -190,23 +188,23 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
     $cmd .=
       " --chr=$h{genome} $chr --rangeStart=$rangeStart --rangeEnd=$rangeEnd";
     $cmd .= " --high_res=$h{high_res}" if $h{high_res};
-    print STDERR "Plotting SNP data:\n" if $h{verbose};
+    print STDERR "\nPlotting SNP data.\n" ;
     Util::run( $cmd, "Failed to generate base-change plot",
         $h{verbose}, $fail_flag );
 
-    ## create plots of indel length distribution
-    $cmd = "$h{rscript} $Bin/Rscripts/indel_length.R --inf=$lenfile";
+    ## create plots of allele frequencies 
+    $cmd = "$h{rscript} $Bin/Rscripts/allele.R --inf=$lenfile";
     $cmd .= " --sample=$sample";
     $cmd .= " --outf=$outdir/$sample.$target_name.len.$plot_ext";
     $cmd .= " --high_res=$h{high_res}" if $h{high_res};
-    print STDERR "Plotting indel length distribution:\n" if $h{verbose};
-    Util::run( $cmd, "Failed to generate indel length distribution plot",
+    print STDERR "\nPlotting allele frequency.\n";
+    Util::run( $cmd, "Failed to generate allele frequency plot",
         $h{verbose}, $fail_flag );
 }
 
 if ( !-f $fail_flag ) {
     qx(touch $outdir/$sample.done);
-    print STDERR "Processing completed!\n";
+    print STDERR "\nProcessing completed!\n";
 }
 
 sub get_input {

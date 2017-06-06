@@ -70,6 +70,9 @@ plot_ext = ifelse( high_res==1, ".tif", ".png")
 dat <- read.table(infile, header=TRUE, sep="\t")
 if ( nrow(dat) == 0 ) {
 	write(paste("Warning: No reads in amplicon:", infile), stderr())
+} else {
+	dat$PctInsertion <- dat$insertions/dat$reads_all * 100	
+	dat$PctDeletion <- dat$deletions/dat$reads_all * 100
 }
 
 getMainTitle <- function(main_title, sub_title) {
@@ -138,27 +141,30 @@ if ( type %in% c("all", "coverage") ) {
 #		}
 #	}
 #}
- 
+
+ymax = 10;   # min scale for indel plots 
+
 if (type %in% c('all', 'insertion')){
 	mtitle <- getMainTitle("Insertion Distribution", sub_title)
 	ytitle <- "Insertion Read %"
 	ycol <- "PctInsertion"
-	if ( nrow(dat) > 0 ) {
-		dat[[ycol]] <- dat$insertions/dat$reads_all * 100
-	}
 	outfile <- paste0(prefix, '.ins', plot_ext)
-	create_plot (100, ycol, xtitle, ytitle, mtitle, outfile) 
+	if ( nrow(dat) > 0 ) {
+		ymax_ins = ceiling(max(dat$insertions/dat$reads_all * 100))
+		ymax = ifelse(ymax_ins > ymax, ymax_ins, ymax)
+	}
+	create_plot (ymax, ycol, xtitle, ytitle, mtitle, outfile) 
 } 
 
 if ( type %in% c('all', 'deletion') ) {
 	mtitle <- getMainTitle("Deletion Distribution", sub_title)
 	ytitle <- "Deletion Read %"
 	ycol <- "PctDeletion"
-	if ( nrow(dat) > 0 ) {
-		dat[[ycol]] <- dat$deletions/dat$reads_all * 100
-	}
-
 	outfile <- paste0(prefix, '.del', plot_ext)
-	create_plot (100, ycol, xtitle, ytitle, mtitle, outfile) 
+	if ( nrow(dat) > 0 ) {	
+		ymax_del = ceiling(max(dat$deletions/dat$reads_all * 100))
+		ymax = ifelse(ymax_del > ymax, ymax_del, ymax)
+	}
+	create_plot (ymax, ycol, xtitle, ytitle, mtitle, outfile) 
 } 
 

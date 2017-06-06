@@ -107,9 +107,9 @@ print $fh "</select>
 my %category_header = (
     "len" => "Allele Frequencies at CRISPR Site",
     "cov" => "Amplicon Coverage",
-    "ins" => "Insertion Locations in Amplicon",
-    "del" => "Deletion Locations in Amplicon",
-    "snp" => "SNP Locations around CRISPR Site"
+    "ins" => "Insertion Distributions in Amplicon",
+    "del" => "Deletion Distributions in Amplicon",
+    "snp" => "SNP Frequencies at CRISPR Site"
 );
 
 my @cats = ( "cov", "ins", "del", "len", "snp" );
@@ -145,6 +145,20 @@ if ( !$h{nocx} ) {
 	  <a href=${site_name}_cx1.html>Alleles with indel &ge; 1%</a><br>\n
 	  <a href=${site_name}_cx0.html>All Alleles</a>\n";
 }
+
+## Analysis parameters
+$tog = getToggleLink( "param", 1 ); 
+print $fh "<p><b>Analysis parameters:</b>$tog\n
+    <table border=1 cellpadding=3 cellspacing=0 style='border-collapse:collapse'>
+        <tr><th>Parameters</th><th>Value</th></tr>
+        <tr><td>Minimum mean quality score of read</td><td>$min_qual_mean</td></tr>
+        <tr><td>Minimum length of read</td><td>$min_len</td></tr>
+        <tr><td>Maximum percentage of non-called base N in read</td><td>$ns_max_p</td></tr>
+        <tr><td>Minimum mapping quality score of read</td><td>$min_mapq</td></tr>
+        <tr><td>
+    </table>
+  </div>
+";
 
 ## Spreadsheet data
 print $fh "<p><b>Spreadsheet data:</b><p>

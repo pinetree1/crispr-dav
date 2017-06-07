@@ -57,11 +57,16 @@ ag <- aggregate(dat$ReadCount, by=list(dat$Pos, dat$IndelLength), FUN=sum)
 colnames(ag)<- c('pos', 'len', 'freq')
 # pos is chr, len and freq are int
 
-## min rows of high frequencies data
-minRows = 11 
+minRows = 21 
 
-## Add dummy data if number of unique alleles < minRows 
-## This would cause all columns to be character
+## R has trouble maintaining fixed bar width: bars are much wider when there are 
+## a couple of rows than when there are a dozen rows. Hard-coded hacking to obtain
+## fixed bar width is not portable between versions of ggplot. So to keep bar width 
+## relatively slim for sample with only a few alleles, add some dummy rows. 
+
+## min rows of high frequencies data
+minRows = 19 
+
 if ( nrow(ag) < minRows ) {
 	vec=c(0)
 	for (x in 1:floor(minRows/2)) { vec <- c(vec, x, -x) }
@@ -70,6 +75,8 @@ if ( nrow(ag) < minRows ) {
 	for (x in vec) {
 		if ( x %in% present_lens == FALSE ) {
 			ag[nrow(ag)+1, ] <- c("any", x, 0)	
+			# When "any" is replaced by space, x-axis sorting is problematic.
+
 			if (nrow(ag)==minRows) {
 				## The above would cause all columns to be character
 				ag$len <- as.numeric(ag$len)
@@ -111,8 +118,8 @@ on.exit(dev.off())
 p<-ggplot(ag, aes(x=factor(allele), y=freq, fill=factor(type, levels=c("Deletion", "Insertion", "WT")))) +
 	geom_bar(stat="identity", position="dodge", width=0.2) + 
 	scale_fill_manual(values=c("WT"="#e74c3c", "Deletion"="#229954", "Insertion"="#2e86c1")) +
-	labs(x="Allele position and indel length", y="Reads", 
-		title=paste("Allele frequencies\nSample:", sample)) +
+	labs(x="Allele Position and Indel Length", y="Reads", 
+		title=paste("Allele Frequencies\nSample:", sample)) +
 	theme(legend.title=element_blank(), legend.text=element_text(size=12, face="bold"), 
 		legend.position='bottom',legend.direction='horizontal' ) +
 	customize_title_axis(angle=90, size=13) +

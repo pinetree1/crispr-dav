@@ -103,5 +103,5 @@ create_plot(data, 'count', cnt_outfile, cols, ytitle, maintitle, high_res)
 cols <- c("PctWt", "PctIndel", "PctInframeIndel")
 data <- melt(dat, id.vars="Sample", measure.vars=cols)
 ytitle<-"Percentage of Reads"
-maintitle<-"Percentages of reads at CRISPR Site"
+maintitle<-"Percentages of Reads at CRISPR Site"
 create_plot(data, 'pct', pct_outfile, cols, ytitle, maintitle, high_res) 

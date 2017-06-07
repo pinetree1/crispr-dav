@@ -167,7 +167,7 @@ sub crispr_data {
             elsif ( $ext eq "hdr" and $hdr_bases ) {
                 # create HDR plot
                 my $cmd =
-"$h{rscript} $Bin/Rscripts/hdr_freq.R --inf=$outfile --sub=$crispr";
+"$h{rscript} $Bin/Rscripts/hdr.R --inf=$outfile --sub=$crispr";
                 $cmd .= " --outf=$dest/$crispr.hdr.$plot_ext";
                 $cmd .= " --high_res=$h{high_res}" if $h{high_res};
                 Util::run( $cmd, "Failed to create HDR plot", $h{verbose} );
@@ -199,6 +199,10 @@ sub crispr_data {
         $cmd .= " --region $h{region} --crispr $h{crispr} --cname $crispr";
         $cmd .= " --nocx" if !$h{canvasXpress};
         $cmd .= " --high_res" if $h{high_res};
+        $cmd .= " --min_qual_mean $h{min_qual_mean} --min_len $h{min_len}";
+        $cmd .= " --ns_max_p $h{ns_max_p} --min_mapq $h{min_mapq}";
+        $cmd .= " --realign" if $h{realign_flag} eq "Y";
+        $cmd .= " --wing_length $h{wing_length}";
         $cmd .= " $h{align_dir} $h{deliv_dir}";
         Util::run( $cmd, "Failed to create results html page", $h{verbose} );
 		print STDERR "Generated HTML report.\n";
@@ -258,7 +262,7 @@ Usage: $0 [options]
     --genome <str> Genome version (e.g. hg19) as specified in configuration file.
 
     --amp_fasta <str> Amplicon reference fasta file containing a single sequence. 
-    --amp_frame <int> Translation starting position in the amplicon reference sequence. 
+    --codon_start <int> Translation starting position in the amplicon reference sequence. 
         If the first codon starts at the first base, then the position is 1. No translation 
         will be performed if the option is omitted. No intron should be present in the 
         amplicon reference sequence if translation is needed. 
@@ -297,7 +301,7 @@ Usage: $0 [options]
     my %h;
     GetOptions(
         \%h,           'conf=s',     'genome=s',  'amp_fasta=s',
-        'amp_frame=i', 'outdir=s',   'help',      'region=s',
+        'codon_start=i', 'outdir=s',   'help',      'region=s',
         'crispr=s',    'fastqmap=s', 'sitemap=s', 'sge',
         'verbose'
     ) or exit;
@@ -356,6 +360,12 @@ Usage: $0 [options]
         }
     }
 
+    ## Directories
+    $h{align_dir} = "$h{outdir}/align";
+    $h{deliv_dir} = "$h{outdir}/deliverables";
+    $h{tmpdir}    = "$h{outdir}/align/tmp";
+    make_path( $h{align_dir}, $h{deliv_dir}, $h{tmpdir} );
+
     if ( $h{genome} ) {
         $h{genome} =~ s/\s//g;
         if ( !$h{region} ) {
@@ -384,10 +394,10 @@ Usage: $0 [options]
         }
     }
     elsif ( $h{amp_fasta} ) {
-        $h{ref_fasta} = "$h{outdir}/new_" . basename($h{amp_fasta});
+        $h{ref_fasta} = "$h{align_dir}/" . basename($h{amp_fasta});
         my ($seqid, $len)= process_custom_seq($h{amp_fasta}, "$h{ref_fasta}");
         $h{bwa_idx}   = $h{ref_fasta};
-        $h{region}    = "$h{outdir}/amplicon.bed";
+        $h{region}    = "$h{align_dir}/amplicon.bed";
 
         # copy to $outdir
         qx(cp $h{amp_fasta} $h{ref_fasta}) if ( !-f $h{ref_fasta} );
@@ -403,20 +413,18 @@ Usage: $0 [options]
         close $tmpf;
 
         # Create coordinate file for translation
-        if ( $h{amp_frame} ) {
-            $h{refGene} = "$h{outdir}/amplicon.frame";
+        if ( $h{codon_start} ) {
+            $h{refGene} = "$h{align_dir}/amplicon.frame";
             $h{refseqid}  = $seqid;
             open( my $tmpf, ">$h{refGene}" ) or die $!;
             print $tmpf join( "\t",
                 "#bin",      "name",       "chrom",    "strand",
                 "txStart",   "txEnd",      "cdsStart", "cdsEnd",
-                "exonCount", "exonStarts", "exonEnds" )
-              . "\n";
+                "exonCount", "exonStarts", "exonEnds" ) . "\n";
             print $tmpf join( "\t",
-                "0", $seqid, $seqid, "+", $h{amp_frame} - 1,
-                $len, $h{amp_frame} - 1,
-                $len, 1, $h{amp_frame} - 1, $len )
-              . "\n";
+                "0", $seqid, $seqid, "+", 
+                $h{codon_start} - 1, $len, $h{codon_start} - 1, $len, 
+                1, $h{codon_start} - 1, $len ) . "\n";
             close $tmpf;
         }
     }

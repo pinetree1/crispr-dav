@@ -9,26 +9,26 @@ use File::Path qw(make_path);
 use FindBin qw($Bin);
 
 my $usage = "Usage: $0 [option] indir outdir
-	--ref     <str> reference name, e.g. hg19. Required.	
-	--gene    <str> Gene name, e.g. FPR2. Required.
-	--region  <str> a bed file of amplicon. Required.
-	--crispr  <str> a bed file containing sgRNA region. Required.
-	--cname   <str> Name of CRISPR site. Optional. 
-	--nocx    Do not to create canvasXpress alignment view 
-	--high_res	High resolution tiff image was created.	
+    --ref     <str> reference name, e.g. hg19. Required.	
+    --gene    <str> Gene name, e.g. FPR2. Required.
+    --region  <str> a bed file of amplicon. Required.
+    --crispr  <str> a bed file containing sgRNA region. Required.
+    --cname   <str> Name of CRISPR site. Optional. 
+    --nocx    Do not to create canvasXpress alignment view 
+    --high_res	High resolution tiff image was created.	
     --min_qual_mean  <int> minimum mean quality score of a read
     --min_len  <int> minimum length of a read
     --ns_max_p  <int> max percentage of Ns in read
     --realign   Flag to turn on realignment with ABRA
     --min_mapq  <int> Minimum mapping quality score
     --wing_length  <int> Number of bases on each side of sgRNA to view SNP 
-	indir	input directory where result files (e.g. plot image files) are. 
-	outdir	output directory 
+    indir  input directory where result files (e.g. plot image files) are. 
+    outdir  output directory 
 ";
 my %h;
 GetOptions( \%h, 'ref=s', 'region=s', 'crispr=s', 'gene=s', 'cname=s', 'nocx',
-    'high_res', 'min_qual_mean', 'min_len', 'ns_max_p', 'realign',
-    'min_mapq', 'wing_length' );
+    'high_res', 'min_qual_mean=i', 'min_len=i', 'ns_max_p=i', 'realign',
+    'min_mapq=i', 'wing_length=i' );
 
 die $usage if ( @ARGV != 2 );
 my ( $indir, $outdir ) = @ARGV;
@@ -71,11 +71,13 @@ print $fh "<html lang='en'>
 		<meta charset='utf-8'>
 		<script src=assets/crispr.js></script>
 	<body>
-		<h2>Gene: $gene</h2><p>
+		<h2>CRISPR Analysis Results</h2><p>
+        <p><b>Gene: $gene</b><p>
+        <table border=0><tr><td width=30></td><td>
 		<table border=1 cellpadding=3 cellspacing=0 style='border-collapse:collapse' width=800>
 			<tr align=center><th>Region</th><th>Reference</th><th>Chr</th>
 				<th>Start</th><th>End</th><th>Strand</th><th>CRISPR Sequence</th>
-				<th>HDR Base Changes on + Strand</th></tr>
+				<th>Expected HDR Base Changes on + Strand</th></tr>
 			<tr align=center><td>Amplicon</td><td>$ref</td><td>$amp_chr</td>
 				<td>$amp_start</td><td>$amp_end</td><td>$amp_strand</td><td></td>
 				<td></td></tr>
@@ -83,6 +85,7 @@ print $fh "<html lang='en'>
 				<td>$start</td> <td>$end</td><td>$strand</td><td>$seq</td>
 				<td>$hdr</td></tr>
 		</table>
+        </td></tr></table>
 		<div id='high_res' style='display:none'>$h{high_res}</div>
 		<p><b>Read Counts and Percentages at CRISPR Site:</b>$rc_tog
 		<table><tr>
@@ -92,7 +95,7 @@ print $fh "<html lang='en'>
 		</div>
 
 		<!--select box for individual sample-->
-		<p><b>Charts for individual sample</b>
+		<p><b>Charts for Individual Sample</b>
 		<select id='select1' onchange='showCharts(\"$site_name\")'>
 			<option value=''>Select a sample to view</option>
 ";
@@ -131,47 +134,60 @@ if ($hdr) {
     my $hdr_tog = getToggleLink( "hdr", 1 );
     print $fh "
 	<p><b>Homology Directed Repair Rates: </b>$hdr_tog
-		<table>
+        <table border=0><tr><td width=30></td><td>
+		<table border=0>
 		<tr><tr><td>When categorizing oligo types, the region from the first to the last base 
 			change was examined.</td></tr>
         <tr><td>Non-Oligo: None of the intended base changes occurs, regardless of indel.</td></tr>
         <tr><td>Partial Oligo: Some but not all intended base changes occur, and no indel.</td></tr>
         <tr><td>Edited Oligo: One or more intended base changes occur, and there is indel(s).</td></tr>
-		<tr><td>Perfect Oligo: All intended base changes occur, but no indel.</td></tr>
+		<tr><td>Perfect Oligo: All intended base changes occur, but no indel. Its value is labeled.</td></tr>
 		<tr>
 			<td><img src=assets/$site_name.hdr.$plot_ext /></td>$rowsep
 		</tr>
 		</table>
+        </td></tr></table>
 	</div>
 ";
 }
 
 ## Allele alignment view
+my $tog = getToggleLink( "cvxp", 1 );
 if ( !$h{nocx} ) {
-    print $fh "<p><b>Visual Alignment of Indel Alleles</b><p>\n
-	  <a href=${site_name}_cx1.html>Alleles with indel &ge; 1%</a><br>\n
-	  <a href=${site_name}_cx0.html>All Alleles</a>\n";
+    print $fh "<p><b>Visual Alignment of Indel Alleles:</b>$tog
+       <table border=0><tr><td width=30></td><td>
+       <table border=0 cellpadding=3 cellspacing=0 style='border-collapse:collapse'>
+	      <tr><td><a href=${site_name}_cx1.html>Alleles with indel rate &ge; 1%</a></td></tr>
+	      <tr><td><a href=${site_name}_cx0.html>All alleles</a></td></tr>
+       </table>
+       </td></tr></table>
+       </div>
+    ";
 }
 
 ## Analysis parameters
 $tog = getToggleLink( "param", 1 ); 
 my $realign = $h{realign}? "Y" : "N";
-print $fh "<p><b>Parameters used in analysis:</b>$tog\n
+print $fh "<p><b>Parameters Used in Analysis:</b>$tog
+    <table border=0><tr><td width=30></td><td>
     <table border=1 cellpadding=3 cellspacing=0 style='border-collapse:collapse'>
-        <tr><th>Parameters</th><th>Value</th></tr>
-        <tr><td>Minimum mean quality score of read</td><td>$h{min_qual_mean}</td></tr>
-        <tr><td>Minimum length of read</td><td>$h{min_len}</td></tr>
-        <tr><td>Maximum percentage of non-called base N in read</td><td>$h{ns_max_p}</td></tr>
-        <tr><td>Minimum mapping quality score of read</td><td>$h{min_mapq}</td></tr>
-        <tr><td>Perform realignment with ABRA after initial BWA alignment</td><td>$realign</td></tr>
-        <tr><td>Number of bases on each side of guide sequence to view SNP</td><td>$h{wing_length}</td></tr>
+        <tr><th>Parameter</th><th>Value</th></tr>
+        <tr><td>Minimum mean quality score of read</td><td align=center>$h{min_qual_mean}</td></tr>
+        <tr><td>Minimum length of read</td><td align=center>$h{min_len}</td></tr>
+        <tr><td>Maximum percentage of non-called base N in read</td><td align=center>$h{ns_max_p}</td></tr>
+        <tr><td>Minimum mapping quality score of read</td><td align=center>$h{min_mapq}</td></tr>
+        <tr><td>Perform ABRA realignment after initial BWA alignment</td><td align=center>$realign</td></tr>
+        <tr><td>Number of bases on each side of guide sequence to view SNP</td><td align=center>$h{wing_length}</td></tr>
     </table>
+	</td></tr></table>
   </div>
 ";
 
 ## Spreadsheet data
-print $fh "<p><b>Spreadsheet data:</b><p>
-	<table>
+$tog = getToggleLink( "data", 1 );
+print $fh "<p><b>Spreadsheet Data:</b>$tog
+    <table border=0><tr><td width=30></td><td>
+	<table border=0 cellpadding=3 cellspacing=0 style='border-collapse:collapse'>
 		<tr><td><a href=assets/${site_name}_cnt.xlsx>Read stats</a></td></tr>
 		<tr><td><a href=assets/${site_name}_pct.xlsx>Indel summary</a></td></tr>
 		<tr><td><a href=assets/${site_name}_len.xlsx>Allele data</a></td></tr>
@@ -183,7 +199,10 @@ if ($hdr) {
       "<tr><td><a href=assets/${site_name}_hdr.xlsx>HDR data</a></td></tr>";
 }
 
-print $fh "</table></body></html>";
+print $fh "</table>
+     </td></tr></table>
+   </div>
+ </body></html>";
 close $fh;
 
 ## return a category's html table of assets of all samples

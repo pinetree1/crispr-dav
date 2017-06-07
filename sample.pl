@@ -114,6 +114,7 @@ my $amplicon_seq =
 
 ## Determine indel pct and length in each CRISPR site
 for my $target_name ( sort split( /,/, $h{target_names} ) ) {
+	print STDERR "\nCreating plots and results for CRISPR $target_name ...\n";
     ## For target and indels
     my $tseqfile = "$outdir/$sample.$target_name.tgt";
     my $pctfile  = "$outdir/$sample.$target_name.pct";
@@ -122,10 +123,10 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
 
     my ( $chr, $target_start, $target_end, $t1, $t2, $strand, $hdr_changes ) =
       $ngs->getRecord( $h{target_bed}, $target_name );
-
+	$target_start ++;
     $ngs->targetSeq(
         bam_inf           => $bamfile,
-        min_overlap       => $target_end - $target_start + 1,
+        min_overlap       => $target_end - $target_start,
         sample            => $sample,
         ref_name          => $h{genome},
         target_name       => $target_name,
@@ -228,7 +229,7 @@ sub get_input {
 	--read2fastq     <str> Optional. Fastq file of read2
 
 	--min_qual_mean  <int> prinseq parameter. Default: 30
-	--min_len        <int> prinseq parameter. Default: 40
+	--min_len        <int> prinseq parameter. Default: 50
 	--ns_max_p       <int> prinseq parameter. Default: 3
 
 	--unique         Optional. Remove duplicate reads from bam file using Picard. 
@@ -245,10 +246,10 @@ sub get_input {
 	--amplicon_start <int> amplicon start position. 1-based
 	--amplicon_end   <int> amplicon end position. 1-based.
 
-	--target_bed     <int> A bed file of CRISPR sites
+	--target_bed     <int> A bed file of CRISPR sites. 0-based coordinates. End is exclusive.
 	--target_names   <str> Names of the CRISPR sites separated by comma.
 
-	--wing_length    <int> Number of bases on each side of CRISPR to show SNP. Default: 50
+	--wing_length    <int> Number of bases on each side of CRISPR to show SNP. Default: 40
 	--nocx           Do not create canvasXpress alignment data 
 	--high_res       Create high resolution tiff file.
 	--verbose        Optional. For debugging.	

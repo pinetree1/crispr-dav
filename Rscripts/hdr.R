@@ -70,8 +70,8 @@ p<- ggplot(datm, aes(x=Sample, y=value, fill=factor(variable, levels=vnames))) +
 	theme_bw() + 
 	scale_y_continuous(breaks=c(0,25,50,75,100), limits=c(0,limit_y)) +
 	scale_fill_manual(name="Oligo Type: ", breaks=vnames, labels=vlabels, 
-		values=c('PctNonOligo'="#ec7063", 'PctPartialOligo'="#aab7b8", 
-			'PctEditedOligo'="#9b59b6", 'PctPerfectOligo'="#229954")) +
+		values=c('PctNonOligo'="#DF98EF", 'PctPartialOligo'="#f4d03f", 
+			'PctEditedOligo'="#0101DF", 'PctPerfectOligo'="#229954")) +
 	labs(x='Sample', y='% Reads', title=mtitle) +
 	customize_title_axis(angle=45)  
 
@@ -82,7 +82,7 @@ if ( n > 0 ) {
 		legend.text = element_text(size=12, face="bold")) + 
 	geom_text(aes(label=ifelse(variable=="PctNonOligo", TotalReads, ' ')),
 		size=4, vjust = -0.5, position = "stack") +
-	geom_text(aes(label=ifelse(variable=="PctPerfectOligo" & value>0.01, value, ' ')),
+	geom_text(aes(label=ifelse(variable=="PctPerfectOligo" & value>0.1, value, ' ')),
 		size=4, vjust=1, position='stack') +
 	annotate(geom='text', x=1, y=annot_y, label=annot, size=5, 
 		family='Times', fontface="plain", hjust=0, vjust=0) 

@@ -127,12 +127,13 @@ for ( i in c(1:4) ) {
 } 
 datm <- melt(dat, id.vars="PosBase", measure.vars=pctBases)
 
-# If any base has mismatch rate >=0.5%, it will be labelled.
+# min mismatch rate(%) to label the SNP rate in plot.
+min_snp = 1;
 
 p<-ggplot(datm, aes(x=PosBase, y=value, fill=variable)) +
 	ylim(0, ymax) +
 	geom_bar(stat='identity') +
-	geom_text(aes(label=ifelse(value>=0.5, round(value,1), ''), vjust=0)) +
+	geom_text(aes(label=ifelse(value>=min_snp, round(value,1), ''), vjust=0)) +
 	theme_bw() + 
 	scale_fill_discrete(breaks=pctBases, labels=bases) +
 	theme(axis.text.x=element_text(angle=90, family="Courier", face="bold", vjust=0.5, size=10),
@@ -159,8 +160,8 @@ hmid_x = hstart_x + (hend_x - hstart_x + 1)/2
 ## Highlight line's y position
 guide_y =  ymax/2
 p<- p + geom_segment(aes(x=hstart_x, y=guide_y, xend=hend_x, yend=guide_y)) +
-  annotate(geom='text', x=hmid_x, y=guide_y*1.1, label='sgRNA Guide', 
-	family='Times', fontface="bold")
+  annotate(geom='text', x=hmid_x, y=guide_y*1.2, label='sgRNA Guide Range', 
+	family='Times', fontface="bold", size=5)
 
 
 if ( high_res ) {

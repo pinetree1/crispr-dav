@@ -360,7 +360,7 @@ sub locateGuideInCDS {
                 {
                     push( @segments,
                         "[" . ( $i + 1 ) . "," . ( $i + 1 ) . "]" );
-                    print STDERR "Guide is near between CDS bases #$i and # "
+                    print STDERR "Guide is between CDS bases #$i and # "
                       . ( $i + 1 ) . "\n";
                     last;
                 }

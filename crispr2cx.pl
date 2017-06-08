@@ -581,10 +581,10 @@ sub HTML_START {
    src='http://canvasxpress.org/js/canvasXpress.min.js'></script>
   <link type='text/css' rel='stylesheet' 
    href='http://canvasxpress.org/css/canvasXpress.css' />
-  <link  href='assets/0_MainStyles.css' type='text/css' rel='stylesheet' />
-  <script src='assets/0_MainScripts.js' type='text/javascript'></script>
-  <script src='assets/basic.js' type='text/javascript'></script>
-  <script src='assets/crispr2cx.js' type='text/javascript'></script>
+  <link  href='Assets/0_MainStyles.css' type='text/css' rel='stylesheet' />
+  <script src='Assets/0_MainScripts.js' type='text/javascript'></script>
+  <script src='Assets/basic.js' type='text/javascript'></script>
+  <script src='Assets/crispr2cx.js' type='text/javascript'></script>
  <body>
 EOF
 

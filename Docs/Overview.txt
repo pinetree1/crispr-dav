@@ -1,4 +1,29 @@
-                   Description of Files and Directories
+                             Overview
+
+I. Overview of Program Files and Directories
+
+   The pipeline programs are in crispr-dav directory.  
+
+      crispr.pl   : The program to initiate the pipeline. 
+      run.sh      : A template shell script to run crispr.pl. Modify before use.  
+      sample.pl   : Invokeby crispr.pl to process a sample.
+      cxdata.pl   : Invoked by sample.pl to generate data for canvasXpress.
+      crispr2cx.pl: Invoked by crispr.pl to generate visual alignment view.
+      report.pl   : Invoked by crispr.pl to generate HTML report of CRISPR results.
+      overlap.pl  : An independent program to assess what percentages of 
+                    overlapping paired-end reads agree and disagree.
+
+      Assets      : Directory containing HTML images, css, and javascripts.
+      BMS         : Directory containing Perl modules used by crispr2cx.pl. 
+      Doc         : Directory containing this document, install instructions, etc.    
+      Modules     : Directory containing Perl modules used by other perl programs.
+      Rscripts    : Directory containing R scripts used by the pipeline. 
+      Examples    : Directory containing two sets of example data. 
+                    example1: uses standard genome as reference.
+                    example2: uses a custom sequence as reference.
+
+
+II. Overview of Input and Output Data Files 
 
 1. The analysis pipeline accepts input and output in relative and/or absolute paths. 
    By default, output is produced in the current directory.
@@ -31,8 +56,8 @@
    (7) genome files: these include genome fasta file and bwa index files. Their paths
           are to be stored in conf.txt.
 
-   (8) run_crispr.sh: a template script to start the pipeline. Modify it according to
-          to the actual input file paths. 
+   (8) run.sh: a template script to start the pipeline. Modify it according to
+          the actual input file paths. 
 
    (9) amp.fa: this is a custom fasta file. It's used in lieu of standard genome, as  
           in example2 of the pipeline package. There can be only one sequence in the 
@@ -75,3 +100,7 @@
    (2) deliverables. This directory contains one or more subdirectories
        depending on number of CRISPR sites in site.bed. The subdirectory
        contains the HTML report and its component files. 
+
+III. Installation
+
+   For installation instructions, see Installation.txt. 

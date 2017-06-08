@@ -49,10 +49,10 @@ die "Incorrect crispr name $h{cname}.\n"
 $amp_start++;
 $start++;
 
-## set up assets
+## set up Assets
 my $sitedir = "$outdir/$site_name";
 make_path($sitedir);
-qx(cp $Bin/assets/* $sitedir/assets);
+qx(cp $Bin/Assets/* $sitedir/Assets);
 
 ## find samples
 my @samples = getSamples( $indir, $site_name );
@@ -69,7 +69,7 @@ my $plot_ext = $h{high_res} ? "tif" : "png";
 print $fh "<html lang='en'>
 	<head>
 		<meta charset='utf-8'>
-		<script src=assets/crispr.js></script>
+		<script src=Assets/crispr.js></script>
 	<body>
 		<h2>CRISPR Analysis Results</h2><p>
         <p><b>Gene: $gene</b><p>
@@ -89,8 +89,8 @@ print $fh "<html lang='en'>
 		<div id='high_res' style='display:none'>$h{high_res}</div>
 		<p><b>Read Counts and Percentages at CRISPR Site:</b>$rc_tog
 		<table><tr>
-			<td><img src=assets/$site_name.indelcnt.$plot_ext /></td>$rowsep
-			<td><img src=assets/$site_name.indelpct.$plot_ext /></td>
+			<td><img src=Assets/$site_name.indelcnt.$plot_ext /></td>$rowsep
+			<td><img src=Assets/$site_name.indelpct.$plot_ext /></td>
 		</tr></table>
 		</div>
 
@@ -107,8 +107,8 @@ print $fh "</select>
 	<p id='charts'></p>
 	<p><b>Preprocessing of Reads: </b>$pp_tog
 	<table><tr>
-		<td><img src=assets/$site_name.readcnt.$plot_ext></td>$rowsep
-		<td><img src=assets/$site_name.readchr.$plot_ext></td>
+		<td><img src=Assets/$site_name.readcnt.$plot_ext></td>$rowsep
+		<td><img src=Assets/$site_name.readchr.$plot_ext></td>
 	</tr></table>
 	</div>
 ";
@@ -143,7 +143,7 @@ if ($hdr) {
         <tr><td>Edited Oligo: One or more intended base changes occur, and there is indel(s).</td></tr>
 		<tr><td>Perfect Oligo: All intended base changes occur, but no indel. Its value is labeled.</td></tr>
 		<tr>
-			<td><img src=assets/$site_name.hdr.$plot_ext /></td>$rowsep
+			<td><img src=Assets/$site_name.hdr.$plot_ext /></td>$rowsep
 		</tr>
 		</table>
         </td></tr></table>
@@ -188,15 +188,15 @@ $tog = getToggleLink( "data", 1 );
 print $fh "<p><b>Spreadsheet Data:</b>$tog
     <table border=0><tr><td width=30></td><td>
 	<table border=0 cellpadding=3 cellspacing=0 style='border-collapse:collapse'>
-		<tr><td><a href=assets/${site_name}_cnt.xlsx>Read stats</a></td></tr>
-		<tr><td><a href=assets/${site_name}_pct.xlsx>Indel summary</a></td></tr>
-		<tr><td><a href=assets/${site_name}_len.xlsx>Allele data</a></td></tr>
-		<tr><td><a href=assets/${site_name}_snp.xlsx>SNP data</a></td></tr>
+		<tr><td><a href=Assets/${site_name}_cnt.xlsx>Read stats</a></td></tr>
+		<tr><td><a href=Assets/${site_name}_pct.xlsx>Indel summary</a></td></tr>
+		<tr><td><a href=Assets/${site_name}_len.xlsx>Allele data</a></td></tr>
+		<tr><td><a href=Assets/${site_name}_snp.xlsx>SNP data</a></td></tr>
 ";
 
 if ($hdr) {
     print $fh
-      "<tr><td><a href=assets/${site_name}_hdr.xlsx>HDR data</a></td></tr>";
+      "<tr><td><a href=Assets/${site_name}_hdr.xlsx>HDR data</a></td></tr>";
 }
 
 print $fh "</table>
@@ -205,7 +205,7 @@ print $fh "</table>
  </body></html>";
 close $fh;
 
-## return a category's html table of assets of all samples
+## return a category's html table of all samples
 # input: extension of plots, like len.png for length distribution plot
 sub getCategoryTable {
     my ( $cat, $plot_ext ) = @_;
@@ -213,14 +213,14 @@ sub getCategoryTable {
     my $CELLS = $cat eq "snp" ? 1 : 2;    # number of cells per row
     my $tab   = "<table border=0>";
     foreach my $s (@samples) {
-        my $img = "$sitedir/assets/$s.$site_name.$cat.$plot_ext";
+        my $img = "$sitedir/Assets/$s.$site_name.$cat.$plot_ext";
         next if !-f $img;
         if ( $i % $CELLS == 0 ) {
             $tab .= "</tr>" if ($i);
             $tab .= "<tr>";
         }
 
-        $tab .= "<td><img src=assets/$s.$site_name.$cat.$plot_ext></td>";
+        $tab .= "<td><img src=Assets/$s.$site_name.$cat.$plot_ext></td>";
         $i++;
     }
     $tab .= "</tr>" if ( $tab !~ /<\/tr>$/ );
@@ -272,7 +272,7 @@ sub getToggleLink {
 
     my $str =
       "<a href=\"javascript:hideshow(\'$sn.div\');toggleImg(\'$sn.img\')\">";
-    $str .= "<img src=assets/$fname width=15 height=15 id=\'$sn.img\'></a>";
+    $str .= "<img src=Assets/$fname width=15 height=15 id=\'$sn.img\'></a>";
     $str .= "\n<div id=\"$sn.div\" style=\"display:$style\">";
     return $str;
 }

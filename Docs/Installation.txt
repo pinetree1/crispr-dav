@@ -1,0 +1,44 @@
+                               Installation
+
+I. Prerequisites
+
+The pipeline utilizes a set of common software tools. They must be installed 
+before the pipeline can be run.
+
+(1) Perl modules. 
+
+The following modules must be installed in paths shown in or added to the @INC array. 
+
+    Config::Tiny
+    Excel::Writer::XLSX
+    Spreadsheet::ParseExcel
+    Spreadsheet::XLSX
+    Time::HiRes
+    JSON
+    CGI
+    URI::Escape
+    BioPerl modules 
+
+To check whether a module is already installed, at command line, type:
+    perl -e "use modulename", e.g. perl -e "use Config::Tiny"
+If the command return nothing, it means the module is already installed.
+
+If you don't have root access, but intend to install a module in your local directory,
+you'll need to include the local path in PERL5LIB environment variable. 
+    export PERL5LIB=$PERL5LIB:<localPath>
+Then the new path will be automatically shown in @INC and the module will be
+loaded correctly. To see the @INC values, you may use this command:
+    perl -e "print join(\"\n\", @INC)"
+
+
+(2) 
+
+ 
+
+
+
+
+   
+ 
+
+

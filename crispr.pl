@@ -111,7 +111,7 @@ sub crispr_data {
 
     foreach my $crispr (@crisprs) {
         print STDERR "\nWorking on CRISPR site $crispr across all samples ...\n";
-        my $dest = "$h{deliv_dir}/$crispr/assets";
+        my $dest = "$h{deliv_dir}/$crispr/Assets";
         make_path($dest);
 
         # Does this crispr has HDR info?

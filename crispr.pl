@@ -734,12 +734,7 @@ sub check_pysam {
 sub check_perlmod {
     my @mods = qw(Config::Tiny
       Excel::Writer::XLSX
-      Spreadsheet::ParseExcel
-      Spreadsheet::XLSX
-      Time::HiRes
       JSON
-      CGI
-      URI::Escape
       Bio::PrimarySeq
     );
 

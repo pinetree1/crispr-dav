@@ -39,7 +39,7 @@ included in all copies or substantial portions of the Software.
 =cut
 
 use strict;
-use Time::HiRes;
+#use Time::HiRes;
 use vars qw($ignoredErrors);
 
 our $hkeyNS  = 'BMS_UTIL_'; # Hopefully unique hash key prefix

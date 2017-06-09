@@ -154,7 +154,7 @@ if ($hdr) {
 ## Allele alignment view
 my $tog = getToggleLink( "cvxp", 1 );
 if ( !$h{nocx} ) {
-    print $fh "<p><b>Visual Alignment of Indel Alleles:</b>$tog
+    print $fh "<p><b>Alignment of Indel Alleles:</b>$tog
        <table border=0><tr><td width=30></td><td>
        <table border=0 cellpadding=3 cellspacing=0 style='border-collapse:collapse'>
 	      <tr><td><a href=${site_name}_cx1.html>Alleles with indel rate &ge; 1%</a></td></tr>

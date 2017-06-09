@@ -1,10 +1,28 @@
                                Installation
 
-I. Prerequisites
+I. CRISPR-DAV pipeline
+  
+    The pipeline itself can be installed by:
+ 
+         git clone https://github.com/pinetree1/crispr-dav.git
+
+    This would create a crispr-dav directory.
+
+    In crispr-dav directory, all the Perl programs (*.pl) use this line to invoke 
+    the perl in your environment:
+
+         #!/usr/bin/env perl 
+
+    Type "ls -l /usr/bin/env" to see if it is available. If not available, try 
+    "which env" and then replace the shebang in all *.pl file with the right path.
+
+    In order to run the pipeline, the following prerequisites must be installed.
+
+II. Prerequisites
 
 The pipeline utilizes a set of tools, most of which are common in
-bioinformatics field. They must be installed before the pipeline can be run.
-These include perl modules, NGS tools, R, Java, and Python programs. 
+bioinformatics field. These include perl modules, NGS tools, R, Java, 
+and Python program. 
 
 (1) Perl modules. 
 
@@ -12,12 +30,7 @@ The following external modules are used by the pipeline.
 
     Config::Tiny
     Excel::Writer::XLSX
-    Spreadsheet::ParseExcel
-    Spreadsheet::XLSX
-    Time::HiRes
     JSON
-    CGI
-    URI::Escape
     Bio::PrimarySeq (Part of BioPerl package) 
 
     Some of them may have already been installed in your system. You may use this
@@ -45,7 +58,24 @@ The following external modules are used by the pipeline.
         perl -e "print join(\"\n\", @INC)"
 
 
-    The modules can be found on CPAN: https://www.cpan.org.
+    The modules can be found on CPAN: https://www.cpan.org. Installing Bioperl could be 
+    a bit complex. See https://github.com/bioperl/bioperl-live/blob/master/INSTALL.md.  
+
+    Other modules can be installed in local directory, e.g. these steps show how to 
+    install Config::Tiny into local directory $HOME/perlmod.    
+
+        wget http://search.cpan.org/CPAN/authors/id/R/RS/RSAVAGE/Config-Tiny-2.23.tgz 
+        tar xvfz Config-Tiny-2.23.tgz
+        cd Config-Tiny-2.23
+        perl Makefile.PL INSTALL_BASE=$HOME/perlmod
+        make
+        make install
+
+	If a module is installed globally, it is already in @INC. But if it is installed 
+    in a local path, you'll need to add the path to @INC by setting PERL5LIB, for 
+    example, adding it to the front of pipeline script run.sh in crispr-dav directory.
+
+        export PERL5LIB=$HOME/perlmod:$PERL5LIB
 
 (2) NGS tools
 
@@ -123,19 +153,6 @@ The following external modules are used by the pipeline.
 
     If this works, be sure to include the statement in the pipeline's run.sh. 
 
-II. CRISPR-DAV pipeline
-  
-    The pipeline itself can be easily installed by:
- 
-         git clone https://github.com/pinetree1/crispr-dav.git
+III. Test run
 
-    This would install it in crispr-dav directory.
-
-    The Perl programs (*.pl) in crispr-dav directory use this line to invoke 
-    the perl in your environment:
-
-         #!/usr/bin/env perl 
-
-    If /usr/bin/env is not available on your system, try to find it using 
-    "which env" command and then replace the shebang with the right path.
-
+    CRISPR-DAV software includes two examples. Check the README.md for test runs.

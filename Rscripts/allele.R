@@ -120,7 +120,7 @@ p<-ggplot(ag, aes(x=factor(allele), y=freq, fill=factor(type, levels=c("Deletion
 	scale_fill_manual(values=c("WT"="#e74c3c", "Deletion"="#229954", "Insertion"="#2e86c1")) +
 	labs(x="Allele Position and Indel Length", y="Reads", 
 		title=paste("Allele Frequencies\nSample:", sample)) +
-	theme(legend.title=element_blank(), legend.text=element_text(size=12, face="bold"), 
+	theme(legend.title=element_blank(), legend.text=element_text(size=10, face="bold"), 
 		legend.position='bottom',legend.direction='horizontal' ) +
 	customize_title_axis(angle=90, size=13) +
 	theme(axis.text.x=element_text(angle=90, family="Courier", face="bold", size=11))

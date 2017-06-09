@@ -109,6 +109,11 @@ sub crispr_data {
     my @crisprs   = sort keys %{ $h{crispr_samples} };
     my $plot_ext  = $h{high_res} ? "tif" : "png";
 
+	# Save a copy of the description of intermediate files
+	if ( -f "$Bin/interm_file_desc" ) {
+		qx(cp $Bin/interm_file_desc $h{align_dir}/README);
+	}
+
     foreach my $crispr (@crisprs) {
         print STDERR "\nWorking on CRISPR site $crispr across all samples ...\n";
         my $dest = "$h{deliv_dir}/$crispr/Assets";
@@ -255,9 +260,14 @@ Usage: $0 [options]
     --conf <str> Configuration file. Required. See template $CONF_TEMPLATE
         It specifies ref_fasta, bwa_idx, min_qual_mean, min_len, etc.
 
-    Specify a reference using --genome or --amp_fasta. Use --genome for standard genomes 
-        with fasta file, bwa index, and gene coordinates as specified in configuration 
-        file. Use --amp_fasta when trying to use a custom amplicon sequenece as reference. 
+    Specify a reference using --genome or --amp_fasta, but not both. 
+    Use --genome for standard genome, such as hg19. Need to have paths of fasta file, 
+    bwa index, and refGene coordinate file in the configuration file. To download the  
+    coordinate file, go to UCSC Genome Browser, in TableBrowser, select group:Genes 
+    and Gene Predictions, track:RefSeq Genes, table:refGene, output format:all fields
+    from selected table. The downloaded tab-delimited file should have these columns:
+    bin,name,chrom,strand,txStart,txEnd,cdsStart,cdsEnd,exonStarts,exonEnds,... 
+    Use --amp_fasta when trying to use a custom amplicon sequenece as reference. 
 
     --genome <str> Genome version (e.g. hg19) as specified in configuration file.
 
@@ -273,27 +283,31 @@ Usage: $0 [options]
         The start and end are 0-based; start is inclusive and end is exclusive.
         Genesym is gene symbol. Refseqid is used to identify transcript coordinates in 
         UCSC refGene coordinate file. If refseqid is '-', no alignment view will be created. 
+        Only one row is allowed this file. If an experiment has two amplicons, run the pipeline
+        separately for each amplicon. 
 
-    --crispr <str> Required. A bed file containing one or multiple CRISPR sgRNA sites.
-        Information for each site:
-        The tab-separated fields are chr, start, end, CRISPR_name, sgRNA_sequence, strand, 
-        and HDR mutations.  All fields except HDR mutations are required. The start and end 
-        are 0-based; start is inclusive and end is exclusive. Names and sequences must be unique. 
-        HDR format: <Pos1><NewBase1>,<Pos2><NewBase2>,... The bases are desired new bases on 
-        positive strand,e.g.101900208C,101900229G,101900232C,101900235A. No space. These 
+    --crispr <str> Required. A bed file containing one or more CRISPR sgRNA sites.
+        Tab-delimited file. No header. Information for each site:
+        The fields are: chr, start, end, CRISPR_name, sgRNA_sequence, strand, and 
+        HDR mutations.  All fields except HDR mutations are required. The start and end 
+        are 0-based; start is inclusive and end is exclusive. CRISPR names and sequences 
+        must be unique. 
+        HDR format: <Pos1><NewBase1>,<Pos2><NewBase2>,... The bases are desired new bases 
+        on positive strand,e.g.101900208C,101900229G,101900232C,101900235A. No space. The 
         positions are 1-based and inclusive. 
 
-    --fastqmap <str> Required. A file containing 2 or 3 columns separated by tab. No header.
-        The fields are sample name, read1 fastq file(.gz), and optionally read2 fastq file(.gz).
+    --fastqmap <str> Required. A tab-delimited file containing 2 or 3 columns. No header.
+        The fields are sample name, read1 fastq file, and optionally read2 fastq file.
+        Fastq files must be gizpped and and file names end with .gz.
 
-    --sitemap <str> Required. A file that associates sample name with CRISPR sites. 
-        No header. Each line starts with sample name, followed by one or more sgRNA 
-        sequences. Sample name and sgRNA sequences are separated by tab.
+    --sitemap <str> Required. A tab-delimited file that associates sample name with CRISPR 
+        sites. No header. Each line starts with sample name, followed by one or more sgRNA
+        guide sequences. 
 
     --sge Submit jobs to SGE queue. Your system must already have been configured for SGE.
     --outdir <str> Output directory. Default: current directory.
     --help  Print this help message.
-    --verbose Print some commands and information.
+    --verbose Print some commands and information for debugging.
 ";
 
     my @all_args = @ARGV;
@@ -710,7 +724,7 @@ sub check_pysam {
     my $pysamstats = shift;
     if ( system("$pysamstats --help > /dev/null") ) {
         my $msg =
-"$pysamstats does not run properly. If there is error importing a module,";
+"$pysamstats did not run properly. If there is error importing a module,";
         $msg .=
           " please include the module path in environment variable PYTHONPATH.";
         die "$msg\n";

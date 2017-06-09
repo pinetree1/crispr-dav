@@ -15,9 +15,9 @@ function toggleImg(id) {
 	var t=x.length - 1
 	var y=x[t]
 	if (y=='plus.jpg')
-		theImg.src="assets/minus.jpg"
+		theImg.src="Assets/minus.jpg"
 	else if (y=='minus.jpg')
-		theImg.src="assets/plus.jpg"
+		theImg.src="Assets/plus.jpg"
 }
 
 function showCharts( crispr_name ) {
@@ -30,13 +30,13 @@ function showCharts( crispr_name ) {
         str = "<table border=0>";
         for (i=0; i< types.length; i++) {
             if ( i%2 ==0 ) { str +="<tr>"; }
-            str += "<td><img src=assets/" + sample + "." + crispr_name + "." + types[i] + plot_ext + "></td>";
+            str += "<td><img src=Assets/" + sample + "." + crispr_name + "." + types[i] + plot_ext + "></td>";
             if ( i%2 == 1 ) { str +="</tr>"; }
         }
         str += "</tr>";
 
         // chart for snp
-        str += "<tr><td colspan=2><img src=assets/" + sample + "." + crispr_name + ".snp" + plot_ext + "></td></tr>";
+        str += "<tr><td colspan=2><img src=Assets/" + sample + "." + crispr_name + ".snp" + plot_ext + "></td></tr>";
         str += "</table>";
     }
     document.getElementById("charts").innerHTML = str;

@@ -58,13 +58,12 @@ create_plot <- function (data, type, imgfile, cols, ytitle, maintitle, high_res)
 			scale_fill_discrete(name=' ', breaks=cols, labels=legends) +
 			customize_title_axis(angle=45) +
 			theme(axis.text.x=element_text(vjust=1, hjust=1)) +
-			theme(legend.text=element_text(face='bold', size=13), 
-				legend.title=element_text(size=13),
+			theme(legend.text=element_text(face='bold', size=11), 
 				legend.position='bottom', legend.direction='horizontal') +
 			geom_text(aes(label=value), position=position_dodge(width=0.5), 
 				check_overlap=TRUE, vjust=-0.5, size=3)
 	} else {
-		ymax <- ifelse(type=='count', 1000, 100)
+		ymax <- ifelse(type=='count', 1000, 105)
 		p <- ggplot(data, aes(x=Sample, y=value, fill=variable)) +
 			labs(y=ytitle, title=maintitle) +
 			customize_title_axis(angle=45) + 
@@ -75,7 +74,7 @@ create_plot <- function (data, type, imgfile, cols, ytitle, maintitle, high_res)
 	}
 
 	if ( high_res ) {
-		h<-4
+		h<-5
 		w<-ifelse(n>10, 0.5*n, h)
 		tiff(filename=imgfile, width=w, height=h, units='in', res=1200)
 	} else {

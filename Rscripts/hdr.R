@@ -70,8 +70,10 @@ p<- ggplot(datm, aes(x=Sample, y=value, fill=factor(variable, levels=vnames))) +
 	theme_bw() + 
 	scale_y_continuous(breaks=c(0,25,50,75,100), limits=c(0,limit_y)) +
 	scale_fill_manual(name="Oligo Type: ", breaks=vnames, labels=vlabels, 
-		values=c('PctNonOligo'="#DF98EF", 'PctPartialOligo'="#f4d03f", 
-			'PctEditedOligo'="#0101DF", 'PctPerfectOligo'="#229954")) +
+		#values=c('PctNonOligo'="#DF98EF", 'PctPartialOligo'="#f4d03f", 
+		#	'PctEditedOligo'="#0101DF", 'PctPerfectOligo'="#229954")) +
+		values=c('PctNonOligo'="#58D3F7", 'PctPartialOligo'="#f4d03f", 
+			'PctEditedOligo'="#2E64FE", 'PctPerfectOligo'="#229954")) +
 	labs(x='Sample', y='% Reads', title=mtitle) +
 	customize_title_axis(angle=45)  
 

@@ -101,7 +101,7 @@ create_plot <- function (ymax, ycol, xtitle, ytitle, mtitle, outfile) {
 			scale_fill_manual(limits=c(hname), values=c('grey')) + 
 			theme(legend.title=element_blank(), 
 				legend.key=element_rect(fill='grey'),
-				legend.text=element_text(face="bold", size=12),
+				legend.text=element_text(face="bold", size=11),
 				legend.position="bottom",
 				legend.direction="horizontal"
 			)	

@@ -2,12 +2,13 @@
 
 I. Prerequisites
 
-The pipeline utilizes a set of common software tools. They must be installed 
-before the pipeline can be run.
+The pipeline utilizes a set of tools, most of which are common in
+bioinformatics field. They must be installed before the pipeline can be run.
+These include perl modules, NGS tools, R, Java, and Python programs. 
 
 (1) Perl modules. 
 
-The following modules must be installed in paths shown in or added to the @INC array. 
+The following external modules are used by the pipeline. 
 
     Config::Tiny
     Excel::Writer::XLSX
@@ -17,28 +18,124 @@ The following modules must be installed in paths shown in or added to the @INC a
     JSON
     CGI
     URI::Escape
-    BioPerl modules 
+    Bio::PrimarySeq (Part of BioPerl package) 
 
-To check whether a module is already installed, at command line, type:
-    perl -e "use modulename", e.g. perl -e "use Config::Tiny"
-If the command return nothing, it means the module is already installed.
+    Some of them may have already been installed in your system. You may use this
+    command to check: 
 
-If you don't have root access, but intend to install a module in your local directory,
-you'll need to include the local path in PERL5LIB environment variable. 
-    export PERL5LIB=$PERL5LIB:<localPath>
-Then the new path will be automatically shown in @INC and the module will be
-loaded correctly. To see the @INC values, you may use this command:
-    perl -e "print join(\"\n\", @INC)"
+        perl -e "use <module>", e.g. perl -e "use Config::Tiny"
+
+    If there is no output, it means the module is already installed. Error message
+	should show up if it's not installed.
+
+    To find the path of a module, try:
+
+        perldoc -l <module>
+
+    If you don't have root access, you can install a module in your local
+    directory. In order for perl to search for a local module, include the
+    local path in PERL5LIB environment variable.  
+
+        export PERL5LIB=<local Path>:$PERL5LIB
+
+    Perl's module search paths are stored in @INC. The local path in $PERL5LIB will
+    be added to the front in @INC and the module will be loaded correctly. To see 
+    the values of @INC, type:  
+
+        perl -e "print join(\"\n\", @INC)"
 
 
-(2) 
+    The modules can be found on CPAN: https://www.cpan.org.
 
+(2) NGS tools
+
+    BWA: https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2/download 
+
+    Samtools: https://sourceforge.net/projects/samtools/files/samtools/1.3.1/samtools-1.3.1.tar.bz2/download
+        Older version of samtools is OK too.
+
+    Bedtools2: https://github.com/arq5x/bedtools2/releases/download/v2.25.0/bedtools-2.25.0.tar.gz
+        Must have version bedtools2.
+
+    PRINSEQ: https://sourceforge.net/projects/prinseq/files/standalone/prinseq-lite-0.20.4.tar.gz/download 
+        Be sure to make the program prinseq-lite.pl executable: 
+        chmod +x prinseq-lite.pl
+
+    ABRA: https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar
+
+(3) R and packages
+
+    R software: https://cran.r-project.org/src/base/R-3/R-3.2.1.tar.gz
+
+    R packages: ggplot2, naturalsort
+
+    To install the packages, after starting R, type:
+
+    >install.packages("ggplot2")
+
+    >install.packages("naturalsort")
+
+    If you get permission errors, you may need to install R in a local directory.
+
+(4) Java
+
+    Java 1.7 or higher is needed to run ABRA jar file. To see java version in
+    your system, type: 
+
+    java -version
+
+(5) Python program 
+
+    pysamstats: https://github.com/alimanfoo/pysamstats 
+
+    Check the web site for installation instructions(for root). 
+
+    If you want to install it in your home directory, you may try these steps:
+
+    A. Install pysam module
+
+        pip install --install-option="--prefix=$HOME" pysam==0.8.4
+
+    This would install pysam in $HOME/lib/python2.7/site-packages, assuming
+    your Python version is 2.7.
+
+	B. Install pysamstats
+
+        git clone git://github.com/alimanfoo/pysamstats.git
+        cd pysamstats
+        python setup.py install --prefix=$HOME
+
+    This would install pysamstats executable script in $HOME/bin and
+    pysamstats module in $HOME/lib/python2.7/site-packages.
+
+    C. Check whether the modules can be loaded by running this:  
+
+       $ python
+
+       >>>import pysam
+       >>>import pysamstats
+       >>>exit()
+
+    If there is no output, the installation is successful. Otherwise, try to 
+    include you local library path to PYTHONPATH before trying to import. 
+
+       export PYTHONPATH=$PYTHONPATH:$HOME/lib/python2.7/site-packages
+
+    If this works, be sure to include the statement in the pipeline's run.sh. 
+
+II. CRISPR-DAV pipeline
+  
+    The pipeline itself can be easily installed by:
  
+         git clone https://github.com/pinetree1/crispr-dav.git
 
+    This would install it in crispr-dav directory.
 
+    The Perl programs (*.pl) in crispr-dav directory use this line to invoke 
+    the perl in your environment:
 
+         #!/usr/bin/env perl 
 
-   
- 
-
+    If /usr/bin/env is not available on your system, try to find it using 
+    "which env" command and then replace the shebang with the right path.
 

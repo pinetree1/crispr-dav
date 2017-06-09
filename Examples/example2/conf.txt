@@ -1,3 +1,5 @@
+## Required tools 
+
 [app]
 prinseq = /home/wangx112/app/prinseq-lite-0.20.4/prinseq-lite.pl 
 samtools = /home/wangx112/app/samtools-1.3.1/samtools 
@@ -8,17 +10,25 @@ bedtools = /home/wangx112/app/bedtools2/bin/bedtools
 pysamstats = /home/wangx112/bin/pysamstats
 rscript = /home/wangx112/app/R-3.2.1/bin/Rscript
 
+## Filtering parameters
+
 [prinseq]
-min_qual_mean = 30
-min_len	= 50
-ns_max_p = 3
+# remove reads with quality score mean below this value (default: 30) 
+#min_qual_mean = 30
+
+# remove reads with length less than this value (default: 50) 
+#min_len	= 50
+
+# remove reads with percentage of Ns over this value (default: 3).
+#ns_max_p = 3 
 
 [other]
-# realign for large indel detection
-realign_flag = N 
+# realign for large indel detection with ABRA: Y(default) or N
+#realign_flag = Y 
 
-# require BWA mapping quality score when selecting mapped reads
-min_mapq = 20
+# require minimum BWA mapping quality score (default: 20) 
+#min_mapq = 20
 
-# number of bases on each side of sgRNA to view base changes 
-wing_length = 40
+# number of bases on each side of sgRNA to view base changes (default: 40) 
+#wing_length = 40 
+

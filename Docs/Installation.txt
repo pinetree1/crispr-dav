@@ -26,12 +26,12 @@ and Python program.
 
 (1) Perl modules. 
 
-The following external modules are used by the pipeline. 
+The following external uncommon modules are used by the pipeline. 
 
     Config::Tiny
     Excel::Writer::XLSX
     JSON
-    Bio::PrimarySeq (Part of BioPerl package) 
+    #Bio::PrimarySeq (Part of BioPerl package) 
 
     Some of them may have already been installed in your system. You may use this
     command to check: 
@@ -40,10 +40,6 @@ The following external modules are used by the pipeline.
 
     If there is no output, it means the module is already installed. Error message
 	should show up if it's not installed.
-
-    To find the path of a module, try:
-
-        perldoc -l <module>
 
     If you don't have root access, you can install a module in your local
     directory. In order for perl to search for a local module, include the
@@ -58,10 +54,11 @@ The following external modules are used by the pipeline.
         perl -e "print join(\"\n\", @INC)"
 
 
-    The modules can be found on CPAN: https://www.cpan.org. Installing Bioperl could be 
-    a bit complex. See https://github.com/bioperl/bioperl-live/blob/master/INSTALL.md.  
+	If you have cpanm, installing a perl module as root is simple:
 
-    Other modules can be installed in local directory, e.g. these steps show how to 
+        cpanm <module>, e.g. cpanm Config::Tiny
+ 
+    If you prefer to install modules in local directory, e.g. these steps show how to 
     install Config::Tiny into local directory $HOME/perlmod.    
 
         wget http://search.cpan.org/CPAN/authors/id/R/RS/RSAVAGE/Config-Tiny-2.23.tgz 

@@ -95,13 +95,20 @@ if (nrow(dat)==0) {
 
 # data in the range
 dat <- dat[dat$pos >= rangeStart & dat$pos <= rangeEnd, ]
+
+## fields for outtsv file
+bases=c('A', 'C', 'G', 'T')
+pctBases=paste0("Pct", bases)
+fs <- c('Sample', 'chrom', 'pos', 'ref', 'total', bases, pctBases)
+
 if (nrow(dat)==0) {
 	blank_plot(dat, xtitle, ytitle, mtitle, outfile)
+    fileConn <- file(outtsv)
+    writeLines(paste(fs, collapse="\t"), fileConn)
+    close(fileConn)
 	exit("Warning: No data in and around CRISPR site", 0)
 }
 
-bases=c('A', 'C', 'G', 'T')
-pctBases=paste0("Pct", bases)
 dat$total = dat$A +  dat$T + dat$C + dat$G
 dat$Sample = sample
 for ( i in c(1:4) ) {

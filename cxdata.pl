@@ -44,6 +44,11 @@ print $ofh join( "\t",
 my ( $sample, $site_name, $chr, $guide_start, $guide_end ) =
   getCrisprInfo($infile);
 
+if ( !$sample ) {
+    close $ofh;
+    exit 0;
+}
+
 ## Get information about the gene coordinates
 my @tmp        = refGeneCoord( $refGene, $h{refseqid} );
 my $strand     = $tmp[2];                               # strandness of the gene
@@ -154,7 +159,6 @@ while ( $line = <$ifh> ) {
 close $ifh;
 
 if ( !$wt_added ) {
-
     # add WT entry if not added
     print $ofh join( "\t",
         $sample,    $site_name, $start, $wt_segment,
@@ -198,7 +202,7 @@ sub getCrisprInfo {
     my ( $chr, $guide_start, $guide_end ) = split( /[:-]/, $a[2] );
     close $fh;
 
-    die "Error: No data in $file\n" if !$sample;
+    #die "Error: No data in $file\n" if !$sample;
 
     return ( $sample, $site_name, $chr, $guide_start, $guide_end );
 }

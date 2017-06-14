@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 ##!/usr/bin/perl -w
 # Author: Charles Tilford
-
+# 6/12/2017: xw removed reliance on bioperl
 use strict;
 use JSON;
 use FindBin qw($Bin);
@@ -133,7 +133,6 @@ sub cx_panel {
         my $clas = $mut->{Class};
         my $frm = $mut->{Frame};
         my $seq = $mut->{Seq};
-		print STDERR "frm:$frm, seq:$seq\n";
         if ($seq && defined $frm) {
             # We can translate the reference
             #my $dBS = Bio::PrimarySeq->new

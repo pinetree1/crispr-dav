@@ -18,10 +18,16 @@ use Data::Dumper;
 $| = 1;
 
 my %h = get_input();
-process_samples();
-crispr_data();
+my $failed_href=process_samples();
+crispr_data($failed_href);
 
 sub process_samples {
+
+    # Save a copy of the description of intermediate files
+    if ( -f "$Bin/interm_file_desc" ) {
+        qx(cp $Bin/interm_file_desc $h{align_dir}/README);
+    }
+
     ## process each sample separately
     my @samples       = sort keys %{ $h{sample_crisprs} };
     my $total_samples = $#samples + 1;
@@ -41,9 +47,10 @@ sub process_samples {
             my $jobname = Util::getJobName( "C", "$i" );
             my $cores_per_job = 2;
 
-# set this to at least 2 so as not to overwhelm the system when there are two many samples.
-            $cmd =
-"qsub -cwd -pe orte $cores_per_job -V -o $h{align_dir}/$sample.log -j y -b y -N $jobname $cmd";
+            # set this to at least 2 so as not to overwhelm the 
+            # system when there are too many samples.
+            $cmd = "qsub -cwd -pe orte $cores_per_job -V -o $h{align_dir}/$sample.log" . 
+                " -j y -b y -N $jobname $cmd";
             print STDERR "$cmd\n" if $h{verbose};
             if ( system($cmd) ) {
                 die "Failed to submit job for $sample\n";
@@ -52,17 +59,16 @@ sub process_samples {
         }
         else {
             $cmd .= " >$h{align_dir}/$sample.log 2>&1";
-            Util::run( $cmd, "Failed in processing sample $sample",
-                $h{verbose}, $fail_flag );
+            Util::run( $cmd, "", $h{verbose}, $fail_flag, 1 );
         }
     }
 
-    ## wait for jobs to finish
+    ## Wait for jobs to finish.  
     my $interval     = 120;                         # seconds
-    my $max_days     = 2;
+    my $max_days     = 1;
     my $max_time     = $max_days * 24 * 60 * 60;    # seconds
     my $elapsed_time = 0;
-    my @failures;
+    my @failures;  # failed samples
     while ( $elapsed_time < $max_time ) {
         sleep $interval;
         $elapsed_time += $interval;
@@ -81,41 +87,37 @@ sub process_samples {
         if ( $finished == $total_samples ) {
             last;
         }
-
-        if ( $total_samples - $finished <= 2 ) {
-            print STDERR "Waiting for "
-              . ( $total_samples - $finished )
-              . " sample(s) to finish ...\n";
-        }
-
-        if ( $h{sge} && $finished == 0 ) {
-
-# If no jobs are on the queue, but they are not indicated as finished either, then exit the program.
-            stop_processing( \%jobnames );
-        }
     }
 
-    if (@failures) {
-        die "Failed in processing samples: "
-          . join( ", ", @failures )
-          . ". Please check the log files in $h{align_dir}\n";
+    if (@failures ) {
+        print STDERR "\nErrors in processing samples:\n";
+        foreach my $s ( @failures ) {
+            my $err;
+            if ( -s "$h{align_dir}/$s.failed" ) {
+                open(my $erf, "$h{align_dir}/$s.failed");
+               	$err= <$erf>; chomp $err;
+                close $erf;
+            }
+
+            print STDERR "\t" . join(": ", $s, $err) . "\n";
+        }
+        print STDERR "\n\tPlease check log files in $h{align_dir}.\n";
     }
+
+    my %failed_samples = map{ $_ => 1 } @failures;
+    return \%failed_samples;
 }
 
 sub crispr_data {
     ## merge crispr-wide data
+  	my $failed_samples = shift; # hash ref 
     my $dir       = $h{align_dir};
     my $hasHeader = 1;
     my @crisprs   = sort keys %{ $h{crispr_samples} };
     my $plot_ext  = $h{high_res} ? "tif" : "png";
 
-	# Save a copy of the description of intermediate files
-	if ( -f "$Bin/interm_file_desc" ) {
-		qx(cp $Bin/interm_file_desc $h{align_dir}/README);
-	}
-
     foreach my $crispr (@crisprs) {
-        print STDERR "\nWorking on CRISPR site $crispr across all samples ...\n";
+        print STDERR "\nMerging data and creating plots for $crispr ...\n";
         my $dest = "$h{deliv_dir}/$crispr/Assets";
         make_path($dest);
 
@@ -123,72 +125,75 @@ sub crispr_data {
         my @tmp = split( /,/, $h{crisprs}->{$crispr} );
         my $hdr_bases = $tmp[5];
 
-        my @samp = sort keys %{ $h{crispr_samples}->{$crispr} };
+        # combine results of all successful samples
+        my @samp;  
+        foreach my $s ( sort keys %{ $h{crispr_samples}->{$crispr} } ) {
+            push (@samp, $s) if !$failed_samples->{$s};
+        }
+
         foreach my $ext ( "cnt", "chr", "snp", "pct", "len", "can", "hdr" ) {
             next if ( $ext eq "can" && !$h{canvasXpress} );
+            next if ( $ext eq "hdr" && !$hdr_bases );
 
             my $outfile = "$h{align_dir}/$crispr" . "_$ext.txt";
-            if ( $ext ne "hdr" or $hdr_bases ) {
-                my @infiles;
+            my (@infiles, $f);
+            foreach my $s ( @samp ) {
                 if ( $ext eq 'cnt' or $ext eq 'chr' ) {
-                    @infiles = map { "$h{align_dir}/$_.$ext" } @samp;
+                    $f = "$h{align_dir}/$s.$ext";
+                } else {
+                    $f = "$h{align_dir}/$s.$crispr.$ext";
                 }
-                else {
-                    @infiles = map { "$h{align_dir}/$_.$crispr.$ext" } @samp;
-                }
+                push(@infiles, $f) if -f $f;
+            }
 
+            if ( @infiles ) {
                 Util::tabcat( \@infiles, $outfile, $hasHeader );
-
-                my $excel_outfile = "$dest/$crispr" . "_$ext.xlsx";
-                Util::tab2xlsx( $outfile, $excel_outfile );
+                Util::tab2xlsx( $outfile, "$dest/${crispr}_$ext.xlsx" );
             }
-
-            if ( $ext eq 'cnt' ) {
-                my $cmd =
-                  "$h{rscript} $Bin/Rscripts/read_stats.R --inf=$outfile";
-                $cmd .=
-" --outf=$dest/$crispr.readcnt.$plot_ext --rmd=$h{remove_duplicate}";
-                $cmd .= " --high_res=$h{high_res}" if $h{high_res};
-                Util::run( $cmd, "Failed to create plot of read stats",
-                    $h{verbose} );
-            }
-            elsif ( $ext eq 'chr' ) {
-                my $cmd = "$h{rscript} $Bin/Rscripts/read_chr.R --inf=$outfile";
-                $cmd .= " --outf=$dest/$crispr.readchr.$plot_ext";
-                $cmd .= " --high_res=$h{high_res}" if $h{high_res};
-                Util::run( $cmd,
+        }
+       
+        # plot reads vs stages 
+        my $infile = "$h{align_dir}/$crispr" . "_cnt.txt";
+        my $cmd = "$h{rscript} $Bin/Rscripts/read_stats.R --inf=$infile" .
+            " --outf=$dest/$crispr.readcnt.$plot_ext --rmd=$h{remove_duplicate}"; 
+        $cmd .= " --high_res=$h{high_res}" if $h{high_res};
+        Util::run($cmd, "Failed to create plot of read stats", $h{verbose});
+        
+        # plot reads vs chromosomes 
+        $infile="$h{align_dir}/$crispr" . "_chr.txt";
+        $cmd = "$h{rscript} $Bin/Rscripts/read_chr.R --inf=$infile" .
+               " --outf=$dest/$crispr.readchr.$plot_ext";
+        $cmd .= " --high_res=$h{high_res}" if $h{high_res};
+        Util::run( $cmd,
                     "Failed to create plot of read count on chromosomes",
                     $h{verbose} );
-            }
-            elsif ( $ext eq "pct" ) {
-                # create plots for indel count and pct
-                my $cmd = "$h{rscript} $Bin/Rscripts/indel.R --inf=$outfile ";
-                $cmd .= " --cntf=$dest/$crispr.indelcnt.$plot_ext";
-                $cmd .= " --pctf=$dest/$crispr.indelpct.$plot_ext";
-                $cmd .= " --high_res=$h{high_res}" if $h{high_res};
-                Util::run( $cmd, "Failed to create indel count/pct plots",
-                    $h{verbose} );
-            }
-            elsif ( $ext eq "hdr" and $hdr_bases ) {
-                # create HDR plot
-                my $cmd =
-"$h{rscript} $Bin/Rscripts/hdr.R --inf=$outfile --sub=$crispr";
-                $cmd .= " --outf=$dest/$crispr.hdr.$plot_ext";
-                $cmd .= " --high_res=$h{high_res}" if $h{high_res};
-                Util::run( $cmd, "Failed to create HDR plot", $h{verbose} );
-            }
-            elsif ( $ext eq "can" ) {
-                # create canvasXpress alignment html file
-                foreach my $pct ( 0 .. 1 ) {
-                    my $cmd =
-"$Bin/crispr2cx.pl -input $outfile -perc $pct > $h{deliv_dir}/$crispr/${crispr}_cx$pct.html";
-                    Util::run( $cmd,
-                        "Failed to create canvasXpress alignment view",
+
+        # plot indel count and pct
+        $infile="$h{align_dir}/$crispr" . "_pct.txt";
+        $cmd = "$h{rscript} $Bin/Rscripts/indel.R --inf=$infile" .
+               " --cntf=$dest/$crispr.indelcnt.$plot_ext" .
+               " --pctf=$dest/$crispr.indelpct.$plot_ext";
+        $cmd .= " --high_res=$h{high_res}" if $h{high_res};
+        Util::run( $cmd, "Failed to create indel count/pct plots", $h{verbose} );
+            
+        # plot HDR 
+        if ( $hdr_bases ) {
+            $infile="$h{align_dir}/$crispr" . "_hdr.txt";
+            $cmd = "$h{rscript} $Bin/Rscripts/hdr.R --inf=$infile --sub=$crispr" .
+                   " --outf=$dest/$crispr.hdr.$plot_ext";
+            $cmd .= " --high_res=$h{high_res}" if $h{high_res};
+            Util::run( $cmd, "Failed to create HDR plot", $h{verbose} );
+        }
+
+        # generate data for interactive alignment view
+        $infile="$h{align_dir}/$crispr" . "_can.txt";
+        foreach my $pct ( 0 .. 1 ) {
+            $cmd = "$Bin/crispr2cx.pl -input $infile -perc $pct >" .
+                   " $h{deliv_dir}/$crispr/${crispr}_cx$pct.html";
+            Util::run( $cmd, "Failed to create canvasXpress alignment view",
                         $h{verbose} );
-                    system($cmd);
-                }
-            }
-        }    # ext
+        }
+
         print STDERR "Combined data and created plots.\n"; 
 
         ## move the image files for individual sample to dest
@@ -200,20 +205,18 @@ sub crispr_data {
         }
 
         ## create results html page
-        my $cmd = "$Bin/report.pl --ref $h{genome} --gene $h{gene_sym}";
-        $cmd .= " --region $h{region} --crispr $h{crispr} --cname $crispr";
+        my $cmd = "$Bin/report.pl --ref $h{genome} --gene $h{gene_sym}" .
+            " --region $h{region} --crispr $h{crispr} --cname $crispr" .
+            " --min_qual_mean $h{min_qual_mean} --min_len $h{min_len}" .
+            " --ns_max_p $h{ns_max_p} --min_mapq $h{min_mapq}" .
+            " --wing_length $h{wing_length}";
         $cmd .= " --nocx" if !$h{canvasXpress};
         $cmd .= " --high_res" if $h{high_res};
-        $cmd .= " --min_qual_mean $h{min_qual_mean} --min_len $h{min_len}";
-        $cmd .= " --ns_max_p $h{ns_max_p} --min_mapq $h{min_mapq}";
         $cmd .= " --realign" if $h{realign_flag} eq "Y";
-        $cmd .= " --wing_length $h{wing_length}";
         $cmd .= " $h{align_dir} $h{deliv_dir}";
         Util::run( $cmd, "Failed to create results html page", $h{verbose} );
-		print STDERR "Generated HTML report.\n";
-    }    # crispr
-
-    print STDERR "\nAll done!\n";
+        print STDERR "Generated HTML report.\n";
+    } # for each crispr
 }
 
 sub prepare_command {
@@ -225,12 +228,11 @@ sub prepare_command {
     $cmd .= " --read2fastq $fastqs[1]" if $fastqs[1];
     $cmd .= " --picard $h{picard}"     if $h{picard};
     $cmd .= " --abra $h{abra} --prinseq $h{prinseq}";
-    $cmd .=
-" --samtools $h{samtools} --bwa $h{bwa} --java $h{java} --bedtools $h{bedtools}";
-    $cmd .=
-      " --pysamstats $h{pysamstats} --rscript $h{rscript} --tmpdir $h{tmpdir}";
-    $cmd .= " --min_qual_mean $h{min_qual_mean} --min_len $h{min_len}";
-    $cmd .= " --ns_max_p $h{ns_max_p}";
+    $cmd .= " --samtools $h{samtools} --bwa $h{bwa}";
+    $cmd .= " --java $h{java} --bedtools $h{bedtools}";
+    $cmd .= " --pysamstats $h{pysamstats} --rscript $h{rscript}"; 
+    $cmd .= " --tmpdir $h{tmpdir} --min_qual_mean $h{min_qual_mean}";
+    $cmd .= " --min_len $h{min_len} --ns_max_p $h{ns_max_p}";
 
     $cmd .= " --unique"  if $h{remove_duplicate} eq "Y";
     $cmd .= " --realign" if $h{realign_flag}     eq "Y";
@@ -258,7 +260,7 @@ sub get_input {
 Usage: $0 [options] 
 
     --conf <str> Configuration file. Required. See template $CONF_TEMPLATE
-        It specifies ref_fasta, bwa_idx, min_qual_mean, min_len, etc.
+        It has information about genome locations, tools, and parameters.  
 
     Specify a reference using --genome or --amp_fasta, but not both. 
     Use --genome for standard genome, such as hg19. Need to have paths of fasta file, 
@@ -267,7 +269,7 @@ Usage: $0 [options]
     and Gene Predictions, track:RefSeq Genes, table:refGene, output format:all fields
     from selected table. The downloaded tab-delimited file should have these columns:
     bin,name,chrom,strand,txStart,txEnd,cdsStart,cdsEnd,exonStarts,exonEnds,... 
-    Use --amp_fasta when trying to use a custom amplicon sequenece as reference. 
+    Use --amp_fasta when using a custom amplicon sequenece as reference. 
 
     --genome <str> Genome version (e.g. hg19) as specified in configuration file.
 
@@ -283,8 +285,8 @@ Usage: $0 [options]
         The start and end are 0-based; start is inclusive and end is exclusive.
         Genesym is gene symbol. Refseqid is used to identify transcript coordinates in 
         UCSC refGene coordinate file. If refseqid is '-', no alignment view will be created. 
-        Only one row is allowed this file. If an experiment has two amplicons, run the pipeline
-        separately for each amplicon. 
+        Only one row is allowed this file. If an experiment has two amplicons, run the 
+        pipeline separately for each amplicon. 
 
     --crispr <str> Required. A bed file containing one or more CRISPR sgRNA sites.
         Tab-delimited file. No header. Information for each site:
@@ -302,9 +304,9 @@ Usage: $0 [options]
 
     --sitemap <str> Required. A tab-delimited file that associates sample name with CRISPR 
         sites. No header. Each line starts with sample name, followed by one or more sgRNA
-        guide sequences. 
+        guide sequences. This file controls what samples to be analyzed. 
 
-    --sge Submit jobs to SGE queue. Your system must already have been configured for SGE.
+    --sge Submit jobs to SGE queue. The system must already have been configured for SGE.
     --outdir <str> Output directory. Default: current directory.
     --help  Print this help message.
     --verbose Print some commands and information for debugging.
@@ -345,19 +347,39 @@ Usage: $0 [options]
     ## parameters in the config file
     my $cfg = Config::Tiny->read( $h{conf} );
 
-    ## tools
+    ## sections
+    for my $s ( "app", "other" ) {
+        die "Error: section [$s] is missing in $h{conf}.\n" if !$cfg->{$s};
+    }
+    
+    # app section
     foreach my $tool (
         "abra", "prinseq",  "samtools",   "bwa",
         "java", "bedtools", "pysamstats", "rscript"
       )
     {
         if ( !$cfg->{app}{$tool} ) {
-            die "Could not find $tool info in configuration file!\n";
-        }
+            if ( $tool eq "abra" or $tool eq "prinseq" ) {
+                die "Could not find $tool under section [app] in $h{conf}!\n";
+            } else {
+                # assuming using default.
+                if ( $tool eq "rscript" ) {
+                    $cfg->{app}{$tool} = "Rscript";
+                } else {
+                    $cfg->{app}{$tool} = $tool;
+                }
 
-        if ( !-f $cfg->{app}{$tool} ) {
+                if ( system("which $cfg->{app}{$tool}") ) {
+                    die "$tool must either be specified under [app]" .  
+                        " in $h{conf} or accessible in your PATH\n"; 
+                }
+            }
+        } 
+
+        if ( $cfg->{app}{$tool} =~ /\// && !-f $cfg->{app}{$tool} ) {
             die "Could not find $cfg->{app}{$tool}!\n";
         }
+
         $h{$tool} = $cfg->{app}{$tool};
     }
 
@@ -377,7 +399,7 @@ Usage: $0 [options]
     ## Directories
     $h{align_dir} = "$h{outdir}/align";
     $h{deliv_dir} = "$h{outdir}/deliverables";
-    $h{tmpdir}    = "$h{outdir}/align/tmp";
+    $h{tmpdir}    = "$h{align_dir}/tmp";
     make_path( $h{align_dir}, $h{deliv_dir}, $h{tmpdir} );
 
     if ( $h{genome} ) {
@@ -387,24 +409,30 @@ Usage: $0 [options]
         }
 
         if ( !$cfg->{ $h{genome} } ) {
-            die "Could not find $h{genome} genome section of configuration file!\n";
+            die "Could not find [$h{genome}] section in configuration file!\n";
         }
         $h{ref_fasta} = $cfg->{ $h{genome} }{ref_fasta};
         $h{bwa_idx}   = $cfg->{ $h{genome} }{bwa_idx};
         $h{refGene}   = $cfg->{ $h{genome} }{refGene};
 
-        if ( !$h{ref_fasta} or !-f $h{ref_fasta} ) {
-            die
-"Could not find ref_fasta entry in $h{conf} or the reference fasta file!\n";
+        foreach my $name ( "ref_fasta", "bwa_idx" ) {
+            if ( !$h{$name} ) { 
+                die "Could not find $name under [$h{genome}] in $h{conf}\n";
+            }
         }
 
-        if ( !$h{bwa_idx} or !-f "$h{bwa_idx}.bwt" ) {
-            die
-"Could not find bwa_index entry in $h{conf} or the bwa index files!\n";
+        if ( !-f $h{ref_fasta} ) {
+            die "Could not find $h{ref_fasta}\n";
+        }
+
+        if ( !-f "$h{bwa_idx}.bwt" ) {
+            die "Could not find bwa index files, e.g. $h{bwa_idx}.bwt\n"; 
         }
 
         if ( $h{refGene} && !-f $h{refGene} ) {
-            die "Could not find refGene file $h{refGene}!\n";
+            die "Could not find refGene file $h{refGene}!\n" . 
+                "  refGene is optional under [$h{genome}] in $h{conf}.\n" . 
+                "  It's needed for creating alignment view.\n";
         }
     }
     elsif ( $h{amp_fasta} ) {
@@ -454,8 +482,8 @@ Usage: $0 [options]
     $h{ns_max_p}      //= 3;
 
     ## Other parameters in the config file
-    $h{remove_duplicate} = uc($cfg->{other}{remove_duplicate});
-    $h{realign_flag}     = uc($cfg->{other}{realign_flag});
+    $h{remove_duplicate} = $cfg->{other}{remove_duplicate};
+    $h{realign_flag}     = $cfg->{other}{realign_flag};
     $h{min_mapq}         = $cfg->{other}{min_mapq};
     $h{wing_length}      = $cfg->{other}{wing_length};
     $h{high_res}         = $cfg->{other}{high_res};
@@ -463,9 +491,9 @@ Usage: $0 [options]
     # Defaults:
     $h{remove_duplicate} ||= "N";
     $h{realign_flag}     ||= "Y";
-	check_yn($h{remove_duplicate}, 
+    check_yn($h{remove_duplicate}, 
       "remove_duplicate value ($h{remove_duplicate}) must be Y or N(default)");
-	check_yn($h{realign_flag}, 
+    check_yn($h{realign_flag}, 
       "realign_flag ($h{realign_flag}) must be Y(default) or N");
     $h{min_mapq}         //= 20;
     $h{wing_length}      //= 40;
@@ -492,42 +520,41 @@ Usage: $0 [options]
     $h{sample_crisprs} = $sample_crisprs;
     $h{crispr_samples} = $crispr_samples;
 
-	# whether to create canvasXpress view of sgRNA on cDNA
+    # whether to create canvasXpress view on cDNA
     if ( $h{refseqid} 
-		&& $h{refseqid} ne "-" 
-		&& -f $h{refGene}
-		&& Util::refGeneCoord($h{refGene}, $h{refseqid})
-	) {
+        && $h{refseqid} ne "-" 
+        && -f $h{refGene}
+        && Util::refGeneCoord($h{refGene}, $h{refseqid})
+    ) {
         $h{canvasXpress} = 1;
     } else {
-		$h{canvasXpress} = 0;
-	}
+        $h{canvasXpress} = 0;
+    }
 
     ## fastq files
     $h{sample_fastqs} = get_fastq_files( $h{fastqmap} );
     print Dumper( $h{sample_fastqs} ) . "\n" if $h{verbose};
 
-    foreach my $key ( sort keys %h ) {
-        print STDERR "$key => $h{$key}\n" if $h{verbose};
-    }
-
     ## ensure all samples in sitemap are present in fastqmap
     foreach my $s ( keys %{ $h{sample_crisprs} } ) {
         if ( !defined $h{sample_fastqs}{$s} ) {
-            die "Error: Sample $s in sitemap is not found in fastqmap!\n";
+            die "Error: Sample $s in $h{sitemap} is not found in $h{fastqmap}!\n";
         }
     }
 
-    print STDERR "\nCRISPR info:\n" . Dumper( $h{crisprs} ) if $h{verbose};
-    print STDERR "\nCRISPR samples:\n" . Dumper( $h{crispr_samples} )
-      if $h{verbose};
-
+    foreach my $key ( sort keys %h ) {
+        print STDERR "$key => $h{$key}\n" if $h{verbose};
+    }
+    if ( $h{verbose} ) {
+        print STDERR "\nCRISPR info:\n" . Dumper($h{crisprs});
+        print STDERR "\nCRISPR samples:\n" . Dumper($h{crispr_samples});
+    }
     return %h;
 }
 
 sub check_yn {
-	my ($value, $errmsg) = @_;
-	die "$errmsg\n" if ($value ne "Y" && $value ne "N");
+    my ($value, $errmsg) = @_;
+    die "$errmsg\n" if ($value ne "Y" && $value ne "N");
 }
 
 sub process_beds {
@@ -542,6 +569,7 @@ sub process_beds {
     my $cnt = 0;
     while ( my $line = <$ampf> ) {
         next if ( $line =~ /^#/ or $line !~ /\w/ );
+        chomp $line;
         $line =~ s/ //g;
         $cnt++;
         if ( $cnt == 1 ) {
@@ -568,8 +596,8 @@ sub process_beds {
 
     my $MIN_AMP_SIZE = 50;
     if ( $amp[2] - $amp[1] < $MIN_AMP_SIZE ) {
-        die
-"Error: Amplicon size too small! Must be at least $MIN_AMP_SIZE bp.\n";
+        die "Error: Amplicon size too small!" . 
+            " Must be at least $MIN_AMP_SIZE bp.\n";
     }
 
     # ensure each crispr site range is inside amplicon range
@@ -579,7 +607,7 @@ sub process_beds {
 
     open( my $cb, $crispr_bed ) or die "Could not find $crispr_bed.\n";
     my %crispr_names;    # {seq}=>name. Ensure unique CRISPR sequences
-	my %seen_names; # to ensure unique CRISPR names 
+    my %seen_names; # to ensure unique CRISPR names 
     while ( my $line = <$cb> ) {
         next if ( $line !~ /\w/ || $line =~ /^#/ );
         $line =~ s/ //g;
@@ -592,8 +620,8 @@ sub process_beds {
         check_bed_coord( $start, $end, "Error in $crispr_bed" );
 
         if ( $chr ne $amp[0] ) {
-            die
-"Error: CRISPR $name\'s chromosome $chr does not match $amp[0] in amplicon bed.\n";
+            die "Error: CRISPR $name\'s chromosome $chr does not" . 
+                " match $amp[0] in amplicon bed.\n";
         }
 
         if ( $start < $amp[1] || $start > $amp[2] ) {
@@ -608,11 +636,11 @@ sub process_beds {
             die "Error: CRISPR sequence $seq is duplicated in $crispr_bed.\n";
         }
 
-		if ( $seen_names{$name} ) {
-			die "Error: CRISPR name $name is duplicated in $crispr_bed.\n";
-		}
+        if ( $seen_names{$name} ) {
+             die "Error: CRISPR name $name is duplicated in $crispr_bed.\n";
+        }
         $crispr_names{$seq} = $name;
-		$seen_names{$name} = 1;
+        $seen_names{$name} = 1;
         $crisprs{$name} = join( ",", $chr, $start, $end, $seq, $strand, $hdr );
     }
     close $cb;
@@ -621,6 +649,7 @@ sub process_beds {
     my %sample_crisprs;    # {sample}{crispr_name}=>1
     my %crispr_samples;    # {crispr_name}{sample}=>1
     open( my $sm, $sitemap ) or die "Could not find $sitemap\n";
+    my %dup; # avoid duplicated entry of sample and seq combination
     while ( my $line = <$sm> ) {
         next if ( $line !~ /\w/ or $line =~ /^\#/ );
         $line =~ s/ //g;
@@ -635,11 +664,14 @@ sub process_beds {
         foreach my $seq (@a) {
             next if !$seq;
             $seq = uc($seq);
-            die "Sequence $seq contained non-ACGT letter!\n"
-              if $seq !~ /[ACGT]/;
-			die "Error: $seq in $sitemap is not in $crispr_bed!\n" 
-              if !$crispr_names{$seq};
-            $found_seq                                      = 1;
+            die "Sequence $seq contained non-ACGT letter!\n" if $seq !~ /[ACGT]/;
+            die "Error: $seq in $sitemap is not in $crispr_bed!\n" if !$crispr_names{$seq};
+            $found_seq  = 1;
+
+            if ( $dup{$sample}{$seq} ) {
+                 die "Error: $sample and $seq combination is duplicated.\n";
+            }
+            $dup{$sample}{$seq} = 1;
             $sample_crisprs{$sample}{ $crispr_names{$seq} } = 1;
             $crispr_samples{ $crispr_names{$seq} }{$sample} = 1;
         }
@@ -655,8 +687,7 @@ sub get_fastq_files {
     my $filemap = shift;
     open( my $fh, $filemap ) or die "Could not find $filemap\n";
     my %fastqs;
-    my @errors;
-
+    my (%seen, %errors);
     while ( my $line = <$fh> ) {
         chomp $line;
         $line =~ s/ //g;
@@ -669,31 +700,25 @@ sub get_fastq_files {
         # ensure fastq files exist
         foreach my $f (@a) {
             next if !$f;
-            if ( !-f $f or -z $f ) {
-                push( @errors, "$f was not found or empty" );
-            }
-            elsif ( $f !~ /\.gz$/ ) {
-                push( @errors, "$f was not .gz file" );
-            }
-            else {
-                push( @b, $f );
-            }
+            push ( @{$errors{$f}}, "File not found") if !-f $f; 
+            push ( @{$errors{$f}}, "File not .gz") if $f !~ /\.gz$/ ;
+            push ( @{$errors{$f}}, "File duplicated") if $seen{$f};
+            push( @b, $f ) if !$errors{$f};
+            $seen{$f} = 1;
         }
 
         if (@b) {
             $fastqs{$sample} = join( ",", @b );
         }
-        else {
-            push( @errors, "No fastq file for $sample" );
-        }
     }
     close $fh;
 
-    if (@errors) {
-        die "Fastq file errors: \n"
-          . join( "\n",
-            @errors,
-            "Note: all fields in $filemap must be separated by tab\n" );
+    if ( %errors ) {
+        print STDERR "Fastq file errors:\n";
+        foreach my $f ( sort keys %errors ) {
+            print STDERR "$f: " . join("; ", @{$errors{$f}}) . "\n";
+        } 
+        exit 1;
     }
 
     return \%fastqs;
@@ -723,10 +748,9 @@ sub check_bed_coord {
 sub check_pysam {
     my $pysamstats = shift;
     if ( system("$pysamstats --help > /dev/null") ) {
-        my $msg =
-"$pysamstats did not run properly. If there is error importing a module,";
-        $msg .=
-          " please include the module path in environment variable PYTHONPATH.";
+        my $msg = "$pysamstats did not run properly. If there is error";
+		$msg .= " importing a module, please include the module path in";
+        $msg .= " environment variable PYTHONPATH.";
         die "$msg\n";
     }
 }
@@ -735,7 +759,6 @@ sub check_perlmod {
     my @mods = qw(Config::Tiny
       Excel::Writer::XLSX
       JSON
-      Bio::PrimarySeq
     );
 
     foreach my $mod (@mods) {
@@ -747,16 +770,17 @@ sub check_perlmod {
 sub stop_processing {
     my $href = shift;
 
-# If no jobs are on the queue, but they are not indicated as finished either, then exit the program.
     my $queue_jobs = Util::getJobCount($href);
     return if $queue_jobs;
 
-    my $delay = 360;
+    my $delay = 300;
     sleep $delay;
 
     my $log_cnt  = 0;
     my %jobnames = %{$href};
+    my $job_cnt = 0;
     while ( my ( $j, $s ) = each %jobnames ) {
+		$job_cnt ++;
         if ( -f "$h{align_dir}/$s.log" ) {
             $log_cnt++;
         }
@@ -764,7 +788,7 @@ sub stop_processing {
 
     my @done   = glob("$h{align_dir}/*.done");
     my @failed = glob("$h{align_dir}/*.failed");
-    if ( $log_cnt && !@done && !@failed ) {
+    if ( $log_cnt == $job_cnt && !@done && !@failed ) {
         print STDERR "Queued jobs have failed. Progam exited.\n";
         system("kill $h{pid}");
         exit 1;

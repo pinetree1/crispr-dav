@@ -22,8 +22,9 @@ my $usage = "Usage: $0 [option] indir outdir
     --realign   Flag to turn on realignment with ABRA
     --min_mapq  <int> Minimum mapping quality score
     --wing_length  <int> Number of bases on each side of sgRNA to view SNP 
-    indir  input directory where result files (e.g. plot image files) are. 
-    outdir  output directory 
+    indir  input directory where intermediate result files (e.g. 
+           plot image files) are, e.g ./align. 
+    outdir  output directory, e.g. ./deliberables 
 ";
 my %h;
 GetOptions( \%h, 'ref=s', 'region=s', 'crispr=s', 'gene=s', 'cname=s', 'nocx',
@@ -57,6 +58,18 @@ qx(cp $Bin/Assets/* $sitedir/Assets);
 ## find samples
 my @samples = getSamples( $indir, $site_name );
 my $rowsep = scalar(@samples) > 10 ? "</tr><tr>" : "";
+
+## find processing errors
+my $err_rows;   
+foreach my $f ( sort glob("$indir/*.failed") ) {
+    basename($f) =~ /(.*)\.failed$/;
+    my $s = $1;
+    open(my $erf, $f);
+    my $err = <$erf>; chomp $err;
+    close $erf;
+    $err //= "Check log in $indir";
+    $err_rows .= "<tr><td>$s</td><td>$err</td></tr>";
+}
 
 # create web page
 my $page = "$sitedir/index.html";
@@ -110,8 +123,20 @@ print $fh "</select>
 		<td><img src=Assets/$site_name.readcnt.$plot_ext></td>$rowsep
 		<td><img src=Assets/$site_name.readchr.$plot_ext></td>
 	</tr></table>
-	</div>
 ";
+
+if ( $err_rows ) {
+    print $fh "<br>
+          <table border=0><tr><td width=30></td><td>
+             <table border=1 cellpadding=3 cellspacing=0 
+                 style='border-collapse:collapse' width=400>
+                 <tr><th>Sample</th><th>Processing Error</th></tr>
+                 $err_rows
+             </table>
+          </td></tr></table>
+    ";
+}
+print $fh "</div>";
 
 ## categories with each plot for individual sample
 my %category_header = (

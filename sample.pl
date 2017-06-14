@@ -32,6 +32,12 @@ my $readchr   = "$outdir/$sample.chr";
 my $varstat = "$outdir/$sample.var"; # to use for amplicon-wide plots, snp plots
 my $fail_flag = "$outdir/$sample.failed";
 
+## file size 0
+if ( -z $h{read1fastq} or ( $h{read2fastq} && -z $h{read2fastq} ) ) {
+    print STDERR "\nError: Fastq file size 0\n"; 
+    quit($fail_flag, "Fastq file size 0");
+}
+
 ## filter fastq files
 my $status = $ngs->filter_reads(
     read1_inf     => $h{read1fastq},
@@ -44,7 +50,11 @@ my $status = $ngs->filter_reads(
     ns_max_p      => $h{ns_max_p}
 );
 
-quit($fail_flag) if $status;
+if ( $status == 1 ) {
+	quit($fail_flag, "No quality reads after filtering");
+} elsif ( $status == 2 ) {
+    quit($fail_flag, "Other filtering error");
+}
 
 ## Alignment and processing to create bam file
 
@@ -71,7 +81,7 @@ my @bamstats = $ngs->create_bam(
     chromCount_outfile => $readchr
 );
 
-quit($fail_flag) if scalar(@bamstats) == 1;
+quit($fail_flag, "Alignment error") if scalar(@bamstats) == 1;
 unlink $ampbed;
 
 ## Count reads in processing stages
@@ -99,7 +109,7 @@ $ngs->variantStat(
     end        => $h{amplicon_end}
 );
 
-quit($fail_flag) if !-f $varstat;
+quit($fail_flag, "Pysamstats error") if !-f $varstat;
 
 my $plot_ext = $h{high_res} ? "tif" : "png";
 
@@ -114,17 +124,46 @@ my $amplicon_seq =
 
 ## Determine indel pct and length in each CRISPR site
 for my $target_name ( sort split( /,/, $h{target_names} ) ) {
-	print STDERR "\nCreating plots and results for CRISPR $target_name ...\n";
+    print STDERR "\nCreating plots and results for CRISPR $target_name ...\n";
+
+    my ( $chr, $target_start, $target_end, $t1, $t2, $strand, $hdr_changes ) =
+      $ngs->getRecord( $h{target_bed}, $target_name );
+    $target_start ++;
+
+    ## create plots of coverage, insertion and deletion on amplicon
+    my $cmd = "$h{rscript} $Bin/Rscripts/amplicon.R --inf=$varstat" .
+        " --outf=$outdir/$sample.$target_name  --sample=$sample" . 
+        " --hname=$target_name --hstart=$target_start --hend=$target_end" .
+        " --chr=$h{genome} $chr --ampStart=$h{amplicon_start}" .
+        " --ampEnd=$h{amplicon_end}"; 
+    $cmd .= " --high_res=$h{high_res}" if $h{high_res};
+    print STDERR
+      "\nPlotting amplicon coverage and indel frequencies.\n";
+    Util::run( $cmd, "Failed to generate amplicon-wide plots",
+        $h{verbose}, $fail_flag );
+
+    ## create a plot of base changes in crispr site and surronding regions
+    my $rangeStart = $target_start - $h{wing_length};
+    my $rangeEnd   = $target_end + $h{wing_length};
+    $cmd = "$h{rscript} $Bin/Rscripts/snp.R --inf=$varstat" .
+        " --outf=$outdir/$sample.$target_name.snp.$plot_ext" . 
+        " --outtsv=$outdir/$sample.$target_name.snp" .
+        " --sample=$sample --hname=$target_name" . 
+        " --hstart=$target_start --hend=$target_end" .
+        " --chr=$h{genome} $chr --rangeStart=$rangeStart" .
+        " --rangeEnd=$rangeEnd";
+    $cmd .= " --high_res=$h{high_res}" if $h{high_res};
+    print STDERR "\nPlotting SNP data.\n" ;
+    Util::run( $cmd, "Failed to generate base-change plot",
+        $h{verbose}, $fail_flag );
+
     ## For target and indels
     my $tseqfile = "$outdir/$sample.$target_name.tgt";
     my $pctfile  = "$outdir/$sample.$target_name.pct";
     my $lenfile  = "$outdir/$sample.$target_name.len";
     my $hdrfile  = "$outdir/$sample.$target_name.hdr";
 
-    my ( $chr, $target_start, $target_end, $t1, $t2, $strand, $hdr_changes ) =
-      $ngs->getRecord( $h{target_bed}, $target_name );
-	$target_start ++;
-    $ngs->targetSeq(
+    my $target_reads = $ngs->targetSeq(
         bam_inf           => $bamfile,
         min_overlap       => $target_end - $target_start,
         sample            => $sample,
@@ -153,54 +192,28 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
         );
     }
 
+	# OK to continue processing even if there is no spanning read.
+
     ## prepare data for alignment visualization by Canvas Xpress.
     if ( !$h{nocx} ) {
         my $canvasfile = "$outdir/$sample.$target_name.can";
-        my $cmd        = "$Bin/cxdata.pl --ref_fasta $h{ref_fasta}";
-        $cmd .= " --refGene $h{refGene} --refseqid $h{refseqid}";
-        $cmd .= " --samtools $h{samtools} $lenfile $canvasfile";
+        my $cmd = "$Bin/cxdata.pl --ref_fasta $h{ref_fasta}" . 
+            " --refGene $h{refGene} --refseqid $h{refseqid}" .
+            " --samtools $h{samtools} $lenfile $canvasfile";
         print STDERR
           "\nPreparing data for alignment visualization by Canvas Xpress.\n";
-        Util::run( $cmd, "Failed to create data for Canvas Xpress",
+        Util::run( $cmd, "Failed to generate data for Canvas Xpress",
             $h{verbose}, $fail_flag );
     }
 
-    ## create plots of coverage, insertion and deletion on amplicon
-    my $cmd =
-"$h{rscript} $Bin/Rscripts/amplicon.R --inf=$varstat --outf=$outdir/$sample.$target_name";
-    $cmd .=
-" --sample=$sample --hname=$target_name --hstart=$target_start --hend=$target_end";
-    $cmd .=
-" --chr=$h{genome} $chr --ampStart=$h{amplicon_start} --ampEnd=$h{amplicon_end}";
-    $cmd .= " --high_res=$h{high_res}" if $h{high_res};
-    print STDERR
-      "\nPlotting amplicon coverage and indel frequencies.\n";
-    Util::run( $cmd, "Failed to generate amplicon-wide plots",
-        $h{verbose}, $fail_flag );
-
-    ## create a plot of base changes in crispr site and surronding regions
-    my $rangeStart = $target_start - $h{wing_length};
-    my $rangeEnd   = $target_end + $h{wing_length};
-    $cmd =
-"$h{rscript} $Bin/Rscripts/snp.R --inf=$varstat --outf=$outdir/$sample.$target_name.snp.$plot_ext";
-    $cmd .= " --outtsv=$outdir/$sample.$target_name.snp";
-    $cmd .=
-" --sample=$sample --hname=$target_name --hstart=$target_start --hend=$target_end";
-    $cmd .=
-      " --chr=$h{genome} $chr --rangeStart=$rangeStart --rangeEnd=$rangeEnd";
-    $cmd .= " --high_res=$h{high_res}" if $h{high_res};
-    print STDERR "\nPlotting SNP data.\n" ;
-    Util::run( $cmd, "Failed to generate base-change plot",
-        $h{verbose}, $fail_flag );
-
     ## create plots of allele frequencies 
-    $cmd = "$h{rscript} $Bin/Rscripts/allele.R --inf=$lenfile";
-    $cmd .= " --sample=$sample";
-    $cmd .= " --outf=$outdir/$sample.$target_name.len.$plot_ext";
+    $cmd = "$h{rscript} $Bin/Rscripts/allele.R --inf=$lenfile" . 
+      " --sample=$sample --outf=$outdir/$sample.$target_name.len.$plot_ext";
     $cmd .= " --high_res=$h{high_res}" if $h{high_res};
     print STDERR "\nPlotting allele frequency.\n";
     Util::run( $cmd, "Failed to generate allele frequency plot",
         $h{verbose}, $fail_flag );
+
 }
 
 if ( !-f $fail_flag ) {
@@ -322,7 +335,11 @@ sub get_input {
 }
 
 sub quit {
-    my $flag_file = shift;
-    qx(touch $flag_file);
+    my ($flag_file, $msg) = @_;
+    if ( $msg ) {
+        qx(echo $msg > $flag_file);
+    } else {  
+        qx(touch $flag_file);
+    }
     exit 1;
 }

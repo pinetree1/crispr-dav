@@ -66,9 +66,9 @@ sub tabcat {
     }
     else {
         my $file = shift @infiles;
-        qx(cat $file > $outfile);
+        qx(cat $file > $outfile) if -f $file;
         foreach $file (@infiles) {
-            qx(tail -n +2 $file >> $outfile);
+            qx(tail -n +2 $file >> $outfile) if $file;
         }
     }
 }
@@ -77,7 +77,7 @@ sub tabcat {
 
  Usage   : Util::run($cmd, $fail_msg, $verbose, fail_flag_file, warn_on_error)
  Function: run a command 
- Returns :
+ Returns : command status
  Args    : cmd, fail_msg, verbose, die_on_error, fail_flag_file 
            warn_on_error: 1-warn, 0-die.
            fail_flag_file: if provided, the file will be created.
@@ -93,10 +93,10 @@ sub run {
         }
 
         if ($warn_on_error) {
-            carp "$fail_msg\n";
+            warn "$fail_msg\n";
         }
         else {
-            croak "$fail_msg\n";
+            die "$fail_msg\n";
         }
     }
 }

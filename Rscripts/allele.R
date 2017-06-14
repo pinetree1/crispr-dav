@@ -45,14 +45,17 @@ if (file.exists(infile)==FALSE) exit(paste("Could not find", infile))
 dat <- read.table(file=infile, sep="\t", header=TRUE, stringsAsFactors=FALSE )
 
 NO_DATA = FALSE 
-if (nrow(dat)==0) {
+if (nrow(dat)==1 & dat$IndelStr[1]=="WT" & dat$ReadCount[1]==0 ) {
 	write(paste("Warning: No data in indel length input file:", infile), stderr())
-	NO_DATA = TRUE 
+	##dat[1,] <- c(sample, 0, 0, "WT", rep(0,5)) 
+	#dat$IndelLength <- as.numeric(dat$IndelLength)
+	#dat$ReadCount <- as.numeric(dat$ReadCount)
+	NO_DATA = TRUE
 }
 
 firstElement <- function(vec) vec[1]
-dat$Pos<-sapply(strsplit(dat$IndelStr, ":"), firstElement)
 
+dat$Pos<-sapply(strsplit(dat$IndelStr, ":"), firstElement)
 ag <- aggregate(dat$ReadCount, by=list(dat$Pos, dat$IndelLength), FUN=sum)
 colnames(ag)<- c('pos', 'len', 'freq')
 # pos is chr, len and freq are int
@@ -120,15 +123,15 @@ p<-ggplot(ag, aes(x=factor(allele), y=freq, fill=factor(type, levels=c("Deletion
 	scale_fill_manual(values=c("WT"="#e74c3c", "Deletion"="#229954", "Insertion"="#2e86c1")) +
 	labs(x="Allele Position and Indel Length", y="Reads", 
 		title=paste("Allele Frequencies\nSample:", sample)) +
-	theme(legend.title=element_blank(), legend.text=element_text(size=10, face="bold"), 
+	theme(legend.title=element_blank(), legend.text=element_text(size=11, face="bold"), 
 		legend.position='bottom',legend.direction='horizontal' ) +
 	customize_title_axis(angle=90, size=13) +
 	theme(axis.text.x=element_text(angle=90, family="Courier", face="bold", size=11))
 
 if ( NO_DATA==TRUE ) {
-	p <- p + scale_y_continuous(limits=c(0,500)) + 
-		annotate(geom='text', x=6, y=250, label="No reads at CRISPR site", 
-		family='Times', fontface="bold", size=5)
-} 
+	p <- p + scale_y_continuous(limits=c(0,500)) +
+		annotate(geom='text', x=10, y=250, label="No reads at CRISPR site",
+			family='Times', fontface="bold", size=5)
+}
 
 print(p)

@@ -1,4 +1,6 @@
-## Change section name and info to reflect the genome of interest.
+### Case sensitive
+
+## Add a genome section to reflect the genome of interest. 
 ## If there are multiple genomes, each genome must have its own section.
 
 [genomex]
@@ -22,21 +24,20 @@ rscript = /home/wangx112/app/R-3.2.1/bin/Rscript
 
 [prinseq]
 # remove reads with quality score mean below this value (default: 30) 
-#min_qual_mean = 30
+min_qual_mean = 30
 
 # remove reads with length less than this value (default: 50) 
-#min_len	= 50
+min_len	= 50
 
 # remove reads with percentage of Ns over this value (default: 3).
-#ns_max_p = 3 
+ns_max_p = 3 
 
 [other]
 # realign for large indel detection with ABRA: Y(default) or N
-#realign_flag = Y 
+realign_flag = Y 
 
 # require minimum BWA mapping quality score (default: 20) 
-#min_mapq = 20
+min_mapq = 20
 
 # number of bases on each side of sgRNA to view base changes (default: 40) 
 wing_length = 12 
-

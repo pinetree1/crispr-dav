@@ -44,7 +44,7 @@ sub new {
 
  Usage   : $obj->filter_reads(read1_inf=>'dir1/S1.fastq.gz', read1_outf='dir2/S1.fastq.gz')
  Function: filter reads in .gz fastq file with PRINSEQ prinseq-lite.pl
- Returns : commnd status 
+ Returns : number indicating success or failure code  
  Args    : Required: read1_inf (input read1 file), read1_outf (output read1 file). More optional args.   
 
 =cut
@@ -78,29 +78,59 @@ sub filter_reads {
     my $read2_outf = $h{read2_outf};
 
     my ( $cmd, $status );
+
+	my $ZERO_GOOD_READ = 1;
+    my $OTHER_FAILURE  = 2;
+
     my $log = "$read1_outf.filter.log";
     if ( !-f $f2 ) {
-        $cmd = "(gunzip -c $f1 | $h{prinseq} -fastq stdin";
-        $cmd .= " -out_good $read1_outf -out_bad null $param) &>$log";
-        $cmd .=
-          " && gzip -c $read1_outf.fastq > $read1_outf && rm $read1_outf.fastq";
         print STDERR "\nFiltering single-end fastq.\n";
+        $cmd = "(gunzip -c $f1 | $h{prinseq} -fastq stdin" .
+            " -out_good $read1_outf -out_bad null $param) &>$log";
         print STDERR "$cmd\n" if $self->{verbose};
         $status = system($cmd);
+        if ($status == 0) {
+            if ( ! -f "$read1_outf.fastq" ) {
+                # zero good reads. All bad reads.
+                $status = $ZERO_GOOD_READ;
+            } else { 
+                $cmd = "gzip -c $read1_outf.fastq > $read1_outf && rm $read1_outf.fastq";
+                print STDERR "$cmd\n" if $self->{verbose};
+                $status = system($cmd);
+                if ( $status ) {
+                    $status = $OTHER_FAILURE;
+                }
+            }
+        } else {
+            $status = $OTHER_FAILURE;
+        } 
     }
     else {
-        $cmd = "gunzip -c $f1 > $read1_outf && gunzip -c $f2 > $read2_outf";
-        $cmd .= " && ($h{prinseq} -fastq $read1_outf -fastq2 $read2_outf";
-        $cmd .= " -out_good $read1_outf -out_bad null $param) &>$log";
-        $cmd .= " && gzip -c ${read1_outf}_1.fastq > $read1_outf";
-        $cmd .= " && gzip -c ${read1_outf}_2.fastq > $read2_outf";
-        $cmd .= " && rm -f ${read1_outf}_[12]*.fastq";
         print STDERR "\nFiltering paired-end fastqs.\n";
+        $cmd = "gunzip -c $f1 > $read1_outf && gunzip -c $f2 > $read2_outf" . 
+            " && ($h{prinseq} -fastq $read1_outf -fastq2 $read2_outf" .
+            " -out_good $read1_outf -out_bad null $param) &>$log";
         print STDERR "$cmd\n" if $self->{verbose};
         $status = system($cmd);
+        if ($status == 0) {
+            if ( ! -f "${read1_outf}_1.fastq" or !-f "${read1_outf}_2.fastq" ) {
+                $status = $ZERO_GOOD_READ;
+            } else {
+                $cmd = "gzip -c ${read1_outf}_1.fastq > $read1_outf" .
+                   " && gzip -c ${read1_outf}_2.fastq > $read2_outf" .
+                   " && rm -f ${read1_outf}_[12]*.fastq";
+                print STDERR "$cmd\n" if $self->{verbose};
+                $status = system($cmd);
+                if ( $status ) {
+                    $status = $OTHER_FAILURE;
+                }
+            }
+        } else {
+            $status = $OTHER_FAILURE;
+        }
     }
 
-    print STDERR "Failed in filtering reads.\n" if $status;
+    print STDERR "\nFailed in filtering reads.\n" if $status;
     return $status;
 }
 
@@ -322,9 +352,12 @@ sub sort_bam {
     my $inbam    = $h{bam_inf};
     my $outbam   = $h{bam_outf} ? $h{bam_outf} : "$inbam.sort.out.bam";
 
-# Old (e.g. 0.1.19) and new (e.g. 1.3.1) versions of samtools have different syntax for sorting bam.
-# The -o in old version is a switch for output to stdout: samtools sort -o inbam fake.outbam > real.outbam
-# The -o in new version accept file argument: samtools sort -o outbam -O BAM inbam
+    # Old (e.g. 0.1.19) and new (e.g. 1.3.1) versions of samtools have 
+    # different syntax for sorting bam.
+    # The -o in old version is a switch for output to stdout: 
+    # samtools sort -o inbam fake.outbam > real.outbam
+    # The -o in new version accept file argument: 
+    # samtools sort -o outbam -O BAM inbam
 
     print STDERR "\nSorting bam.\n";
 
@@ -395,15 +428,12 @@ sub mark_duplicate {
 
     my $cmd;
     if ( $h{bam_outf} ) {
-        $cmd =
-"$self->{java} -jar $prog I=$h{bam_inf} O=$h{bam_outf} METRICS_FILE=$h{bam_outf}"
-          . $h{metrics};
+        $cmd = "$self->{java} -jar $prog I=$h{bam_inf} O=$h{bam_outf}" . 
+            " METRICS_FILE=$h{bam_outf} $h{metrics}";
     }
     else {
-        $cmd = "mv $h{bam_inf} $h{bam_inf}.tmp";
-        $cmd .=
-" && $self->{java} -jar $prog I=$h{bam_inf}.tmp O=$h{bam_inf} METRICS_FILE=$h{bam_inf}"
-          . $h{metrics};
+        $cmd = "mv $h{bam_inf} $h{bam_inf}.tmp && $self->{java} -jar $prog" .
+          " I=$h{bam_inf}.tmp O=$h{bam_inf} METRICS_FILE=$h{bam_inf} $h{metrics}";
     }
 
     $cmd .= " REMOVE_DUPLICATES=false ASSUME_SORTED=true";
@@ -456,22 +486,20 @@ sub ABRA_realign {
         $h{bam_outf} = "$h{bam_inf}.realign.bam";
     }
 
-# ABRA requires that workdir does not exist and input bam file is already indexed.
-    my $cmd = "rm -rf $workdir && mkdir -p $workdir";
-    $cmd .=
-      " && $self->{java} -Djava.io.tmpdir=$tmpdir -jar $h{abra} --threads 2";
-    $cmd .= " --ref $h{ref_fasta} --targets $h{target_bed} --working $workdir";
-    $cmd .= " --in $h{bam_inf} --out $h{bam_outf}";
-
-    #$cmd .= " && rm -r $workdir";
+    # ABRA requires that workdir does not exist and input bam 
+    # file is already indexed.
+    my $cmd = "rm -rf $workdir && mkdir -p $workdir" .
+      " && $self->{java} -Djava.io.tmpdir=$tmpdir -jar $h{abra} --threads 2" .
+      " --ref $h{ref_fasta} --targets $h{target_bed} --working $workdir" .
+      " --in $h{bam_inf} --out $h{bam_outf}";
 
     if ($replace_flag) {
         my $prev_bam = $h{bam_inf};
         $prev_bam =~ s/\.bam/.preRealign.bam/;
 
-        $cmd .=
-" && mv -f $h{bam_inf} $prev_bam && mv -f $h{bam_inf}.bai $prev_bam.bai";
-        $cmd .= " && mv -f $h{bam_outf} $h{bam_inf}";
+        $cmd .= " && mv -f $h{bam_inf} $prev_bam" .
+            " && mv -f $h{bam_inf}.bai $prev_bam.bai" .
+            " && mv -f $h{bam_outf} $h{bam_inf}";
     }
 
     $cmd = "($cmd) &> $h{bam_inf}.abra.log";
@@ -732,10 +760,10 @@ sub variantStat {
     );
 
     required_args( \%h, 'bam_inf', 'ref_fasta', 'outfile' );
-    my $cmd = "$h{pysamstats} --type $h{type} --max-depth $h{max_depth}";
-    $cmd .= " --window-size $h{window_size} --fasta $h{ref_fasta}";
-    $cmd .=
-" --fields chrom,pos,ref,reads_all,matches,mismatches,deletions,insertions,A,C,T,G,N";
+    my $cmd = "$h{pysamstats} --type $h{type} --max-depth $h{max_depth}" .
+        " --window-size $h{window_size} --fasta $h{ref_fasta}" .
+        " --fields chrom,pos,ref,reads_all,matches,mismatches," . 
+        "deletions,insertions,A,C,T,G,N";
     if ( $h{chr} && $h{start} > 0 && $h{end} > 0 ) {
         $cmd .= " --chromosome $h{chr} --start $h{start} --end $h{end}";
     }
@@ -768,6 +796,7 @@ sub required_args {
 
  Usage   : $obj->targetSeq(args)
  Function: Find reads that overlap with the target region. 
+ Returns : Number of spanning reads
  Args    : bam_inf, chr, target_start, target_end,
            amplicon_seq, amplicon_start, 
 			outfile_targetSeq, outfile_indelPct, outfile_indelLen
@@ -823,19 +852,18 @@ sub targetSeq {
         end     => $h{target_end},
         outfile => $bedfile
     );
-    my $cmd =
-      "$self->{bedtools} intersect -a $h{bam_inf} -b $bedfile -F $ratio -u";
-    $cmd .= " | $self->{samtools} view -";
+    my $cmd = "$self->{bedtools} intersect -a $h{bam_inf} -b $bedfile" . 
+        " -F $ratio -u | $self->{samtools} view -";
 
     open( P, "$cmd|" );
 
     # reads overlapping target region that meet min_mapq and min_overlap
     my $overlap_reads = 0;
 
-  # among total reads, those with at least 1 base of indel inside target region.
+    # among total reads, those with at least 1 base of indel inside target region.
     my $indel_reads         = 0;
     my $inframe_indel_reads = 0;
-    my %freqs;    # frequencies of alleles
+    my %freqs = (WT=>0);    # frequencies of alleles
 
     while ( my $line = <P> ) {
         my @info =
@@ -859,15 +887,15 @@ sub targetSeq {
 
     unlink $bedfile;
 
-    return if !$overlap_reads;
+    #return  0 if !$overlap_reads;
 
     ## Output read counts
 
-    my $wt_reads  = $overlap_reads - $indel_reads;
-    my $pct_wt    = sprintf( "%.2f", $wt_reads * 100 / $overlap_reads );
-    my $pct_indel = sprintf( "%.2f", 100 - $pct_wt );
-    my $pct_inframe =
-      sprintf( "%.2f", $inframe_indel_reads * 100 / $overlap_reads );
+    my $wt_reads  = $overlap_reads ? $overlap_reads - $indel_reads : 0;
+    my $pct_wt    = $overlap_reads ? sprintf( "%.2f", $wt_reads * 100 / $overlap_reads ) : 0;
+    my $pct_indel = $overlap_reads ? sprintf( "%.2f", 100 - $pct_wt ) : 0;
+    my $pct_inframe = $overlap_reads ? 
+      sprintf( "%.2f", $inframe_indel_reads * 100 / $overlap_reads ) : 0;
 
     print $pctf join( "\t",
         $h{sample},     $h{target_name},
@@ -881,7 +909,7 @@ sub targetSeq {
     ## Output allele frequencies in descending order
     foreach my $key ( sort { $freqs{$b} <=> $freqs{$a} } keys %freqs ) {
         my $reads = $freqs{$key};
-        my $pct = sprintf( "%.2f", $reads * 100 / $overlap_reads );
+        my $pct = $overlap_reads ? sprintf( "%.2f", $reads * 100 / $overlap_reads ) : 0;
 
         my $indel_len   = 0;
         my $frame_shift = "N";
@@ -900,6 +928,8 @@ sub targetSeq {
             $key, $reads, $pct, $indel_len, $frame_shift, $flank_seq )
           . "\n";
     }
+
+    return $overlap_reads;
 }
 
 =head2 extractReadRange
@@ -920,7 +950,6 @@ sub extractReadRange {
     ) = split( /\t/, $sam_record );
 
     if ( $min_mapq && $mapq < $min_mapq ) {
-#print STDERR "Removed due to min_mapq: $qname, $flag, $refchr, mapq:$mapq.\n" if $self->{verbose};
         return;
     }
 
@@ -928,7 +957,8 @@ sub extractReadRange {
     my $indelstr     = '';    # position are 1-based.
     my $indel_length = 0;
 
-# read sequence comparable to reference but with insertion removed and deletion added back.
+    # read sequence comparable to reference but with 
+    # insertion removed and deletion added back.
     my $newseq;
     my $chr_pos = $align_start - 1;    # pos on chromosome
     my $seq_pos = 0;                   # position on read sequence

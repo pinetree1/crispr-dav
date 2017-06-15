@@ -6,7 +6,7 @@ CRISPR-DAV is a pipeline to analyze amplicon-based NGS data of CRISPR clones in 
 
 ## Installing and running the pipeline
 
-The pipeline can be installed via a docker container or the traditional physical approach. Please see [Install_and_Run.txt](Install_and_Run.txt) for instructions.
+The pipeline can be installed via a docker container or the traditional physical approach. Please see [Install_and_Run](Install_and_Run.md) for instructions.
 
 
 ## Results

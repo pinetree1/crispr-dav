@@ -66,7 +66,7 @@ In the resulting crispr-dav directory, all the Perl programs (\*.pl) use this li
 
 The pipeline utilizes a set of tools, most of which are common in bioinformatics field. These include Perl and Python modules, R, and NGS tools.  
 
-**A. Perl modules **
+**A. Perl modules**
 
 The following modules are required but may not be present in default perl install.  
 
@@ -124,7 +124,7 @@ To install the packages, after starting R, type:
 
 If you get permission errors, check with your admin or install R in a local directory.
 
-**D. Python program ** 
+**D. Python program** 
 
 Required: Pysamstats https://github.com/alimanfoo/pysamstats 
 

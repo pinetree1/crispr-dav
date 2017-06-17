@@ -140,11 +140,11 @@ print $fh "</div>";
 
 ## categories with each plot for individual sample
 my %category_header = (
-    "len" => "Allele Frequencies at CRISPR Site",
+    "len" => "Allele Frequency at CRISPR Site",
     "cov" => "Amplicon Coverage",
-    "ins" => "Insertion Distributions in Amplicon",
-    "del" => "Deletion Distributions in Amplicon",
-    "snp" => "SNP Frequencies at CRISPR Site"
+    "ins" => "Insertion Distribution in Amplicon",
+    "del" => "Deletion Distribution in Amplicon",
+    "snp" => "SNP Frequency at CRISPR Site"
 );
 
 my @cats = ( "cov", "ins", "del", "len", "snp" );

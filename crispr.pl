@@ -102,6 +102,7 @@ sub process_samples {
             print STDERR "\t" . join(": ", $s, $err) . "\n";
         }
         print STDERR "\n\tPlease check log files in $h{align_dir}.\n";
+        exit 1 if scalar(@failures)==$total_samples; 
     }
 
     my %failed_samples = map{ $_ => 1 } @failures;
@@ -117,7 +118,7 @@ sub crispr_data {
     my $plot_ext  = $h{high_res} ? "tif" : "png";
 
     foreach my $crispr (@crisprs) {
-        print STDERR "\nMerging data and creating plots for $crispr ...\n";
+        print STDERR "\nMerging data and creating plots for $crispr.\n";
         my $dest = "$h{deliv_dir}/$crispr/Assets";
         make_path($dest);
 
@@ -165,8 +166,8 @@ sub crispr_data {
                " --outf=$dest/$crispr.readchr.$plot_ext";
         $cmd .= " --high_res=$h{high_res}" if $h{high_res};
         Util::run( $cmd,
-                    "Failed to create plot of read count on chromosomes",
-                    $h{verbose} );
+                    "Failed to plot read count on chromosomes",
+                    $h{verbose});
 
         # plot indel count and pct
         $infile="$h{align_dir}/$crispr" . "_pct.txt";
@@ -174,7 +175,7 @@ sub crispr_data {
                " --cntf=$dest/$crispr.indelcnt.$plot_ext" .
                " --pctf=$dest/$crispr.indelpct.$plot_ext";
         $cmd .= " --high_res=$h{high_res}" if $h{high_res};
-        Util::run( $cmd, "Failed to create indel count/pct plots", $h{verbose} );
+        Util::run( $cmd, "Failed to plot indel count/pct", $h{verbose});
             
         # plot HDR 
         if ( $hdr_bases ) {
@@ -182,7 +183,7 @@ sub crispr_data {
             $cmd = "$h{rscript} $Bin/Rscripts/hdr.R --inf=$infile --sub=$crispr" .
                    " --outf=$dest/$crispr.hdr.$plot_ext";
             $cmd .= " --high_res=$h{high_res}" if $h{high_res};
-            Util::run( $cmd, "Failed to create HDR plot", $h{verbose} );
+            Util::run( $cmd, "Failed to create HDR plot", $h{verbose});
         }
 
         # generate data for interactive alignment view
@@ -191,10 +192,8 @@ sub crispr_data {
             $cmd = "$Bin/crispr2cx.pl -input $infile -perc $pct >" .
                    " $h{deliv_dir}/$crispr/${crispr}_cx$pct.html";
             Util::run( $cmd, "Failed to create canvasXpress alignment view",
-                        $h{verbose} );
+                        $h{verbose});
         }
-
-        print STDERR "Combined data and created plots.\n"; 
 
         ## move the image files for individual sample to dest
         foreach my $s (@samp) {
@@ -214,8 +213,9 @@ sub crispr_data {
         $cmd .= " --high_res" if $h{high_res};
         $cmd .= " --realign" if $h{realign_flag} eq "Y";
         $cmd .= " $h{align_dir} $h{deliv_dir}";
-        Util::run( $cmd, "Failed to create results html page", $h{verbose} );
-        print STDERR "Generated HTML report.\n";
+        Util::run( $cmd, "Failed to create results html page", 
+              $h{verbose});
+        print STDERR "Generated HTML report for $crispr.\n";
     } # for each crispr
 }
 
@@ -227,12 +227,12 @@ sub prepare_command {
     my $cmd = "$Bin/sample.pl $sample $fastqs[0] $h{align_dir}";
     $cmd .= " --read2fastq $fastqs[1]" if $fastqs[1];
     $cmd .= " --picard $h{picard}"     if $h{picard};
-    $cmd .= " --abra $h{abra} --prinseq $h{prinseq}";
-    $cmd .= " --samtools $h{samtools} --bwa $h{bwa}";
-    $cmd .= " --java $h{java} --bedtools $h{bedtools}";
-    $cmd .= " --pysamstats $h{pysamstats} --rscript $h{rscript}"; 
-    $cmd .= " --tmpdir $h{tmpdir} --min_qual_mean $h{min_qual_mean}";
-    $cmd .= " --min_len $h{min_len} --ns_max_p $h{ns_max_p}";
+    $cmd .= " --abra $h{abra} --prinseq $h{prinseq}" .
+       " --samtools $h{samtools} --bwa $h{bwa}" . 
+       " --java $h{java} --bedtools $h{bedtools}" . 
+       " --pysamstats $h{pysamstats} --rscript $h{rscript}" . 
+       " --tmpdir $h{tmpdir} --min_qual_mean $h{min_qual_mean}" .
+       " --min_len $h{min_len} --ns_max_p $h{ns_max_p}";
 
     $cmd .= " --unique"  if $h{remove_duplicate} eq "Y";
     $cmd .= " --realign" if $h{realign_flag}     eq "Y";
@@ -243,9 +243,9 @@ sub prepare_command {
     $cmd .= " --ref_fasta $h{ref_fasta}";
     $cmd .= " --refGene $h{refGene}" if $h{refGene};
     $cmd .= " --refseqid $h{refseqid}" if $h{refseqid};
-    $cmd .= " --chr $h{chr} --amplicon_start $h{amplicon_start}";
-    $cmd .= " --amplicon_end $h{amplicon_end} --target_bed $h{crispr}";
-    $cmd .= " --target_names $crispr_names --wing_length $h{wing_length}";
+    $cmd .= " --chr $h{chr} --amplicon_start $h{amplicon_start}" .
+       " --amplicon_end $h{amplicon_end} --target_bed $h{crispr}" .
+       " --target_names $crispr_names --wing_length $h{wing_length}";
     $cmd .= " --nocx" if !$h{canvasXpress};
     $cmd .= " --high_res" if $h{high_res};
     $cmd .= " --verbose" if $h{verbose};
@@ -330,10 +330,14 @@ Usage: $0 [options]
         }
     }
 
+    if ( !-f $h{conf} ) {
+        die "Error: Could not find $h{conf}.\n"; 
+    }
+
     if ( ( !$h{genome} && !$h{amp_fasta} ) or ( $h{genome} && $h{amp_fasta} ) )
     {
-        die "Must specify --genome or --amp_fasta, but not both!\n";
-    }
+        die "Must specify either --genome or --amp_fasta\n";
+    } 
 
     $h{pid} = $$;
 
@@ -342,7 +346,8 @@ Usage: $0 [options]
     print STDERR "Main command: $0 @all_args\n" if $h{verbose};
 
     ## Output directory
-    make_path( $h{outdir} );
+    make_path($h{outdir}, {error=>\my $err});
+    die "Could not create directory $h{outdir}\n" if @$err;
 
     ## parameters in the config file
     my $cfg = Config::Tiny->read( $h{conf} );
@@ -369,10 +374,11 @@ Usage: $0 [options]
                     $cfg->{app}{$tool} = $tool;
                 }
 
-                if ( system("which $cfg->{app}{$tool}") ) {
+                #if ( system("which $cfg->{app}{$tool} > /dev/null") ) {
+                $cfg->{app}{$tool}=qx(which $cfg->{app}{$tool}) or 
                     die "$tool must either be specified under [app]" .  
                         " in $h{conf} or accessible in your PATH\n"; 
-                }
+                chomp($cfg->{app}{$tool}); 
             }
         } 
 
@@ -381,11 +387,15 @@ Usage: $0 [options]
         }
 
         $h{$tool} = $cfg->{app}{$tool};
+        if ( $tool ne "abra" ) {
+            if ( $h{$tool} =~ /\// && ! -x $h{$tool} ) {
+                die "Error: $h{$tool} is not executable. Run: chmod +x $h{$tool}\n"; 
+            }
+        }
     }
 
     check_pysam( $h{pysamstats} );
     check_perlmod();
-
     if ( $cfg->{app}{picard} ) {
         $h{picard} = $cfg->{app}{picard};
     }
@@ -401,6 +411,8 @@ Usage: $0 [options]
     $h{deliv_dir} = "$h{outdir}/deliverables";
     $h{tmpdir}    = "$h{align_dir}/tmp";
     make_path( $h{align_dir}, $h{deliv_dir}, $h{tmpdir} );
+
+	check_rpkg($h{rscript}, $h{outdir});
 
     if ( $h{genome} ) {
         $h{genome} =~ s/\s//g;
@@ -436,6 +448,12 @@ Usage: $0 [options]
         }
     }
     elsif ( $h{amp_fasta} ) {
+        if ( defined $h{codon_start} ) {
+            if ( $h{codon_start} < 1 ) {
+               die "codon_start is $h{codon_start}, but it must be at least 1.\n";
+           	} 
+        }
+
         $h{ref_fasta} = "$h{align_dir}/" . basename($h{amp_fasta});
         my ($seqid, $len)= process_custom_seq($h{amp_fasta}, "$h{ref_fasta}");
         $h{bwa_idx}   = $h{ref_fasta};
@@ -445,7 +463,7 @@ Usage: $0 [options]
         qx(cp $h{amp_fasta} $h{ref_fasta}) if ( !-f $h{ref_fasta} );
 
         # create bwa index
-        qx($h{bwa} index $h{ref_fasta});
+        qx($h{bwa} index $h{ref_fasta} 2>/dev/null);
 
         $h{genome} = $seqid;
 
@@ -470,6 +488,12 @@ Usage: $0 [options]
             close $tmpf;
         }
     }
+
+    ## Make sure ref_fasta's directory is writable for pysamstats 
+    ## or samtools faidx to create FASTA index if not present.
+    if ( ! -w dirname($h{ref_fasta}) ) {
+        die "Error: $h{ref_fasta}\'s directory is not writable.\n";
+    } 
 
     ## prinseq
     foreach my $p ( "min_qual_mean", "min_len", "ns_max_p" ) {
@@ -549,6 +573,7 @@ Usage: $0 [options]
         print STDERR "\nCRISPR info:\n" . Dumper($h{crisprs});
         print STDERR "\nCRISPR samples:\n" . Dumper($h{crispr_samples});
     }
+
     return %h;
 }
 
@@ -612,8 +637,11 @@ sub process_beds {
         next if ( $line !~ /\w/ || $line =~ /^#/ );
         $line =~ s/ //g;
         chomp $line;
-        my ( $chr, $start, $end, $name, $seq, $strand, $hdr ) =
-          split( /\t/, $line );
+        my @a = split(/\t/, $line);
+        die "Error: In $crispr_bed, This entry does not have at least " .  
+           "6 tab-separated columns:\n$line\n" if scalar(@a) < 6;  
+
+        my ($chr, $start, $end, $name, $seq, $strand, $hdr) = @a;
         $seq = uc($seq);
         die "Strand must be + or - in bed file!\n" if $strand !~ /[+-]/;
 
@@ -652,11 +680,18 @@ sub process_beds {
     my %dup; # avoid duplicated entry of sample and seq combination
     while ( my $line = <$sm> ) {
         next if ( $line !~ /\w/ or $line =~ /^\#/ );
-        $line =~ s/ //g;
         chomp $line;
         my @a = split( /\t/, $line );
-        die "There must be at least 2 tab-separated columns in: $line\n"
-          if @a < 2;
+        if (@a < 2) {
+            die "In $sitemap, each line must have at least 2 tab-separated\n" . 
+                " columns:\nError line: $line\n";
+        }
+
+        # remove space in each element
+        for (my $i=0; $i<@a; $i++) {
+            $a[$i] =~ s/ //g;
+        }
+
         my $sample = shift @a;
         next if !$sample;
 
@@ -689,10 +724,17 @@ sub get_fastq_files {
     my %fastqs;
     my (%seen, %errors);
     while ( my $line = <$fh> ) {
+        next if ( $line =~ /^#/ or $line !~ /\w/ );
         chomp $line;
-        $line =~ s/ //g;
         my @a = split( /\t/, $line );
+        if ( scalar(@a) < 2 or scalar(@a) > 3 ) {
+            die "In $filemap, a sample can have only 1 or 2 fastq" . 
+               " files separated by tab.\n" . 
+               "Error line: $line\n"; 
+        }
+
         my $sample = shift @a;
+        $sample =~ s/ //g;
         next if !$sample;
 
         my @b;
@@ -741,7 +783,7 @@ sub check_bed_coord {
     }
 
     if (@errs) {
-        die "$msg:\n" . join( "\n", @errs );
+        die "$msg:\n" . join( "\n", @errs ) . "\n";
     }
 }
 
@@ -765,6 +807,19 @@ sub check_perlmod {
         eval("use $mod");
         die "Cannot find $mod!\n" if $@;
     }
+}
+
+sub check_rpkg {
+    my ($rscript_path, $tmpdir)=@_;
+    my $script = "$tmpdir/.check.R";
+    open(my $tmpf, ">$script") or die "could not create $script\n";
+    print $tmpf "library(ggplot2)\nlibrary(naturalsort)\n" . 
+        "library(reshape2)\n";
+    close $tmpf;
+    if ( system("$rscript_path $script") ) {
+        die "Error: Missing required R package.\n"; 
+    }
+    unlink $script;
 }
 
 sub stop_processing {

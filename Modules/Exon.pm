@@ -64,7 +64,8 @@ sub getSeq {
         }
     }
 
-    my $result = qx($self->{samtools} faidx $self->{fasta_file} $region);
+    my $result = qx($self->{samtools} faidx $self->{fasta_file} $region) or 
+      die "Could not create .fai file for $self->{fasta_file} likely due to permission\n";
     my @a = split( /\n/, $result );
     shift @a;
     return join( "", @a );

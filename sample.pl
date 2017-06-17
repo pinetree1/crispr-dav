@@ -13,14 +13,6 @@ use Data::Dumper;
 
 my %h = get_input();
 print STDERR Dumper( \%h ) if $h{verbose};
-my $ngs = new NGS(
-    java     => $h{java},
-    samtools => $h{samtools},
-    bedtools => $h{bedtools},
-    bwa      => $h{bwa},
-    tmpdir   => $h{tmpdir},
-    verbose  => $h{verbose}
-);
 
 my $outdir        = $h{outdir};
 my $sample        = $h{sample};
@@ -34,9 +26,19 @@ my $fail_flag = "$outdir/$sample.failed";
 
 ## file size 0
 if ( -z $h{read1fastq} or ( $h{read2fastq} && -z $h{read2fastq} ) ) {
-    print STDERR "\nError: Fastq file size 0\n"; 
-    quit($fail_flag, "Fastq file size 0");
+    print STDERR "\nError: Source fastq file empty\n"; 
+    quit($fail_flag, "Source fastq file empty");
 }
+
+my $ngs = new NGS(
+    java     => $h{java},
+    samtools => $h{samtools},
+    bedtools => $h{bedtools},
+    bwa      => $h{bwa},
+    tmpdir   => $h{tmpdir},
+    verbose  => $h{verbose},
+    errorfile=> $fail_flag 
+);
 
 ## filter fastq files
 my $status = $ngs->filter_reads(
@@ -109,7 +111,7 @@ $ngs->variantStat(
     end        => $h{amplicon_end}
 );
 
-quit($fail_flag, "Pysamstats error") if !-f $varstat;
+quit($fail_flag, "Pysamstats error") if -z $varstat;
 
 my $plot_ext = $h{high_res} ? "tif" : "png";
 
@@ -128,7 +130,7 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
 
     my ( $chr, $target_start, $target_end, $t1, $t2, $strand, $hdr_changes ) =
       $ngs->getRecord( $h{target_bed}, $target_name );
-    $target_start ++;
+    $target_start ++; # now 1-based
 
     ## create plots of coverage, insertion and deletion on amplicon
     my $cmd = "$h{rscript} $Bin/Rscripts/amplicon.R --inf=$varstat" .
@@ -165,7 +167,7 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
 
     my $target_reads = $ngs->targetSeq(
         bam_inf           => $bamfile,
-        min_overlap       => $target_end - $target_start,
+        min_overlap       => $target_end - $target_start + 1,
         sample            => $sample,
         ref_name          => $h{genome},
         target_name       => $target_name,
@@ -230,11 +232,12 @@ sub get_input {
 
 	--picard         <str> Optional. Path to picard-tools directory containing various jar files
 	--abra           <str> Path of ABRA jar file.
-	--prinseq        <str> Path of prinseq script.
+	--prinseq        <str> Path of prinseq script. Make sure it is executable.
 	--samtools       <str> Path of samtools. Default: executable in PATH
-	--bwa            <str> Path of bwa. Default: executable in PATH
-	--java           <str> Path of java. Default: executable in PATH
-	--bedtools       <str> Path of version 2 bedtools. Default: executable in PATH
+	--bwa            <str> Path of bwa. Default: executable in PATH. Make sure it supports mem -M
+	--java           <str> Path of java. Default: executable in PATH. Version 1.7 or higher.
+	--bedtools       <str> Path of bedtools 2.25. Default: executable in PATH. 
+                           Make sure intersect command supports -F option.
 	--pysamstats     <str> Path of pysamstats. Default: executable in PATH.
 	--rscript        <str> Path of Rscript. Default: executable in PATH.
 	--tmpdir         <str> Path of temporary directory. Default: /tmp 

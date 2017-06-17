@@ -353,7 +353,7 @@ sub sort_bam {
     my $outbam   = $h{bam_outf} ? $h{bam_outf} : "$inbam.sort.out.bam";
 
     # Old (e.g. 0.1.19) and new (e.g. 1.3.1) versions of samtools have 
-    # different syntax for sorting bam.
+    # different and imcompatible syntax for sorting bam.
     # The -o in old version is a switch for output to stdout: 
     # samtools sort -o inbam fake.outbam > real.outbam
     # The -o in new version accept file argument: 
@@ -377,7 +377,6 @@ sub sort_bam {
         print STDERR "Failed in sorting bam.\n";
     }
     else {
-
         # Replace input bam when bam_outf is not specified
         if ( !$h{bam_outf} ) {
             $status = system("mv $outbam $inbam");
@@ -557,7 +556,7 @@ sub remove_duplicate {
 sub fastqReadCount {
     my ( $self, $fastq_file, $gz ) = @_;
     my $cmd = $gz ? "gunzip -c $fastq_file|wc -l" : "wc -l $fastq_file";
-    my $result = qx($cmd);
+    my $result = qx($cmd) or quit($self->{errorfile}, "Fastq read counting failed");
     chomp $result;
     return $result / 4;
 }
@@ -617,7 +616,7 @@ qx($self->{samtools} view -F 4 -c $h{bam_inf} $h{chr}:$h{start}-$h{end} 2>/dev/n
         my $cmd =
           "$self->{bedtools} intersect -a $h{bam_inf} -b $bedfile -F $ratio -u";
         $cmd .= " | $self->{samtools} view -F 4 -c - ";
-        $cnt = qx($cmd);
+        $cnt = qx($cmd) or quit($self->{errorfile}, "Bedtools failed");
         unlink $bedfile;
     }
     chomp $cnt;
@@ -725,7 +724,7 @@ sub chromCount {
 
     my $result =
       qx($self->{samtools} view $h{bam_inf} | cut -f 3 | sort | uniq -c);
-    open( my $outf, ">$h{outfile}" );
+    open( my $outf, ">$h{outfile}" ) or quit($self->{errorfile}, "Chrom counting failed");;
     print $outf join( "\t", "Sample", "Chromosome", "ReadCount" ) . "\n";
     foreach my $line ( split( /\n/, $result ) ) {
         next if $line !~ /\w/;
@@ -743,7 +742,8 @@ sub chromCount {
  Function: Caluculate depth, indel, SNPs in a bam file.
  Args    : bam_inf, ref_fasta, outfile, etc.
 	pysamstats must be in PATH or specified. Require python module pysam.
-
+    pysamstats will try to build FASTA index if it is not present, so the
+      reference directory should be writable.
 =cut
 
 sub variantStat {
@@ -772,7 +772,9 @@ sub variantStat {
     print STDERR "\nCalculating stats of variants using pysamstats.\n";
     print STDERR "$cmd\n" if $self->{verbose};
 
-    print STDERR "Failed in calculating variant stats!\n" if system($cmd);
+    if ( system($cmd) ) {
+        quit($self->{errorfile}, "Pysamstats failure");
+    }
 }
 
 =head2 required_args
@@ -855,7 +857,7 @@ sub targetSeq {
     my $cmd = "$self->{bedtools} intersect -a $h{bam_inf} -b $bedfile" . 
         " -F $ratio -u | $self->{samtools} view -";
 
-    open( P, "$cmd|" );
+    open( P, "$cmd|" ) or quit($self->{errorfile}, "Bedtools failed");
 
     # reads overlapping target region that meet min_mapq and min_overlap
     my $overlap_reads = 0;
@@ -886,8 +888,6 @@ sub targetSeq {
     }    # end while
 
     unlink $bedfile;
-
-    #return  0 if !$overlap_reads;
 
     ## Output read counts
 
@@ -928,8 +928,6 @@ sub targetSeq {
             $key, $reads, $pct, $indel_len, $frame_shift, $flank_seq )
           . "\n";
     }
-
-    return $overlap_reads;
 }
 
 =head2 extractReadRange
@@ -1108,7 +1106,10 @@ sub categorizeHDR {
     my $samtools = $self->{samtools};
     my $cmd = "$self->{bedtools} intersect -a $h{bam_inf} -b $bedfile -F 1 -u";
     $cmd .= " > $hdr_bam && $samtools index $hdr_bam";
-    print STDERR "Failed to create $hdr_bam\n" if system($cmd);
+    if ( system($cmd) ) {
+        print STDERR "Failed to create $hdr_bam\n";
+        quit($self->{errorfile}, "Bedtools failed");
+    }
 
     ## create HDR seq file
     my $hdr_seq_file = "$outdir/$sample.hdr.seq";
@@ -1343,6 +1344,16 @@ sub getFlankingSeq {
     }
 
     return join( '', @flank_bases );
+}
+
+sub quit {
+    my ($flag_file, $msg) = @_;
+    if ( $msg ) {
+        qx(echo $msg > $flag_file);
+    } else {
+        qx(touch $flag_file);
+    }
+    exit 1;
 }
 
 1;

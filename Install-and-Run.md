@@ -56,13 +56,13 @@ Then edit conf.txt, fastq.list, and run.sh to reflect the paths in the container
 
 ### II. Running via a physical installation
 
-####1. Clone the repository
+#### 1. Clone the repository
   
         git clone https://github.com/pinetree1/crispr-dav.git
 
 In the resulting crispr-dav directory, all the Perl programs (\*.pl) use this line to invoke the perl in your environment: \#!/usr/bin/env perl. The path of env on your system may differ. If so, the path should be changed accordingly in all \*.pl files in crispr-dav directory.
 
-####2. Install prerequisite tools    
+#### 2. Install prerequisite tools    
 
 The pipeline utilizes a set of tools, most of which are common in bioinformatics field. These include Perl and Python modules, R, and NGS tools.  
 
@@ -158,7 +158,7 @@ If there is no output, the installation is successful. Otherwise, try to include
         export PYTHONPATH=$PYTHONPATH:$HOME/lib/python2.7/site-packages
 
 
-####3. Test run 
+#### 3. Test run 
 
 The pipeline can be started using the shell script template run.sh, which invokes the main program crispr.pl. Modify the files referred in run.sh to suit your project.    
     

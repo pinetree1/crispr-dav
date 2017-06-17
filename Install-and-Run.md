@@ -5,7 +5,7 @@ The CRISPR-DAV pipeline can be run via a docker container or a physical installa
 
 ### I. Running via docker container
 
-The docker repository for CRISPR-DAV is called ***[pinetree1/crispr-dav](https://hub.docker.com/r/pinetree1/crispr-dav/)***. It has the pipeline and prerequisite tools. No physical installation is required but you need to be able to run docker on your system. 
+The docker repository for CRISPR-DAV is called [**pinetree1/crispr-dav**](https://hub.docker.com/r/pinetree1/crispr-dav/). It has the pipeline and prerequisite tools. No physical installation is required but you need to be able to run docker on your system. 
 
 The pipeline includes two example projects. Here are steps to test run example1. Running example2 is quite similar.  
 

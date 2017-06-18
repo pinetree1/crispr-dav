@@ -1,8 +1,9 @@
-### Case sensitive
+### Case sensitive for all section names, parameters, and values
 
 ## Add a genome section to reflect the genome of interest. 
 ## If there are multiple genomes, each genome must have its own section.
-
+## When amplicon sequence is used as reference, this section is ignored.
+#
 [genomex]
 ref_fasta = genome/genomex.fa
 bwa_idx = genome/genomex.fa
@@ -34,7 +35,7 @@ java = /path/to/jdk1.7.0_51/bin/java
 
 pysamstats = /path/to/bin/pysamstats
 
-# R must have ggplot2 and naturalsort packages
+# R must have ggplot2, reshape2, and naturalsort packages
 rscript = /path/to/R-3.2.1/bin/Rscript
 
 ## Filtering parameters

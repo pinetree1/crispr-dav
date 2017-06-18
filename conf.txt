@@ -1,8 +1,9 @@
-### Case sensitive
+### Case sensitive for all section names, parameters, and values
 
 ## Add a genome section to reflect the genome of interest. 
 ## If there are multiple genomes, each genome must have its own section.
-
+## When amplicon sequence is used as reference, this section is ignored.
+#
 [genomex]
 ref_fasta = genome/genomex.fa
 bwa_idx = genome/genomex.fa
@@ -11,14 +12,31 @@ refGene = genome/refgenex.txt
 ## Required tools 
 
 [app]
-prinseq = /home/wangx112/app/prinseq-lite-0.20.4/prinseq-lite.pl 
-samtools = /home/wangx112/app/samtools-1.3.1/samtools 
-bwa = /home/wangx112/app/bwa-0.7.15/bwa 
-java = /apps/sys/java/jdk1.7.0_51/bin/java
-abra = /home/wangx112/app/ABRA/abra-0.97-SNAPSHOT-jar-with-dependencies.jar
-bedtools = /home/wangx112/app/bedtools2/bin/bedtools
-pysamstats = /home/wangx112/bin/pysamstats
-rscript = /home/wangx112/app/R-3.2.1/bin/Rscript
+
+# The paths of prinseq and abra must be provided. 
+# For others, if path is not provided, it must be accessible 
+# in your environment  
+ 
+abra = /path/to/ABRA/abra-0.97-SNAPSHOT-jar-with-dependencies.jar
+
+# Path to prinseq-lite.pl. Make sure prinseq path is executable.
+prinseq = /path/to/prinseq-lite-0.20.4/prinseq-lite.pl 
+
+# bwa (e.g. 0.7.15) must support: bwa mem -M
+bwa = /path/to/bwa-0.7.15/bwa 
+
+samtools = /path/to/samtools-1.3.1/samtools 
+
+# bedtools (e.g. v2.25) must support: bedtools intersect -F 
+bedtools = /path/to/bedtools2.25/bin/bedtools
+
+# java must be 1.7 or later
+java = /path/to/jdk1.7.0_51/bin/java
+
+pysamstats = /path/to/bin/pysamstats
+
+# R must have ggplot2, reshape2, and naturalsort packages
+rscript = /path/to/R-3.2.1/bin/Rscript
 
 ## Filtering parameters
 

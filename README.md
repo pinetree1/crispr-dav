@@ -98,7 +98,7 @@ This is an interactive alignment view of the sequences of sgRNA guide, WT, and i
 
 This section appears only when (1) the parameter refGene is specified in conf.txt and the gene of interest can be found in the refGene file; or (2) an amplicon sequence is used as reference in lieu of genome, and codon_start option is supplied.
 
-![](images/allele_view.png?raw=true)
+![](images/alignment_view.png?raw=true)
 
 #### 12. Parameters Used in Analysis:
 

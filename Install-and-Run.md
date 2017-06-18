@@ -5,9 +5,9 @@ The CRISPR-DAV pipeline can be run via a docker container or a physical installa
 
 ### I. Running via docker container
 
-The docker repository for CRISPR-DAV is called [**pinetree1/crispr-dav**](https://hub.docker.com/r/pinetree1/crispr-dav/). It has the pipeline and prerequisite tools. No physical installation is required but you need to be able to run docker on your system. 
+The docker repository for CRISPR-DAV is called [**pinetree1/crispr-dav**](https://hub.docker.com/r/pinetree1/crispr-dav/). It's based on the official fedora image at Docker Hub, and has included the pipeline and prerequisite tools. No physical installation of them is required but you need to be able to run docker on your system. 
 
-The pipeline includes two example projects. Here are steps to test run example1. Running example2 is quite similar.  
+The pipeline includes two example projects. Here are steps to test run example1. Running example2 is quite similar. You may replace /Users/xyz/temp with your own absolute path. 
 
 (1) Start the container interactively and mount a path of host to the container:
 
@@ -31,12 +31,12 @@ The docker image is about 1GB, and takes a few minutes to start up. This command
 
         exit
 
-(6) On the host, open a browser to view the report index.html file in /Users/xyz/temp/deliverables/GENEX_CR1.
+(6) On the host, open a browser to view the report file, index.html, in /Users/xyz/temp/deliverables/GENEX_CR1.
 
 
-The general steps for analyzing your own project via the docker are simlar. The important thing is to share your data directories with the container. For example, assuming that there are 3 directories on the host related to your project:
+The general steps for analyzing your own project via the docker are similar. You'll need to prepare a set of input files: conf.txt, amplicon.bed, site.bed, sample.site, fastq.list, and run.sh, similar to those in the examples; and prepare reference genome or amplicon sequence. The important thing is to share your data directories with the container. For example, assuming that there are 3 directories on the host related to your project:
 
-      /Users/xyz/temp/project: contains the input files (amplicon.bed, conf.txt, fastq.list, run.sh, sample.site, and site.bed).
+      /Users/xyz/temp/project: contains the input files.
       
       /Users/xyz/temp/rawfastq: contains the fastq files.
       
@@ -51,7 +51,9 @@ You'll mount these directories to the container using the same paths:
 
     cd /Users/xyz/temp/project
 
-Then edit conf.txt, fastq.list, and run.sh to reflect the paths in the container. Start the pipeline by: sh run.sh. The results will be present in the project directory of the container and the host.
+Then edit conf.txt, fastq.list, and run.sh to reflect the paths in the container. 
+
+Start the pipeline by: sh run.sh. The results will be present in the project directory of the container and the host.
 
 
 ### II. Running via a physical installation

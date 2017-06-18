@@ -49,25 +49,19 @@ If a sample has no reads in the source fastq files or after filtering, the sampl
 
 The plots show the read depth curve in the amplicon range, with grey bar indicating the location of the CRISPR sgRNA region. 
 
-<!--div style="width:450px; height=300px"-->
 ![](images/coverage.png?raw=true)
-<!--/div-->
 
 #### 6. Insertion Distribution in Amplicon: 
 
 The plots show the insertion rates across the amplicon range. If the insertion is caused by CRISPR, the insertion peak should overlap with the location of CRISRP site.
 
-<!--div style="width:450px; height=300px"-->
 ![](images/insertion_survey.png?raw=true)
-<!--/div-->
 
 #### 7. Deletion Distribution in Amplicon: 
 
 The plots show the deletion rates across the amplicon range. if the deletion is caused by CRISPR, the peak should overlap with the location of CRISRP site.
 
-<!--div style="width:450px; height=300px"-->
 ![](images/deletion_survey.png?raw=true)
-<!--/div-->
 
 #### 8. Allele Frequency at CRISPR Site: 
 
@@ -75,9 +69,7 @@ The plots show the locations and frequencies of the top-abundance alleles, and f
 
 In control sample where no CRISPR is introduced, there is often no significant number of indel reads. Without many indel alleles, the WT bar will look awefully wide in the plot. In order to maintain slim bar width comparable to other samples, sham alleles of zero reads are added to the plot and labeled like "any:+n" and "any:-n" in x-axis.
 
-<!--div style="width:450px; height=300px"-->
 ![](images/allele.png?raw=true)
-<!--/div-->
 
 #### 9. SNP Frequency at CRISPR Site: 
 
@@ -108,4 +100,4 @@ This shows the parameters used for read filtering, realignment, and SNP plot reg
 
 #### 13. Spreadsheet data: 
 
-This section presents the results in Excel files for download. 
+This section lists the Excel files of results for download. 

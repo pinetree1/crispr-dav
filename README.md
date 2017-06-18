@@ -104,6 +104,8 @@ This section appears only when (1) the parameter refGene is specified in conf.tx
 
 This shows the parameters used for read filtering, realignment, and SNP plot region.
 
+![](images/params.png?raw=true)
+
 #### 13. Spreadsheet data: 
 
 This section presents the results in Excel files for download. 

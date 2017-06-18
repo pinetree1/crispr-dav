@@ -49,25 +49,25 @@ If a sample has no reads in the source fastq files or after filtering, the sampl
 
 The plots show the read depth curve in the amplicon range, with grey bar indicating the location of the CRISPR sgRNA region. 
 
-<div style="width:450px; height=300px">
+<!--div style="width:450px; height=300px"-->
 ![](images/coverage.png?raw=true)
-</div>
+<!--/div-->
 
 #### 6. Insertion Distribution in Amplicon: 
 
 The plots show the insertion rates across the amplicon range. If the insertion is caused by CRISPR, the insertion peak should overlap with the location of CRISRP site.
 
-<div style="width:450px; height=300px">
+<!--div style="width:450px; height=300px"-->
 ![](images/insertion_survey.png?raw=true)
-</div>
+<!--/div-->
 
 #### 7. Deletion Distribution in Amplicon: 
 
 The plots show the deletion rates across the amplicon range. if the deletion is caused by CRISPR, the peak should overlap with the location of CRISRP site.
 
-<div style="width:450px; height=300px">
+<!--div style="width:450px; height=300px"-->
 ![](images/deletion_survey.png?raw=true)
-</div>
+<!--/div-->
 
 #### 8. Allele Frequency at CRISPR Site: 
 

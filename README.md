@@ -75,9 +75,9 @@ The plots show the locations and frequencies of the top-abundance alleles, and f
 
 In control sample where no CRISPR is introduced, there is often no significant number of indel reads. Without many indel alleles, the WT bar will look awefully wide in the plot. In order to maintain slim bar width comparable to other samples, sham alleles of zero reads are added to the plot and labeled like "any:+n" and "any:-n" in x-axis.
 
-<div style="width:450px; height=300px">
+<!--div style="width:450px; height=300px"-->
 ![](images/allele.png?raw=true)
-</div>
+<!--/div-->
 
 #### 9. SNP Frequency at CRISPR Site: 
 

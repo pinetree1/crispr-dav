@@ -44,13 +44,21 @@ if (file.exists(infile)==FALSE) exit(paste("Could not find", infile))
 
 ## create the plot
 dat <- read.table(file=infile, sep="\t", header=TRUE, stringsAsFactors=FALSE)
-if (nrow(dat)==0) exit(paste("No data in input file", infile), 0)
 
 dat$Chromosome<- factor(dat$Chromosome, levels=naturalsort(unique(dat$Chromosome)))
 p<-ggplot(dat, aes(x=Chromosome, y=ReadCount, fill=Sample)) +
-	geom_bar(stat='identity', position=position_dodge(), width=0.5 ) +
 	labs(x="Chromosome", y="Number of reads", title="Reads Mapped on Chromosomes") + 
 	theme_bw() + customize_title_axis(angle=90) 
+
+if ( nrow(dat) > 0 ) {
+	p <- p + geom_bar(stat='identity', position=position_dodge(), width=0.5)
+} else {
+	write(paste("Warning: No data in input file", infile), stderr())
+	p <- p + scale_y_continuous(limits=c(0, 1000)) + 
+		annotate(geom='text', x=1, y=500, label="No reads mapped to reference",
+			size=5, family='Times', fontface="bold") +
+		theme(axis.text.x = element_blank())
+}
 
 # number of samples
 n <- length(unique(dat$Sample))

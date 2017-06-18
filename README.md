@@ -1,203 +1,103 @@
-# CRISPR-DAV: CRISPR NGS Data Analysis and Visualization Pipeline 
+<center><h2>CRISPR-DAV: CRISPR NGS Data Analysis and Visualization Pipeline</h2></center>
+<br>
 
-## Installation 
+### Introduction
 
-### 1. Clone the CRISPR pipeline repository:
+CRISPR-DAV is a pipeline to analyze amplicon-based NGS data of CRISPR clones in a high throughput manner. In the pipeline, BWA alignment and ABRA realignment are performed to detect insertion and deletion. The realignment with ABRA has improved detection of large indels. Results are presented in a comprehensive set of charts and interactive alignment view.
 
-In a directory where you want the pipeline to be installed, type:
+### Installing and running the pipeline
 
-    git clone https://biogit.pri.bms.com/wangx112/crispr.git 
-
-### 2. Install required tools and modules: 
-
-#### A. Install tools
-
-The following tools are required. See details are in Install/required_tools.txt.  
-
-    bwa, samtools 1.x, bedtools2, prinseq, ABRA, R, R packages ggplots and naturalsort.
-    
-The tools can be installed in appropriate directory as non-root user or root. If some tools are already installed in your system, you may not need to re-install. Here is an example of how to install the tools: 
-
-    cd <app directory> 
-
-	sh <crispr directory>/Install/install_app.sh 
-	
-	If an app failed to install, you need to install it manually. Check the details in the script for steps.
-	
-	After R is installed, you need to start R and install two packages manually:
-	    <app directory>/R-3.2.1/bin/R
-	    >install.packages("naturalsort")
-	    >install.packages("ggplot2")
-
-#### B. Install perl and python modules
-
-The required modules are listed in <crispr directory>/Install/install_mod.sh.
-    
-Install them as **root**, for example:
-
-	sh <crispr directory>/Install/install_mod.sh 
-	
-This should install the modules in system-wide locations so that non-root user can access. 
-
-To check whether the perl modules are installed, run this as regular user:
-
-    <crispr directory>/Install/check_perlmod.pl
-
-If there is no output, the installation was successful.
-
-To check whether python modules are accessible, do this as regular user:
-
-    $python
-    >>>import pysam
-    >>>import pysamstats
-    >>>exit()
-
-Again, if there is no output, the installation is successful.
-	
-
-### 3. Prepare a genome  
-
-In the Examples/example1 provided in the pipeline package, a test genome is already prepared. To run the examples, you can skip this step. 
-
-Below are general steps for preparing a genome: 
-
-#### A. Prepare fasta file:
-For example, to parepare human genome hg19, download the chromosome sequence files from UCSC browser, combine them (excluding the haplotype and chrUn) into one file, hg19.fa.
-
-#### B. Create bwa index:
-For example, to create bwa index for hg19.fa:  	
-	
-	bwa index hg19.fa 
-
-#### C. Download refGene table: 
-Go to UCSC Genome Broser (http://genome.ucsc.edu/cgi-bin/hgBlat), then click on Tools and select TableBrowser. Select assembly hg19, group: Genes and Gene Predictions, track: RefSeq Genes, table: refGene. Download the file in plain text to the same directory as the genome file.
-
-If the sequence of an amplicon is used as reference, only a fasta file needs to be created if the sequence is all in exons. See the 'Run pipeline' section for more details.  An example is in Examples/example2 in the pipeline package.
+The pipeline can be run via a docker container or a physical install. Please see [Install-and-Run](Install-and-Run.md) for instructions.
 
 
-## Run pipeline
+### Results
 
-There are two example runs in the "Examples" directory. 
+Results are presented in an HTML report, which looks like this:
 
-### 1. example1: 
-This example shows how to run the pipeline when a genome is used as reference. The genome is in exmaple1/genome directory. See the above on how to prepare a genome. In addition, there are several input files to prepare:
+![](images/resultpage.png?raw=true)
 
-#### conf.txt: 
-Use the conf.txt in crispr.pl script directory as template, modify the paths and settings according to your installation and project requirement.  
+<br>
 
-#### amplicon.bed: 
-A tab-delimited text file with 6 columns: chr, start, end, genesymbol, refseq_accession, strand. Only one amplicon is allowed. The start and end are 1-based and inclusive. Genesymbol should have no space. Refseq_accession must match the "name" (2nd column) in genome's refGene table.  
- 
-#### site.bed: 
-A tab-delimited text file with 7 columns: chr, start, end, crispr_name, sgRNA_sequence, strand, HDR_new_bases_and_positions. This file can contain multiple records, but crispr_name and sgRNA_sequence must be unique among the records. All the crisprs must belong to the same amplicon. Start and end are 1-based and inclusive.
-
-#### sample.fastq: 
-A tab-delimited text file with 2 or 3 columns: sample name, read1 file, optional read2 file. Fastq files must be gzipped with .gz extension.
-
-#### sample.site: 
-A tab-delimited text file with 2 or more columns: sample name, sgRNA_sequence. The sample name must match what's in sample.fastq. All samples listed in sample.site will be analyzed. 
-
-None of the files should have column header.
-
-#### To start the pipeline: 
-
-    cd <crispr directory>/Examples/example1
-    
-    Edit conf.txt: change the paths to genome and applications accordingly.
-    
-    cp ../run_script.sh .
-
-    Edit the script accordingly. If --sge option is added to the command line, the pipeline will submit jobs to SGE default queue, provided it's set up for your system. Without this option, jobs will be processed in serial fashion on local host. 
-
-    Run the pipeline in background by issuing this command:
-
-    sh run_script.sh &> r.log &
-
-This will create 2 directories: 
-
-* align: this contains the intermediate files.  
-
-* deliverables: this contains the results. Each crispr name will have a sub-directory under it. The subdirectory contains index.html file for viewing the results. 
-
-### 2. example2: 
-This example shows how to run the pipeline when an amplicon sequence is used as reference. 
-
-To use an amplicon sequence as reference, use --amp_fasta to specify an amplicon fasta file. The --genome option must not be used. The pipeline will create the bwa index of the amplicon sequence, and create the refGene equivalent table based on translation frame provided, assuming translation occurs on the positive strand and there is no intron in the amplicon sequence. Otherwise, then the refGene table must be pre-created and example1 should be followed. 
-
---amp_fasta: specify a reference sequence for the amplicon. The file must be a fasta file with an ID and only one sequence. 
-
---amp_frame: Translation starting position in the amplicon reference sequence. If the first codon starts at the first base, then the position is 1.
-
-site.bed: the chromosome name must be the same as that in amplicon fasta file. The start and end positions mean the positions of a CRISPR guide sequence in the amplicon sequence.
-
-All other files and steps are similar to those in example1.
-
-## Results
-
-Results are available in 'deliverables' directory. Each subdirectory is for a CRISPR site. Results for a CRISPR site are accessable via index.html in the subdirectory. The html page looks like this:
-
-![](readme_images/resultpage.png?raw=true)
-
-
-Below are the descriptions for the result sections:
+The various sections are described below:
 
 #### 1. Gene: 
-Brief description about the amplicon and CRISPR target.
+
+Brief information about the amplicon and CRISPR target.
 	
 #### 2. Read Counts and Percentages at CRISPR Site:
-The Count plot shows the number of wild type, indel, and inframe reads at the CRISPR site. The reads must span the sgRNA region. Wild type reads have no indel in this region. Indel reads have at least one insertion or deletion base inside the sgRNA region. Inframe indel reads are part of the indel reads, but their indel length are multiples of 3 and thus do not cause frame shift in translation.   
 
-The Percentage plot shows the percentage of read types out of total reads, i.e. WT reads + indel reads. Pct Inframe indel reads is the percentage of all inframe indel reads out of the total reads.
+The Count plot shows the number of reads (wild type, indel, and inframe indel) at the CRISPR site. The reads must span the sgRNA sequence region. Wild type reads have no indel in this region. Indel reads have insertion and/or deletion overlapping and potentially extending beyound the sgRNA region. Inframe indel reads are part of the indel reads, but their indel lengths are multiples of 3 and thus do not cause frame shift in translation.   
 
-The +/- circle image can be clicked to open or close the section.
+The Percentage plot shows the percentage of read types with regard to total reads (WT reads + indel reads). 
 
-![](readme_images/percent.png?raw=true)
-
-
-#### 3. Charts for individual sample. 
-The allows to show charts of only one sample. 
-
-#### 4. Amplicon coverage: 
-The plots show the read depth in the amplicon range, with grey bar indicating the location of the CRISPR sgRNA region. The minimum depth at boundaries is shown. This value is set in the conf.txt file.
-
-![](readme_images/coverage.png?raw=true)
+![](images/percent.png?raw=true)
 
 
-#### 5. Insertion Location in Amplicon: 
-The plots show the insertion rates across the amplicon range. When there is a significant percentage of insertion, the peak should overlap with the location of CRISRP site.
+#### 3. Charts for Individual Sample:
 
-![](readme_images/insertion_survey.png?raw=true)
+This section shows a group of charts for a particular sample chosen from a dropdown menu. 
+
+#### 4. Preprocessing of Reads:
+
+The first plot shows counting of reads at various stages: raw reads, filtered reads, reads mapped to genome, and reads mapped to amplicon. The second plot shows the numbers of reads on different chromosomes.
+
+If a sample has no reads in the source fastq files or after filtering, the sample will not be drawn in the charts, but a message table would appear below the charts to indicate the issue.
+
+![](images/filtering.png?raw=true)
+
+#### 5. Amplicon coverage: 
+
+The plots show the read depth curve in the amplicon range, with grey bar indicating the location of the CRISPR sgRNA region. 
+
+![](images/coverage.png?raw=true)
+
+#### 6. Insertion Distribution in Amplicon: 
+
+The plots show the insertion rates across the amplicon range. If the insertion is caused by CRISPR, the insertion peak should overlap with the location of CRISRP site.
+
+![](images/insertion_survey.png?raw=true)
+
+#### 7. Deletion Distribution in Amplicon: 
+
+The plots show the deletion rates across the amplicon range. if the deletion is caused by CRISPR, the peak should overlap with the location of CRISRP site.
+
+![](images/deletion_survey.png?raw=true)
+
+#### 8. Allele Frequency at CRISPR Site: 
+
+The plots show the locations and frequencies of the top-abundance alleles, and frequency of WT reads. This helps to understand how CRISPR affects sister chromosomes in a diploid genome.
+
+In control sample where no CRISPR is introduced, there is often no significant number of indel reads. Without many indel alleles, the WT bar will look awefully wide in the plot. In order to maintain slim bar width comparable to other samples, sham alleles of zero reads are added to the plot and labeled like "any:+n" and "any:-n" in x-axis.
+
+![](images/allele.png?raw=true)
+
+#### 9. SNP Frequency at CRISPR Site: 
+
+The plots show the point mutation rates in and around a CRISPR site. The X axis has the position and reference base on positive strand; the bars indicate the mutant bases. The sgRNA sequence region is marked with a horizontal line. The number of bases on the sides of the sgRNA is determined by the parameter wing_length in the conf.txt file. In the chart below, it can be seen that the Homology-Directed Repair (HDR) clearly introduced expected mutations as indicated in the Gene Table. 
+
+![](images/snp.png?raw=true)
 
 
-#### 6. Deletion Location in Amplicon: 
-The plots show the deletion rates across the amplicon range. When there is a significant percentage of deletion, the peak should overlap with the location of CRISRP site.
+#### 10. Homology Directed Repair (HDR) Rates: 
 
-![](readme_images/deletion_survey.png?raw=true)
+This plot compares the HDR rates across all samples. Oligo nucleotide seqences in HDR region are categorized into 4 types. Their fractions and total reads are indicated. The rate of perfect oligo is labelled. If HDR base changes are not specified in CRISPR bed file (site.bed), the section will not appear. 
 
+![](images/hdr.png?raw=true)
 
-#### 7. Indel Length at CRISPR site: 
-Two plots are shown for each sample. The first plot does not include WT read count, in order to see the reads of insertion and deletion in higher scale when the reads are predominantly WT. The second plot includes WT. 
+#### 11. Visual Alignment of Indel Alleles: 
 
-![](readme_images/indel_length.png?raw=true)
+This is an interactive alignment view of the sequences of sgRNA guide, WT, and indel alleles in the gene. The frequencies of WT, deletion and insert reads are shown. The view is enabled with Canvas Xpress (http://canvasxpress.org/html/index.html). The bars can be zoomed in and out, and moved to the left and right. Only the coding sequence (CDS) is drawn in the bars. If the sgRNA sequence has intronic bases, these bases will not be drawn, causing the sgRNA sequence look shorter than the original. Likewise, if some indel bases are inside intron, they will not be drawn. Deletion is shown as a arc line connecting intact bases. Insertion is shown as a tick mark between two bases. However, the inserted bases are not shown.
 
+This section appears only when (1) the parameter refGene is specified in conf.txt and the gene of interest can be found in the refGene file; or (2) an amplicon sequence is used as reference in lieu of genome, and codon_start option is supplied.
 
-#### 8. SNP Locations around CRISPR site: 
-In a plot, the X axis shows the position and reference base, the bars indicate the point mutation frequencies. sgRNA region is marked with a horizontal bar. The number of bases on the sides of the sgRNA is determined by wing_length in the conf.txt file.
+![](images/alignment_view.png?raw=true)
 
-![](readme_images/snp.png?raw=true)
+#### 12. Parameters Used in Analysis:
 
+This shows the parameters used for read filtering, realignment, and SNP plot region.
 
-#### 9. Homology Directed Repair (HDR) Rates: 
-This section shows the HDR rates. Oligos were categorized into 4 types. The fractions and total reads were plotted. This section appears only when HDR base changes are specified in crispr bed file (site.bed). The desired new bases supplied must be on positive strand.
+![](images/params.png?raw=true)
 
-![](readme_images/hdr.png?raw=true)
+#### 13. Spreadsheet data: 
 
-
-#### 10. Visual Alignment of Indel Alleles: 
-This section appears only when gene/cds/exon coordinates were provided via refGene parameter in conf.txt or in case of amplicon as reference the amp_frame option was supplied. The image was created with Canvas Xpress (http://canvasxpress.org/html/index.html). It shows insertion and deletion locations in the context of coding sequence (CDS) and sgRNA guide sequence. The bars can be zoomed in and out (by rolling middle mouse key), and moved to the left or right. If the shown guide sequence is not full length, that is because the missed bases happen to be in intronic region. Likewise, if some indel bases are inside intron, they will not be shown in the bars either. Deletion is shown as a curved line bridging intact bases. Insertion is shown as a little line between two bases.  
-
-![](readme_images/allele_view.png?raw=true)
-
-
-#### 11. Spreadsheet data: 
-This section presents the data in Excel files for download. The plots in previous sections were generated using the spreadsheet data. 	
+This section lists the Excel files of results for download. 

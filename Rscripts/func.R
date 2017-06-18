@@ -39,7 +39,7 @@ customize_title_axis <- function(angle=0, color="black", face="bold", family="Ti
 	f<-face
 	fm<-family
 	theme(axis.text.x=element_text(angle=angle, color=c, 
-			family=fm, face="bold", size=size, vjust=0.5, hjust=0.5), 
+		family=fm, face="bold", size=size, vjust=0.5, hjust=0.5), 
 		axis.text.y=element_text(color=c, family=fm, face=f, size=size),
 		axis.title.x=element_text(color=c, family=fm, face=f, size=size, vjust=-0.2),
 		axis.title.y=element_text(color=c, family=fm, face=f, size=size, vjust=1),
@@ -67,7 +67,7 @@ fixedWidth <- function(graph, width=0.1) {
 
 	#change the widths
 	g2$grobs[[4]]$children[[2]]$width <- rep(width,
-			length(g2$grobs[[4]]$children[[2]]$width))
+		length(g2$grobs[[4]]$children[[2]]$width))
 
 	#copy the attributes (units)
 	attributes(g2$grobs[[4]]$children[[2]]$width) <- original.attibutes

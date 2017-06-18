@@ -39,7 +39,7 @@ included in all copies or substantial portions of the Software.
 =cut
 
 use strict;
-use CGI;
+#use CGI;
 use BMS::ErrorInterceptor;
 use BMS::Utilities::Escape;
 use BMS::Utilities::FileUtilities;

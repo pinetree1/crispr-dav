@@ -48,9 +48,9 @@ my $VERSION =
 use strict;
 use vars qw(@ISA);
 use BMS::ErrorInterceptor;
-use Spreadsheet::ParseExcel;
+#use Spreadsheet::ParseExcel;
 #use lib '/stf/biocgi/tilfordc/patch_lib';
-use Spreadsheet::XLSX;
+#use Spreadsheet::XLSX;
 
 @ISA = qw(BMS::ErrorInterceptor);
 
@@ -457,10 +457,10 @@ sub format {
             $self->{OPENFILE} = \&_open_rich;
             $self->{NEXTROW}  = \&_nextrow_excel;
         } elsif ($newval =~ /^(xls|excel|xlsx)$/) {
-            $self->{FORMAT}   = $newval =~ /xlsx/ ? 'xlsx' : 'excel';
-            $self->{NEXTROW}  = \&_nextrow_excel;
-            $self->{OPENFILE} = \&_open_excel;
-            $self->{CLOSEFILE} = \&_close_excel;
+        #    $self->{FORMAT}   = $newval =~ /xlsx/ ? 'xlsx' : 'excel';
+        #    $self->{NEXTROW}  = \&_nextrow_excel;
+        #    $self->{OPENFILE} = \&_open_excel;
+        #    $self->{CLOSEFILE} = \&_close_excel;
         } elsif (! $_[0]) {
             $self->death("I do not know how to interpret format '$newval'");
         }
@@ -790,79 +790,79 @@ sub _set_basic_workbook_properties {
     }
 }
 
-sub _open_excel {
-    my $self = shift;
-    my ($path) = @_;
-    unless (-e $path) {
-        $self->death("Can not open '$path' - failed to find file.");
-    }
-    $self->open_input();
-    my $frm = $self->format();
-    my ($wb);
-    if ($frm eq 'xlsx') {
-        if (ref($path)) {
-            # This is a file handle. The XLSX module expects a very
-            # particular kind of file handle OBJECT, so we need to
-            # write this to disk and provide the file path instead
-            my $tmp = $self->{TEMP_FILE} = "/tmp/TableReader-$$.xlsx";
-            open(TRTMP, ">$tmp") || $self->death
-                ("Failed to write temporary file for XLSX file", $!, $tmp);
-            while (<$path> ) { print TRTMP $_; }
-            close TRTMP;
-            chmod(0666, $tmp);
-            $wb = Spreadsheet::XLSX->new($tmp);
-        } else {
-            $wb = Spreadsheet::XLSX->new($path);
-        }
-    } else {
-        my $pe = new Spreadsheet::ParseExcel;
-        $wb    = $pe->Parse($path);
-    }
-    my @sheet = @{$wb->{Worksheet} || []};
-    my $sdat  = $self->{SHEETS};
-    my $exd   = $self->{EXCELDAT} = {
-        wb     => $wb,
-        path   => $path,
-        sheets => [],
-        row    => [],
-        list   => [],
-    };
-    for my $snum (0..$#sheet) {
-        my $sheet = $sheet[$snum];
-        my $sinfo = $exd->{sheets}[$snum] = {
-            # sheet    => $sheet,
-            row      => 0,
-            rowcount => $#{$sheet->{Cells}},
-        };
-        $sdat->{list}[$snum] = $sheet;
-        if (my $wsn = $sheet->{Name}) {
-            $sdat->{names}[$snum] = $wsn;
-            $sinfo->{name}        = $wsn;
-            $wsn = uc($wsn);
-            $sdat->{lookup}{$wsn} = $snum;
-            $wsn =~ s/[\s_]+//g;
-            $sdat->{lookup}{$wsn} = $snum;
-        }
-        $sdat->{lookup}{$snum + 1}  = $snum;
-        $sdat->{lookup}{uc($sheet)} = $snum;
-        if (my $hnum = $self->has_header()) {
-            $self->select_sheet($snum + 1);
-            my $plim = $self->{LIMIT};
-            $self->{LIMIT} = 0;
-            for my $discard (2..$hnum) { $self->nextrow() }
-            my $hrow = $self->next_row();
-            $self->{LIMIT} = $plim;
-            $self->{ROWCOUNT} = 0;
-            my @head;
-            foreach my $val (@{$hrow}) {
-                push @head, $self->remap_header_name($val);
-            }
-            $self->{HEADER}[$snum] = \@head;
-        }
-        $sdat->{row}[$snum] = 0;
-    }
-    return $self->select_sheet(1);
-}
+#sub _open_excel {
+#    my $self = shift;
+#    my ($path) = @_;
+#    unless (-e $path) {
+#        $self->death("Can not open '$path' - failed to find file.");
+#    }
+#    $self->open_input();
+#    my $frm = $self->format();
+#    my ($wb);
+#    if ($frm eq 'xlsx') {
+#        if (ref($path)) {
+#            # This is a file handle. The XLSX module expects a very
+#            # particular kind of file handle OBJECT, so we need to
+#            # write this to disk and provide the file path instead
+#            my $tmp = $self->{TEMP_FILE} = "/tmp/TableReader-$$.xlsx";
+#            open(TRTMP, ">$tmp") || $self->death
+#                ("Failed to write temporary file for XLSX file", $!, $tmp);
+#            while (<$path> ) { print TRTMP $_; }
+#            close TRTMP;
+#            chmod(0666, $tmp);
+#            $wb = Spreadsheet::XLSX->new($tmp);
+#        } else {
+#            $wb = Spreadsheet::XLSX->new($path);
+#        }
+#    } else {
+#        my $pe = new Spreadsheet::ParseExcel;
+#        $wb    = $pe->Parse($path);
+#    }
+#    my @sheet = @{$wb->{Worksheet} || []};
+#    my $sdat  = $self->{SHEETS};
+#    my $exd   = $self->{EXCELDAT} = {
+#        wb     => $wb,
+#        path   => $path,
+#        sheets => [],
+#        row    => [],
+#        list   => [],
+#    };
+#    for my $snum (0..$#sheet) {
+#        my $sheet = $sheet[$snum];
+#        my $sinfo = $exd->{sheets}[$snum] = {
+#            # sheet    => $sheet,
+#            row      => 0,
+#            rowcount => $#{$sheet->{Cells}},
+#        };
+#        $sdat->{list}[$snum] = $sheet;
+#        if (my $wsn = $sheet->{Name}) {
+#            $sdat->{names}[$snum] = $wsn;
+#            $sinfo->{name}        = $wsn;
+#            $wsn = uc($wsn);
+#            $sdat->{lookup}{$wsn} = $snum;
+#            $wsn =~ s/[\s_]+//g;
+#            $sdat->{lookup}{$wsn} = $snum;
+#        }
+#        $sdat->{lookup}{$snum + 1}  = $snum;
+#        $sdat->{lookup}{uc($sheet)} = $snum;
+#        if (my $hnum = $self->has_header()) {
+#            $self->select_sheet($snum + 1);
+#            my $plim = $self->{LIMIT};
+#            $self->{LIMIT} = 0;
+#            for my $discard (2..$hnum) { $self->nextrow() }
+#            my $hrow = $self->next_row();
+#            $self->{LIMIT} = $plim;
+#            $self->{ROWCOUNT} = 0;
+#            my @head;
+#            foreach my $val (@{$hrow}) {
+#                push @head, $self->remap_header_name($val);
+#            }
+#            $self->{HEADER}[$snum] = \@head;
+#        }
+#        $sdat->{row}[$snum] = 0;
+#    }
+#    return $self->select_sheet(1);
+#}
 
 sub _close_excel {
     my $self = shift;

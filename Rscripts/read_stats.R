@@ -36,7 +36,6 @@ if ( is.null(argsL$inf) | is.null(argsL$outf) ) {
     exit("Missing required argument")
 }
 
-
 ## set the output file name and path
 infile<-argsL$inf;
 outfile <- argsL$outf
@@ -47,7 +46,6 @@ if (!remove_dup %in% c('Y', 'N')) {
 	exit("--rmd value can only be 'Y' or 'N'")
 }
 
-
 ## create the plot
 readTypes <- c("RawReads", "QualityReads", "MappedReads", "UniqueReads", "AmpliconReads")
 labels<- c("Raw Reads", "Quality Reads", "Mapped Reads", "Unique Reads", "Amplicon Reads")
@@ -57,7 +55,6 @@ if ( remove_dup == 'N' ) {
 }
 
 dat <- read.table(file=infile, sep="\t", header=TRUE)
-if (nrow(dat)==0) exit(paste("No data in input file", infile), 0)
 
 dat.m <- melt(dat, id.vars="Sample", measure.vars=readTypes)
 dat.m$Sample<- factor(dat.m$Sample, levels=naturalsort(unique(dat.m$Sample)))
@@ -74,11 +71,23 @@ if ( high_res ) {
 	png(filename=outfile, height=h, width=w)
 }
 
-ggplot(dat.m, aes(x=Sample, y=value, fill=variable)) + 
-	geom_bar(stat='identity', position=position_dodge(), width=0.5) +
+p <- ggplot(dat.m, aes(x=Sample, y=value, fill=variable)) + 
 	labs(x="Sample", y="Number of reads", title="Reads at Preprocessing Stages") + 
 	scale_fill_discrete(breaks=readTypes, labels=labels) +
-	guides(fill=guide_legend(title=NULL)) +
 	theme_bw() + customize_title_axis(angle=45) 
 
+if (nrow(dat)>0) {
+	p <- p + geom_bar(stat='identity', position=position_dodge(), width=0.5) +
+		theme(legend.title=element_blank(),
+			legend.text=element_text(face="bold", size=12))
+
+} else {
+	write(paste("Warning: No data in input file", infile), stderr())
+	p <- p + scale_y_continuous(limits=c(0, 1000)) +
+		annotate(geom='text', x=1, y=500, label="No reads in raw data",
+			size=5, family='Times', fontface="bold") +
+		theme(axis.text.x = element_blank())
+}
+
+print(p)
 invisible(dev.off())

@@ -19,7 +19,9 @@ if("--help" %in% args) {
   exit(cat( script.name, "
       Arguments:
       --inf=pysamstat variation file, e.g. xx.var. Required.
-      --sub=subtitle. Use quote if there are spaces.Optional.
+      --sample=sample name. No space. Required.
+      --ampStart=start of amplicon. Required.
+      --ampEnd=end of amplicon. Required. 
       --hname=name of highlight region, e.g. sgRNA. Optional but required if --hstart is provided.
       --hstart=highlight region start position, e.g. sgRNA start position. Optional.
       --hend=highlight region end position, e.g. sgRNA end position. Optional.
@@ -27,7 +29,6 @@ if("--help" %in% args) {
       --chr=chromosome name, e.g. 'hg19 chr3'. Optional.
       --outf=ouput image file prefix. Required. Extension, e.g. .cov.png/tif will be added. 
       --high_res=1 or 0. 1-create high resolution .tif image. 0-create png file.
-      --min_depth=min depth marking the start and end of amplicon region. Default: 1000
       --help 	Print this message
 	"))
 }
@@ -37,7 +38,9 @@ parseArgs <- function(x) strsplit(sub("^--", "", x), "=")
 argsDF <- as.data.frame(do.call("rbind", parseArgs(args)))
 argsL <- as.list(as.character(argsDF$V2))
 names(argsL) <- argsDF$V1
-if ( is.null(argsL$inf) | is.null(argsL$outf) ) { 
+
+if ( is.null(argsL$inf) | is.null(argsL$outf) |is.null(argsL$ampStart) 
+	| is.null(argsL$ampEnd) |is.null(argsL$sample) ) { 
 	exit("Missing required argument")
 }
 
@@ -45,6 +48,8 @@ if ( is.null(argsL$inf) | is.null(argsL$outf) ) {
 infile  <-argsL$inf
 prefix <- argsL$outf
 if (file.exists(infile)==FALSE) exit(paste("Could not find", infile))
+ampStart <- as.numeric(argsL$ampStart)
+ampEnd <- as.numeric(argsL$ampEnd)
 
 hstart <- NULL
 hend <- NULL
@@ -63,44 +68,40 @@ plot_ext = ifelse( high_res==1, ".tif", ".png")
 
 ## read data
 dat <- read.table(infile, header=TRUE, sep="\t")
-if (nrow(dat)==0) exit(paste("No data in input file", infile), 0)
-
-# min depth marking the start and end of amplicon region
-min_depth <- ifelse ( is.null(argsL$min_depth), 1000, as.numeric(argsL$min_depth) ) 
-
-h=1
-t=nrow(dat)
-
-h <- which(dat$reads_all>min_depth)[1]
-if (is.na(h)) exit(paste("No position has depth >=", min_depth), 0)
-t <- tail(which(dat$reads_all>min_depth), n=1)
-if ( t > nrow(dat) ) {
-	exit("There is not enough data for plotting", 0)
+if ( nrow(dat) == 0 ) {
+	write(paste("Warning: No reads in amplicon:", infile), stderr())
+} else {
+	dat$PctInsertion <- dat$insertions/dat$reads_all * 100	
+	dat$PctDeletion <- dat$deletions/dat$reads_all * 100
 }
-
-dat2 <- dat[h:t, ]
 
 getMainTitle <- function(main_title, sub_title) {
 	mt=ifelse(is.null(sub_title), main_title, paste0(main_title, "\n", sub_title))
 }
 
-create_plot <- function (dat, ycol, xtitle, ytitle, mtitle, outfile,
-	hstart, hend, hname ) {
+create_plot <- function (ymax, ycol, xtitle, ytitle, mtitle, outfile) {
+	if  ( nrow(dat) > 0 ) {
+		p <- ggplot(dat, aes(x=pos, y=dat[,ycol]), environment = environment() ) + theme_bw() +
+			geom_line(color="blue") +
+			scale_x_continuous(breaks=ceiling(seq(ampStart, ampEnd, length.out=15))) 
+	} else {
+		p <- ggplot(dat, aes(x=pos, y=reads_all)) + theme_bw() + 
+			scale_x_continuous(limits=c(ampStart, ampEnd)) +
+			annotate(geom='text', x=(ampStart+ampEnd)/2, y=ymax/2, 
+				label='No reads in amplicon', family='Times', fontface="bold", size=5)
 
-	## create the plot
-	p<- ggplot(dat, aes(x=pos, y=dat[,ycol]), environment = environment() ) + 
-		geom_line(color="blue") + 
-		theme_bw() +
-		scale_x_continuous(breaks=seq(min(dat$pos), max(dat$pos),by=50)) +
+	}
+
+	p <- p + scale_y_continuous(limits=c(0, ymax)) +
 		labs(x=xtitle, y=ytitle, title=mtitle) + customize_title_axis(angle=90)
 
-	if ( !is.null(hstart) & !is.null(hend) ) {
+	if ( !is.null(hstart) & !is.null(hend) & nrow(dat)> 0 ) {
 		p<- p + geom_rect(aes(xmin=hstart, xmax=hend, ymin=-Inf, ymax=Inf, 
 			fill=hname), alpha=0.01) +
 			scale_fill_manual(limits=c(hname), values=c('grey')) + 
 			theme(legend.title=element_blank(), 
 				legend.key=element_rect(fill='grey'),
-				legend.text=element_text(face="bold", size=12),
+				legend.text=element_text(face="bold", size=11),
 				legend.position="bottom",
 				legend.direction="horizontal"
 			)	
@@ -117,31 +118,53 @@ create_plot <- function (dat, ycol, xtitle, ytitle, mtitle, outfile,
 
 xtitle <- ifelse(is.null(argsL$chr), "Position", paste(argsL$chr, "Position"))
 type <- ifelse(is.null(argsL$type), "all", argsL$type)
-sub_title<- ifelse(is.null(argsL$sub), NULL, argsL$sub)
+sub_title<- argsL$sample 
 
 if ( type %in% c("all", "coverage") ) {
 	mtitle <- getMainTitle("Depth of Coverage", sub_title)
 	ytitle <- "Read Depths"
 	ycol <- "reads_all"   # y column name
 	outfile <- paste0(prefix, '.cov', plot_ext) 
-	create_plot (dat2, ycol, xtitle, ytitle, mtitle, outfile, hstart, hend, hname) 
+	ymax = ifelse (nrow(dat)> 0, max(dat[,ycol]), 10000);
+	create_plot (ymax, ycol, xtitle, ytitle, mtitle, outfile) 
 }
+
+#ymax=25
+#if ( nrow(dat) > 0 ) {
+#	ymax_ins = ceiling(max(dat$insertions/dat$reads_all * 100)) 
+#	ymax_del = ceiling(max(dat$deletions/dat$reads_all * 100)) 
+#	ymax = ifelse (ymax_ins > ymax, ymax_ins, ymax) 
+#	ymax = ifelse (ymax_del > ymax, ymax_del, ymax) 	
+#	for ( i in c(75, 50, 25) ) {
+#		if (ymax > i) {
+#			ymax = ifelse(i+25>100, 100, i+25)
+#		}
+#	}
+#}
+
+ymax = 10;   # min scale for indel plots 
 
 if (type %in% c('all', 'insertion')){
 	mtitle <- getMainTitle("Insertion Distribution", sub_title)
 	ytitle <- "Insertion Read %"
 	ycol <- "PctInsertion"
-	dat2[[ycol]] <- dat2$insertions/dat2$reads_all * 100
 	outfile <- paste0(prefix, '.ins', plot_ext)
-	create_plot (dat2, ycol, xtitle, ytitle, mtitle, outfile, hstart, hend, hname)
+	if ( nrow(dat) > 0 ) {
+		ymax_ins = ceiling(max(dat$insertions/dat$reads_all * 100))
+		ymax = ifelse(ymax_ins > ymax, ymax_ins, ymax)
+	}
+	create_plot (ymax, ycol, xtitle, ytitle, mtitle, outfile) 
 } 
 
 if ( type %in% c('all', 'deletion') ) {
 	mtitle <- getMainTitle("Deletion Distribution", sub_title)
 	ytitle <- "Deletion Read %"
 	ycol <- "PctDeletion"
-	dat2[[ycol]] <- dat2$deletions/dat2$reads_all * 100
 	outfile <- paste0(prefix, '.del', plot_ext)
-	create_plot (dat2, ycol, xtitle, ytitle, mtitle, outfile, hstart, hend, hname)
+	if ( nrow(dat) > 0 ) {	
+		ymax_del = ceiling(max(dat$deletions/dat$reads_all * 100))
+		ymax = ifelse(ymax_del > ymax, ymax_del, ymax)
+	}
+	create_plot (ymax, ycol, xtitle, ytitle, mtitle, outfile) 
 } 
 

@@ -44,7 +44,7 @@ included in all copies or substantial portions of the Software.
 
 use strict;
 use BMS::Utilities;
-use URI::Escape;
+#use URI::Escape;
 
 use vars qw(@ISA);
 @ISA   = qw(BMS::Utilities);

@@ -1,14 +1,14 @@
-#!/bin/env perl
+#!/usr/bin/env perl
 ##!/usr/bin/perl -w
-## Author: Charles Tilford
-
+# Author: Charles Tilford
+# 6/12/2017: xw removed reliance on bioperl
 use strict;
 use JSON;
 use FindBin qw($Bin);
 use lib $Bin;
 use BMS::TableReader;
 use BMS::ArgumentParser;
-use Bio::PrimarySeq;
+#use Bio::PrimarySeq;
 
 my $args = BMS::ArgumentParser->new
     ( -nocgi      => $ENV{HTTP_HOST} ? 0 : 1,
@@ -135,17 +135,18 @@ sub cx_panel {
         my $seq = $mut->{Seq};
         if ($seq && defined $frm) {
             # We can translate the reference
-            my $dBS = Bio::PrimarySeq->new
-                (-seq => substr($seq, $frm), -alphabet => 'dna');
-            my $pBS = $dBS->translate();
+            #my $dBS = Bio::PrimarySeq->new
+            #    (-seq => substr($seq, $frm), -alphabet => 'dna');
+            #my $pBS = $dBS->translate();
+            my $protseq = translate($seq); 
             my $pad = (" " x $frm) || "";
-            
+           	 
             # $ps will be a space-padded (for frame / offset) and
             # square-bracketted (to bring modulus-3 inline with DNA)
             # protein sequence.
             
-            my $ps = $pad .
-                join('', map { "[$_]" } split('', uc($pBS->seq())));
+            #my $ps = $pad .  #    join('', map { "[$_]" } split('', uc($pBS->seq())));
+            my $ps = $pad . join('', map { "[$_]" } split('', $protseq));
             if ($ps =~ /^([^\*]+\*\])(.+)/) {
                 my ($prot, $pastStop) = ($1, $2);
                 $mut->{hasStop} = 1;
@@ -452,6 +453,42 @@ sub cx_panel {
     printf($fh "<span style=''>Rejected %d class%s with < %s%% representation.</span><br />\n", $rejects, $rejects == 1 ? '' : 'es', $minPerc) if ($minPerc);
 }
 
+# xw added in order to avoid Bioperl
+sub translate {
+    my $dnaSeq = shift;
+    $dnaSeq = uc($dnaSeq);
+    my %ct = (
+        TTT=>'F', TTC=>'F', TTA=>'L', TTG=>'L',
+        TCT=>'S', TCC=>'S', TCA=>'S', TCG=>'S',
+        TAT=>'Y', TAC=>'Y', TAA=>'*', TAG=>'*',
+        TGT=>'C', TGC=>'C', TGA=>'*', TGG=>'W',
+        
+        CTT=>'L', CTC=>'L', CTA=>'L', CTG=>'L',
+        CCT=>'P', CCC=>'P', CCA=>'P', CCG=>'P',
+        CAT=>'H', CAC=>'H', CAA=>'Q', CAG=>'Q',
+        CGT=>'R', CGC=>'R', CGA=>'R', CGG=>'R',
+
+        ATT=>'I', ATC=>'I', ATA=>'I', ATG=>'M',
+        ACT=>'T', ACC=>'T', ACA=>'T', ACG=>'T',
+        AAT=>'N', AAC=>'N', AAA=>'K', AAG=>'K',
+        AGT=>'S', AGC=>'S', AGA=>'R', AGG=>'R',
+
+        GTT=>'V', GTC=>'V', GTA=>'V', GTG=>'V',
+        GCT=>'A', GCC=>'A', GCA=>'A', GCG=>'A',
+        GAT=>'D', GAC=>'D', GAA=>'E', GAG=>'E',
+        GGT=>'G', GGC=>'G', GGA=>'G', GGG=>'G'
+     );
+
+	my $ps;
+    for (my $i=0; $i<length($dnaSeq); $i +=3) {
+        my $codon = substr($dnaSeq, $i, 3);
+		if ( length($codon)==3 ) {
+            $ps .= $ct{$codon};	
+		}
+	} 
+	return $ps;
+}
+
 sub read_source {
     my $path = shift;
     return unless ($path);
@@ -581,10 +618,10 @@ sub HTML_START {
    src='http://canvasxpress.org/js/canvasXpress.min.js'></script>
   <link type='text/css' rel='stylesheet' 
    href='http://canvasxpress.org/css/canvasXpress.css' />
-  <link  href='assets/0_MainStyles.css' type='text/css' rel='stylesheet' />
-  <script src='assets/0_MainScripts.js' type='text/javascript'></script>
-  <script src='assets/basic.js' type='text/javascript'></script>
-  <script src='assets/crispr2cx.js' type='text/javascript'></script>
+  <link  href='Assets/0_MainStyles.css' type='text/css' rel='stylesheet' />
+  <script src='Assets/0_MainScripts.js' type='text/javascript'></script>
+  <script src='Assets/basic.js' type='text/javascript'></script>
+  <script src='Assets/crispr2cx.js' type='text/javascript'></script>
  <body>
 EOF
 

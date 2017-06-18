@@ -177,3 +177,63 @@ The pipeline would create these directories:
     Make sure not to put your source fastq files in this directory. They could be overwritten there.
 
 - deliverables: contains the results. The HTML report file index.html is in a subdirectory.
+
+### III. Preparing input files for the pipeline
+
+- **Fastq files:**
+
+These are the raw fastq files. They must be gzipped with file extension .gz. Put the fastq files in a directory outside the pipeline's output directory. Don't put these fastq files inside the pipeline's 'align' directory, as they could get overwritten.
+
+- **Reference files:** 
+
+An amplicon sequence or a genome can be used as a reference. If an amplicon sequence is used for reference, all you need is a fasta file containing the sequence.
+ 
+If a genome is used as reference, you'll prepare a fasta file, BWA index, and refGene coordinate files 
+
+A. Prepare fasta file:
+
+For example, to parepare human genome hg19, download the chromosome sequence files from UCSC browser, combine them into one file, e.g. hg19.fa. 
+
+B. Create bwa index: bwa index hg19.fa 
+
+C. Download refGene table:
+
+Go to UCSC Genome Broser (http://genome.ucsc.edu/cgi-bin/hgBlat), click Tools and select TableBrowser. Then make these selections:
+
+    Assembly: hg19
+    Group: Genes and Gene Predictions
+    Track: RefSeq Genes
+    Table: refGene
+    Region: Genome
+    Output format: all fields from selected table. 
+    
+The downloaded tab-delimited file should have these columns: bin, name, chrom, strand, txStart, txEnd, cdsStart, cdsEnd, exonStarts, exonEnds,...
+
+- **amplicon.bed:**
+
+A tab-delimited text file with 6 columns for: chr, start, end, genesymbol, refseq_accession, strand. Only one amplicon is allowed. The start and end are 0-based according to BED format. The start is inclusive and the end is exclusive. Genesymbol should have no space. Refseq_accession must match the value in the "name" field (2nd column) in genome's refGene table for the gene.
+
+- **site.bed:**
+
+A tab-delimited text file with 6 or 7 columns for: chr, start, end, crispr_name, sgRNA_sequence, strand, HDR_new_bases_and_positions. This file can contain multiple rows, but crispr_name and sgRNA_sequence must be unique. All the CRISPR sites must belong to the same amplicon. Start and end are 0-based. 
+
+The 7th field is optional. If HDR is performed, enter expected base changes in the field. 
+
+HDR format: <Pos1><NewBase1>,<Pos2><NewBase2>,... The bases are desired new bases on ***positive strand***, e.g.101900208C,101900229G,101900232C,101900235A. No space. The positions are 1-based.
+
+
+- **sample.site:**
+
+This file controls what samples to be analyzed. It's a tab-delimited text file with 2 or more columns for: sample name, sgRNA_sequence1, sgRNA_sequence2, ... 
+
+- **fastq.list:**
+
+A tab-delimited text file with 2 or 3 columns for: sample name, read1 file, optional read2 file. Fastq files must be gzipped with .gz extension. The sample name must match what's in sample.site. 
+
+- **conf.txt:**
+
+Use the conf.txt in crispr.pl script directory as template, modify the paths and settings accordingly.
+
+Please note that none of the tab-delimited files should have a column header row. The names of these files can be changed, as long as they match what's in the shell script run.sh.
+
+

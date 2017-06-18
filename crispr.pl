@@ -266,8 +266,9 @@ Usage: $0 [options]
     Use --genome for standard genome, such as hg19. Need to have paths of fasta file, 
     bwa index, and refGene coordinate file in the configuration file. To download the  
     coordinate file, go to UCSC Genome Browser, in TableBrowser, select group:Genes 
-    and Gene Predictions, track:RefSeq Genes, table:refGene, output format:all fields
-    from selected table. The downloaded tab-delimited file should have these columns:
+    and Gene Predictions, track:RefSeq Genes, table:refGene, region:genome,
+    output format:all fields from selected table. The downloaded tab-delimited file 
+    should have these columns:
     bin,name,chrom,strand,txStart,txEnd,cdsStart,cdsEnd,exonStarts,exonEnds,... 
     Use --amp_fasta when using a custom amplicon sequenece as reference. 
 
@@ -642,8 +643,9 @@ sub process_beds {
            "6 tab-separated columns:\n$line\n" if scalar(@a) < 6;  
 
         my ($chr, $start, $end, $name, $seq, $strand, $hdr) = @a;
-        $seq = uc($seq);
         die "Strand must be + or - in bed file!\n" if $strand !~ /[+-]/;
+        $seq = uc($seq);
+        $seq =~ s/U/T/g;
 
         check_bed_coord( $start, $end, "Error in $crispr_bed" );
 

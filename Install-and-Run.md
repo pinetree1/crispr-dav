@@ -248,3 +248,12 @@ Use the conf.txt in crispr.pl script directory as template, modify the paths and
 Please note that none of the tab-delimited files should have a column header row. The names of these files can be changed, as long as they match what's in the shell script run.sh.
 
 
+### IV. Troubleshooting
+
+- **Errors before pipeline starts:**
+
+These are errors related to prerequisite tools and data inputs. For example, if a required tool or module is not found, there will be error messaging indicating the issue. You may try setting PERL5LIB and PYTHONPTH if the module is installed. If an input file that should be tab-separated, the pipeline may report missing columns.  
+ 
+- **Errors during pipeline:**
+
+  There are several log files per sample. Check the README in 'align' directory for descriptions. For example, if the installed Bedtools version does not support "bedtools insert -F", there will be error messages in the <sample>.log file. 

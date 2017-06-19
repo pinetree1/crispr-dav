@@ -7,7 +7,7 @@ produced in the 'deliverables' directory.
     .bam          Alignment bam file	
     .fliter.log   Filtering log
     .bwa.log      BWA alignment log
-    .abra.log     ABRA realignment log if realign_flag is set to Y in conf.txt
+    .abra.log     ABRA realignment log if realignment is performed.
      <sample>.log  General log for sample processing 
     .chr          Counts of reads mapped on different chromosomes 
     .cnt          Counts of reads at different stages of pre-processing

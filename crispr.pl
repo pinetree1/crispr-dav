@@ -228,7 +228,7 @@ sub prepare_command {
     $cmd .= " --read2fastq $fastqs[1]" if $fastqs[1];
     $cmd .= " --picard $h{picard}"     if $h{picard};
     $cmd .= " --abra $h{abra} --prinseq $h{prinseq}" .
-       " --samtools $h{samtools} --bwa $h{bwa}" . 
+       " --samtools $h{samtools}" . 
        " --java $h{java} --bedtools $h{bedtools}" . 
        " --pysamstats $h{pysamstats} --rscript $h{rscript}" . 
        " --tmpdir $h{tmpdir} --min_qual_mean $h{min_qual_mean}" .
@@ -360,7 +360,7 @@ Usage: $0 [options]
     
     # app section
     foreach my $tool (
-        "abra", "prinseq",  "samtools",   "bwa",
+        "abra", "prinseq",  "samtools", 
         "java", "bedtools", "pysamstats", "rscript"
       )
     {
@@ -394,6 +394,9 @@ Usage: $0 [options]
             }
         }
     }
+    
+    # Ensure bwa is in PATH
+    qx(which bwa 2>/dev/null) or die "Error: bwa not found. It must be in your PATH\n";
 
     check_pysam( $h{pysamstats} );
     check_perlmod();

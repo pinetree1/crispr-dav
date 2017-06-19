@@ -1,8 +1,8 @@
 # example to start the pipeline
-## You may need to set PYTHONPATH to search for pysam module
-## export PYTHONPATH=$PYTHONPATH:/path/to/pysam-module 
-## You may need to set PERL5LIB path to search for perl modules
-## export PERL5LIB=$PERL5LIB:/path/to/perl-module
+## You may need to set PYTHONPATH to search for pysam modules if installed locally, e.g.
+#export PYTHONPATH=$HOME/lib/python2.7/site-packages:$PYTHONPATH
+## You may need to set PERL5LIB path to search for perl modules if installed locally, e.g.
+#export PERL5LIB=$HOME/perlmod/lib/perl5:$PERL5LIB
 unset module
 genome=genomex
 ./crispr.pl --conf conf.txt --region amplicon.bed --crispr site.bed \

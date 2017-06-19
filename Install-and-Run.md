@@ -95,14 +95,21 @@ If you prefer to install modules as a non-root user, these steps show how to ins
     make
     make install
 
+The modules can be found in CPAN. Install the other modules similarly. Keep in mind that these modules could have dependencies. You will need to install them as well.
+
 If a module is installed globally by root, it is already in @INC which has paths that perl searches for a module. 
 
-But if the module is installed in a local path, you'll need to add the path to @INC by setting PERL5LIB: export PERL5LIB=\$HOME/perlmod:$PERL5LIB
-. You may add the line to the pipeline script run.sh in crispr-dav directory.
+But if the module is installed in a local path, you'll need to add the path to @INC by setting PERL5LIB: 
+
+	export PERL5LIB=$HOME/perlmod/lib/perl5:$PERL5LIB
+
+You may add the line to the pipeline script run.sh in crispr-dav directory.
 
 **B. NGS tools**
 
-- BWA: Burrows-Wheeler Aligner. **Make sure your version supports "bwa mem -M" command.** Recommended version: [0.7.15](https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2/download)
+- ABRA: Assembly Based ReAligner. Recommended version: [0.97]( https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar). **Java 1.7 or later is needed to run the realigner.**
+
+- BWA: Burrows-Wheeler Aligner. **Make sure your version supports "bwa mem -M" command.** Recommended version: [0.7.15](https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2/download). Also make sure the executable bwa is in PATH, because bwa in PATH is to be used by ABRA. 
 
 - Samtools: Recommended version: [1.3.1](https://sourceforge.net/projects/samtools/files/samtools/1.3.1/samtools-1.3.1.tar.bz2/download). Older version of samtools is OK. 
 
@@ -111,8 +118,6 @@ But if the module is installed in a local path, you'll need to add the path to @
 - PRINSEQ: Recommended version: [0.20.4](https://sourceforge.net/projects/prinseq/files/standalone/prinseq-lite-0.20.4.tar.gz/download). **Be sure to make the program prinseq-lite.pl executable:** 
 
         chmod +x prinseq-lite.pl
-
-- ABRA: Assembly Based ReAligner. Recommended version: [0.97]( https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar). **Java 1.7 or later is needed to run the realigner.**
 
 **C. R packages**
 
@@ -138,15 +143,19 @@ To install it in home directory, you may try these steps:
 
         pip install --install-option="--prefix=$HOME" pysam==0.8.4
 
-This would install pysam in $HOME/lib/python2.7/site-packages, assuming your Python version is 2.7.
+This would install pysam in $HOME/lib/python2.7/site-packages, assuming your Python version is 2.7. The 'lib' could be lib64.
+
+Then make pysam module searchable:
+
+		export PYTHONPATH=$PYTHONPATH:$HOME/lib/python2.7/site-packages
 
 - ***Install pysamstats:***
 
-        git clone git://github.com/alimanfoo/pysamstats.git
+        git clone https://github.com/alimanfoo/pysamstats.git 
         cd pysamstats
         python setup.py install --prefix=$HOME
 
-This would install an executable script pysamstats in $HOME/bin and pysamstats module in $HOME/lib/python2.7/site-packages.
+This would install an executable script pysamstats in $HOME/bin and pysamstats module in the same place as pysam.
 
 Check whether the modules can be loaded:
 
@@ -155,20 +164,22 @@ Check whether the modules can be loaded:
         >>>import pysamstats
         >>>exit()
 
-If there is no output, the installation is successful. Otherwise, try to include the python library path to PYTHONPATH and add it to the pipeline's run.sh script, for example:
+If there is no output, the installation is successful. 
+
+You should add it to the pipeline's run.sh script, for example:
     
         export PYTHONPATH=$PYTHONPATH:$HOME/lib/python2.7/site-packages
 
 
 #### 3. Test run 
 
-The pipeline can be started using the shell script template run.sh, which invokes the main program crispr.pl. Modify the files referred in run.sh to suit your project.    
-    
-For test run, CRISPR-DAV includes two examples in Examples directory. The example1 uses a genome as reference, whereas example2 uses an amplicon sequence as reference. The procedure to run the pipelines is similar in the examples.
+CRISPR-DAV includes two examples in Examples directory. The example1 uses a genome as reference, whereas example2 uses an amplicon sequence as reference. The procedure to run the pipelines is similar in the examples.
  
         cd crispr-dav/Examples/example1
-        Edit the conf.txt and run.sh accordingly. 
-        Start the pipeline: sh run.sh
+
+        Edit the conf.txt and run.sh accordingly. Remember to add commands of setting PERL5LIB and PYTHONPATH in run.sh if the Perl and Python modules were installed locally.  
+
+        Start the pipeline: sh run.sh. This shell script invokes the main program crispr.pl which starts the pipeline.
 
 The pipeline would create these directories: 
 

@@ -2,6 +2,7 @@
 # Process one sample
 # Author: X. Wang
 
+use 5.010;
 use strict;
 use Getopt::Long;
 use FindBin qw($Bin);

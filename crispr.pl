@@ -2,7 +2,7 @@
 # Start processing of all samples and integrate them.
 # Author: X. Wang
 
-use 5.18.1;
+use 5.010;
 use strict;
 use File::Path qw(make_path);
 use File::Spec;

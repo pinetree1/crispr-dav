@@ -2,6 +2,7 @@
 # Creates html page
 # Author: X. Wang
 
+use 5.010;
 use strict;
 use File::Basename;
 use Getopt::Long;

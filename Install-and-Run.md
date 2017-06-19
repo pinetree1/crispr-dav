@@ -95,7 +95,7 @@ If you prefer to install modules as a non-root user, these steps show how to ins
     make
     make install
 
-The modules can be found in CPAN. Install the other modules similarly. Keep in mind that these modules could have dependencies. You will need to install them as well.
+The modules can be found in CPAN. Install the other modules similarly. Keep in mind that if they have dependencies which are not already installed on your system, you will need to install them as well.
 
 If a module is installed globally by root, it is already in @INC which has paths that perl searches for a module. 
 
@@ -103,13 +103,13 @@ But if the module is installed in a local path, you'll need to add the path to @
 
 	export PERL5LIB=$HOME/perlmod/lib/perl5:$PERL5LIB
 
-You may add the line to the pipeline script run.sh in crispr-dav directory.
+You may add the line to the pipeline script run.sh in crispr-dav directory in that case.
 
 **B. NGS tools**
 
 - ABRA: Assembly Based ReAligner. Recommended version: [0.97]( https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar). **Java 1.7 or later is needed to run the realigner.**
 
-- BWA: Burrows-Wheeler Aligner. **Make sure your version supports "bwa mem -M" command.** Recommended version: [0.7.15](https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2/download). Also make sure the executable bwa is in PATH, because bwa in PATH is to be used by ABRA. 
+- BWA: Burrows-Wheeler Aligner. **Make sure your version supports "bwa mem -M" command, and bwa must be put in PATH for use by ABRA.** Recommended version: [0.7.15](https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2/download). 
 
 - Samtools: Recommended version: [1.3.1](https://sourceforge.net/projects/samtools/files/samtools/1.3.1/samtools-1.3.1.tar.bz2/download). Older version of samtools is OK. 
 

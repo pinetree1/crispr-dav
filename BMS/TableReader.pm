@@ -1381,7 +1381,7 @@ sub _nextrow_csv {
     do {
         $keepGoing = 0;
         for my $i (0..$#quoted) {
-            if ($quoted[$i][0] =~ /(QUOTED{(\d+)})/) {
+            if ($quoted[$i][0] =~ /(QUOTED\{(\d+)\})/) {
                 my ($orig, $rep) = ($1, $quoted[$2][0]);
                 $quoted[$i][0] =~ s/\Q$orig\E/$rep/g;
                 $keepGoing++;
@@ -1391,11 +1391,11 @@ sub _nextrow_csv {
     my @rv;
     my $sep = $self->separator();
     foreach my $txt (split(/\Q$sep\E/, $row)) {
-        if ($txt =~ /^QUOTED{(\d+)}$/) {
+        if ($txt =~ /^QUOTED\{(\d+)\}$/) {
             # The entire cell is quoted, we will just leave out the quotes
             $txt = $quoted[$1][1];
         } else {
-            while ($txt =~ /(QUOTED{(\d+)})/) {
+            while ($txt =~ /(QUOTED\{(\d+)\})/) {
                 # Just an internal part is quoted
                 my ($orig, $rep) = ($1, $quoted[$2][0]);
                 $txt =~ s/\Q$orig\E/$rep/g;

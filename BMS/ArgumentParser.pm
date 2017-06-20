@@ -186,7 +186,7 @@ sub new {
                     my $rep  = 'ASCIICHAR{'.hex($2).'}';
                     $val     =~ s/\Q$orig\E/$rep/g;
                 }
-                while ($val =~ /(ASCIICHAR{(\d+)})/) {
+                while ($val =~ /(ASCIICHAR\{(\d+)\})/) {
                     my $orig = $1;
                     my $rep  = chr($2);
                     $val     =~ s/\Q$orig\E/$rep/g;

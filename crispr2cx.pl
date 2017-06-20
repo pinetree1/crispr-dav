@@ -477,16 +477,16 @@ sub translate {
         GCT=>'A', GCC=>'A', GCA=>'A', GCG=>'A',
         GAT=>'D', GAC=>'D', GAA=>'E', GAG=>'E',
         GGT=>'G', GGC=>'G', GGA=>'G', GGG=>'G'
-     );
+    );
 
-	my $ps;
+    my $ps;
     for (my $i=0; $i<length($dnaSeq); $i +=3) {
         my $codon = substr($dnaSeq, $i, 3);
-		if ( length($codon)==3 ) {
+        if ( length($codon)==3 ) {
             $ps .= $ct{$codon};	
-		}
-	} 
-	return $ps;
+        }
+    } 
+    return $ps;
 }
 
 sub read_source {

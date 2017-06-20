@@ -5,15 +5,15 @@ The CRISPR-DAV pipeline can be run via a docker container or a physical installa
 
 ### I. Running via docker container
 
-The docker repository for CRISPR-DAV is called [**pinetree1/crispr-dav**](https://hub.docker.com/r/pinetree1/crispr-dav/). It's based on the official fedora image at Docker Hub, and has included the pipeline and prerequisite tools. No physical installation of them is required but you need to be able to run docker on your system. 
+The docker repository for CRISPR-DAV is called [**pinetree1/crispr-dav**](https://hub.docker.com/r/pinetree1/crispr-dav/). It's based on the official Fedora image at Docker Hub, and has included the pipeline and prerequisite tools. No physical installation of them is required but you need to be able to run docker on your system. 
 
-The pipeline includes two example projects. Here are steps to test run example1. Running example2 is quite similar. You may replace /Users/xyz/temp with your own absolute path. 
+The pipeline includes two example projects. Here are steps to test run example1. Running example2 is quite similar. You may replace /Users/xyz/temp with your own absolute path in the following commands. 
 
 (1) Start the container interactively and mount a path of host to the container:
 
         docker run -it -v /Users/xyz/temp:/Users/xyz/temp pinetree1/crispr-dav bash
 
-The docker image is about 1GB, and takes a few minutes to start up. This command mounts /Users/xyz/temp in the host to /Users/xyz/temp in the container. Inside the container, the pipeline's path is /opt/crispr-dav.
+The docker image is about 1GB, and takes a few minutes to start up for the first time. This command mounts /Users/xyz/temp in the host to /Users/xyz/temp in the container. Inside the container, the pipeline's path is /opt/crispr-dav.
 
 (2) After starting up, at the container prompt, go to example1 directory:
 
@@ -31,7 +31,7 @@ The docker image is about 1GB, and takes a few minutes to start up. This command
 
         exit
 
-(6) On the host, open a browser to view the report file, index.html, in /Users/xyz/temp/deliverables/GENEX_CR1.
+(6) On the host, open a browser to view the report, index.html, in /Users/xyz/temp/deliverables/GENEX_CR1.
 
 
 The general steps for analyzing your own project via the docker are similar. You'll need to prepare a set of input files: conf.txt, amplicon.bed, site.bed, sample.site, fastq.list, and run.sh, similar to those in the examples; and prepare reference genome or amplicon sequence. The important thing is to share your data directories with the container. For example, assuming that there are 3 directories on the host related to your project:
@@ -42,7 +42,7 @@ The general steps for analyzing your own project via the docker are similar. You
       
       /Users/xyz/temp/genome: contains the genome files.
 
-You'll mount these directories to the container using the same paths:
+You'll mount these directories to the container (using the same paths for convenience):
 
     docker run -it -v /Users/xyz/temp/project:/Users/xyz/temp/project \
       -v /Users/xyz/temp/rawfastq:/Users/xyz/temp/rawfastq \
@@ -103,7 +103,7 @@ But if the module is installed in a local path, you'll need to add the path to @
 
 	export PERL5LIB=$HOME/perlmod/lib/perl5:$PERL5LIB
 
-You may add the line to the pipeline script run.sh in crispr-dav directory in that case.
+In that case, You may add the line to the pipeline script run.sh, a template script in crispr-dav directory.
 
 **B. NGS tools**
 
@@ -143,7 +143,7 @@ To install it in home directory, you may try these steps:
 
         pip install --install-option="--prefix=$HOME" pysam==0.8.4
 
-This would install pysam in $HOME/lib/python2.7/site-packages, assuming your Python version is 2.7. The 'lib' could be lib64.
+This would install pysam in $HOME/lib/python2.7/site-packages, assuming your Python version is 2.7 (The 'lib' could be lib64, depending on system).
 
 Then make pysam module searchable:
 
@@ -166,7 +166,7 @@ Check whether the modules can be loaded:
 
 If there is no output, the installation is successful. 
 
-You should add it to the pipeline's run.sh script, for example:
+You should add the module path to the pipeline's run.sh script, for example:
     
         export PYTHONPATH=$PYTHONPATH:$HOME/lib/python2.7/site-packages
 
@@ -193,21 +193,27 @@ The pipeline would create these directories:
 
 - **Fastq files:**
 
-These are the raw fastq files. They must be gzipped with file extension .gz. Put the fastq files in a directory outside the pipeline's output directory. Don't put these fastq files inside the pipeline's 'align' directory, as they could get overwritten.
+These are the raw fastq files. They must be gzipped with file extension .gz. Put the fastq files in a directory outside the pipeline's output directory. Don't put them inside the pipeline's "align" directory, as they could get overwritten.
 
 - **Reference files:** 
 
-An amplicon sequence or a genome can be used as a reference. If an amplicon sequence is used for reference, all you need is a fasta file containing the sequence.
+An amplicon sequence or a genome can be used as a reference. If an amplicon sequence is used for reference, all you need is a **fasta** file containing sequence ID and the sequence.
  
 If a genome is used as reference, you'll prepare a fasta file, BWA index, and refGene coordinate files 
 
 A. Prepare fasta file:
 
-For example, to parepare human genome hg19, download the chromosome sequence files from UCSC browser, combine them into one file, e.g. hg19.fa. 
+For example, to parepare human genome hg19, download the chromosome sequence files from UCSC browser, uncompress and combine them into one file, e.g. hg19.fa.
 
-B. Create bwa index: bwa index hg19.fa 
+B. Create Fasta index: 
 
-C. Download refGene table:
+    samtools faidx hg19.fa
+
+C. Create bwa index: 
+    
+    bwa index hg19.fa
+
+D. Download refGene table:
 
 Go to UCSC Genome Broser (http://genome.ucsc.edu/cgi-bin/hgBlat), click Tools and select TableBrowser. Then make these selections:
 
@@ -222,7 +228,7 @@ The downloaded tab-delimited file should have these columns: bin, name, chrom, s
 
 - **amplicon.bed:**
 
-A tab-delimited text file with 6 columns for: chr, start, end, genesymbol, refseq_accession, strand. Only one amplicon is allowed. The start and end are 0-based according to BED format. The start is inclusive and the end is exclusive. Genesymbol should have no space. Refseq_accession must match the value in the "name" field (2nd column) in genome's refGene table for the gene.
+A tab-delimited text file with 6 columns for: chr, start, end, genesymbol, refseq_accession, strand. Only one amplicon is allowed. The start and end are 0-based, conforming to BED format. Genesymbol should have no space. Refseq_accession must match the value in the "name" field (2nd column) in genome's refGene table for the gene.
 
 - **site.bed:**
 
@@ -243,16 +249,20 @@ A tab-delimited text file with 2 or 3 columns for: sample name, read1 file, opti
 
 - **conf.txt:**
 
-Use the conf.txt in crispr.pl script directory as template, modify the paths and settings accordingly.
+Use the conf.txt.template in crispr.pl script directory as template, modify the paths and settings accordingly.
 
-Please note that none of the tab-delimited files should have a column header row. The names of these files can be changed, as long as they match what's in the shell script run.sh.
+Please note that none of the tab-delimited files should have a column header row. Each field should not contain space. The names of the input files can be changed. 
+
+- **run.sh:**
+
+For convenience, you may use run.sh.template to create a wrapper script run.sh to start the pipeline. Edit the file accordingly. You may set module paths there.
 
 
 ### IV. Troubleshooting
 
 - **Errors before pipeline starts:**
 
-These are errors related to prerequisite tools and data inputs. For example, if a required tool or module is not found, there will be error messaging indicating the issue. You may try setting PERL5LIB and PYTHONPTH if the module is installed. If an input file that should be tab-separated, the pipeline may report missing columns.  
+These are errors related to prerequisite tools and data inputs. For example, if a required tool or module is not found, there will be error message indicating the issue. You may try setting PERL5LIB and PYTHONPATH if the module is installed. If an input file used space instead of the required tab as separator, the pipeline would report error of missing columns.  
  
 - **Errors during pipeline:**
 

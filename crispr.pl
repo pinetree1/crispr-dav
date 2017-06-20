@@ -396,7 +396,10 @@ Usage: $0 [options]
     }
     
     # Ensure bwa is in PATH
-    qx(which bwa 2>/dev/null) or die "Error: bwa not found. It must be in your PATH\n";
+    my $bwa= qx(which bwa 2>/dev/null) or 
+        die "Error: bwa not found. It must be in your PATH\n";
+    chomp $bwa;
+    $h{bwa} = $bwa;
 
     check_pysam( $h{pysamstats} );
     check_perlmod();

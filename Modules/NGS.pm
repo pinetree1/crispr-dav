@@ -1208,7 +1208,7 @@ sub categorizeHDR {
 =cut
 
 # read the bam entries and categorize the HDRs
-# start, end are 1-based inclusiv. They are the first and last position
+# start, end are 1-based inclusive. They are the first and last position
 # of intended base change region of HDR
 sub extractHDRseq {
     my ( $self, $hdr_bam, $chr, $hdr_start, $hdr_end, $out_hdr_seq, $min_mapq )

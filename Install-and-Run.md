@@ -36,31 +36,31 @@ The docker image is about 1GB, and takes a few minutes to start up for the first
 
 The general steps for analyzing your own project via the docker are similar. You'll need to prepare a set of input files: conf.txt, amplicon.bed, site.bed, sample.site, fastq.list, and run.sh, similar to those in the examples; and prepare reference genome or amplicon sequence. The important thing is to share your data directories with the container. For example, assuming that there are 3 directories on the host related to your project:
 
-      /Users/xyz/temp/project: contains the input files.
+    /Users/xyz/temp/project: contains the input files.
       
-      /Users/xyz/temp/rawfastq: contains the fastq files.
+    /Users/xyz/temp/rawfastq: contains the fastq files.
       
-      /Users/xyz/temp/genome: contains the genome files.
+    /Users/xyz/temp/genome: contains the genome files.
 
 You'll mount these directories to the container (using the same paths for convenience):
 
     docker run -it -v /Users/xyz/temp/project:/Users/xyz/temp/project \
-      -v /Users/xyz/temp/rawfastq:/Users/xyz/temp/rawfastq \
-      -v /Users/xyz/temp/genome:/Users/xyz/temp/genome \
-      pinetree1/crispr-dav bash
+    -v /Users/xyz/temp/rawfastq:/Users/xyz/temp/rawfastq \
+    -v /Users/xyz/temp/genome:/Users/xyz/temp/genome \
+    pinetree1/crispr-dav bash
 
     cd /Users/xyz/temp/project
 
 Then edit conf.txt, fastq.list, and run.sh to reflect the paths in the container. 
 
-Start the pipeline by: sh run.sh. The results will be present in the project directory of the container and the host.
+Start the pipeline by: sh run.sh. The results will be present in the project directory of the container and the host. Due to the nature of BWA, your results could be slightly different from what's shown in Git repository README file. 
 
 
 ### II. Running via a physical installation
 
 #### 1. Clone the repository
   
-        git clone https://github.com/pinetree1/crispr-dav.git
+    git clone https://github.com/pinetree1/crispr-dav.git
 
 In the resulting crispr-dav directory, all the Perl programs (\*.pl) use this line to invoke the perl in your environment: \#!/usr/bin/env perl. The path of env on your system may differ. If so, the path should be changed accordingly in all \*.pl files in crispr-dav directory.
 
@@ -109,28 +109,82 @@ In that case, You may add the line to the pipeline script run.sh, a template scr
 
 - ABRA: Assembly Based ReAligner. Recommended version: [0.97]( https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar). **Java 1.7 or later is needed to run the realigner.**
 
+    Example installation by non-root user:
+    
+	    mkdir -p $HOME/app/ABRA
+	    cd $HOME/app/ABRA
+	    wget https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar -O abra-0.97-SNAPSHOT-jar-with-dependencies.jar	
+	
 - BWA: Burrows-Wheeler Aligner. **Make sure your version supports "bwa mem -M" command, and bwa must be put in PATH for use by ABRA.** Recommended version: [0.7.15](https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2/download). 
 
+    Example install by non-root user:
+
+    	cd $HOME/app
+	    wget https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2/download --no-check-certificate
+	    tar xvfj bwa-0.7.15.tar.bz2
+	    cd bwa-0.7.15
+	    make
+
+    The binary executable 'bwa' can be moved to somewhere else and the source tree can then be removed. For simplicity the example skipped this step.
+    
+    Be sure to put bwa in your PATH, for example, by adding this line to $HOME/.bashrc assuming you are using bash:
+    
+	    export PATH=$HOME/app/bwa-0.7.15:$PATH
+ 	
+    
 - Samtools: Recommended version: [1.3.1](https://sourceforge.net/projects/samtools/files/samtools/1.3.1/samtools-1.3.1.tar.bz2/download). Older version of samtools is OK. 
+
+    Example install by non-root user:
+
+	    cd $HOME/app
+	    wget https://sourceforge.net/projects/samtools/files/samtools/1.3.1/samtools-1.3.1.tar.bz2/download --no-check-certificate
+	    tar xvfj samtools-1.3.1.tar.bz2
+	    ./configure
+	    make
 
 - Bedtools2: **Make sure your version supports -F option in 'bedtools intersect' command.** Recommended version: [2.25.0]( https://github.com/arq5x/bedtools2/releases/download/v2.25.0/bedtools-2.25.0.tar.gz)
 
+    Example install by non-root user:
+
+	    cd $HOME/app
+	    wget https://github.com/arq5x/bedtools2/releases/download/v2.25.0/bedtools-2.25.0.tar.gz -O bedtools-2.25.0.tar.gz
+	    tar xvfz bedtools-2.25.0.tar.gz
+	    cd bedtools2
+	    make
+
 - PRINSEQ: Recommended version: [0.20.4](https://sourceforge.net/projects/prinseq/files/standalone/prinseq-lite-0.20.4.tar.gz/download). **Be sure to make the program prinseq-lite.pl executable:** 
 
-        chmod +x prinseq-lite.pl
+    Example install by non-root user:
+        
+        cd $HOME/app
+	    wget https://sourceforge.net/projects/prinseq/files/standalone/prinseq-lite-0.20.4.tar.gz/download --no-check-certificate
+	    tar xvfz prinseq-lite-0.20.4.tar.gz
+	    cd prinseq-lite-0.20.4
+	    chmod +x prinseq-lite.pl
 
 **C. R packages**
 
 - R packages: ggplot2, reshape2, naturalsort
 
-To install the packages, after starting R, type:
+    To install the packages, after starting R, type:
 
         >install.packages("ggplot2")
         >install.packages("reshape2")
         >install.packages("naturalsort")
 
-If you get permission errors, check with your admin or install R in a local directory.
-
+    If you get permission errors, check with your admin. 
+    
+    If you have to install R in a local directory, here are example steps:
+        
+        cd $HOME/app
+        wget https://cran.r-project.org/src/base/R-3/R-3.2.1.tar.gz
+        tar xvfz R-3.2.1.tar.gz
+        cd R-3.2.1
+        ./configure
+        make
+        
+        Then install the packages as stated above.
+        
 **D. Python program** 
 
 Required: Pysamstats https://github.com/alimanfoo/pysamstats 

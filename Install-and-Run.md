@@ -241,7 +241,7 @@ The pipeline would create these directories:
 
     Make sure not to put your source fastq files in this directory. They could be overwritten there.
 
-- deliverables: contains the results. The HTML report file index.html is in a subdirectory.
+- deliverables: contains the results. The HTML report file index.html is in a subdirectory. Due to the nature of BWA, your results could be slightly different from what's shown in Git repository README file.
 
 ### III. Preparing input files for the pipeline
 

@@ -614,10 +614,10 @@ sub HTML_START {
   <title>Crsipr Explorr</title>
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
 
-  <script type='text/javascript' 
-   src='http://canvasxpress.org/js/canvasXpress.min.js'></script>
-  <link type='text/css' rel='stylesheet' 
-   href='http://canvasxpress.org/css/canvasXpress.css' />
+  <!--script type='text/javascript' src='http://canvasxpress.org/js/canvasXpress.min.js'></script-->
+  <script type='text/javascript' src='Assets/canvasXpress.min.js'></script>
+  <!--link type='text/css' rel='stylesheet' href='http://canvasxpress.org/css/canvasXpress.css' /-->
+  <link type='text/css' rel='stylesheet' href='Assets/canvasXpress.min.css'>
   <link  href='Assets/0_MainStyles.css' type='text/css' rel='stylesheet' />
   <script src='Assets/0_MainScripts.js' type='text/javascript'></script>
   <script src='Assets/basic.js' type='text/javascript'></script>

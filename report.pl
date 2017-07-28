@@ -298,7 +298,7 @@ sub getToggleLink {
 
     my $str =
       "<a href=\"javascript:hideshow(\'$sn.div\');toggleImg(\'$sn.img\')\">";
-    $str .= "<img src=Assets/$fname width=15 height=15 id=\'$sn.img\'></a>";
+    $str .= "<img style='border:0;' src=Assets/$fname width=15 height=15 id=\'$sn.img\'></a>";
     $str .= "\n<div id=\"$sn.div\" style=\"display:$style\">";
     return $str;
 }

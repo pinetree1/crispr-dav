@@ -120,7 +120,7 @@ In that case, You may add the line to the pipeline script run.sh, a template scr
     Example install by non-root user:
 
     	cd $HOME/app
-	    wget https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2/download --no-check-certificate
+	    wget https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2/download --no-check-certificate -O bwa-0.7.15.tar.bz2
 	    tar xvfj bwa-0.7.15.tar.bz2
 	    cd bwa-0.7.15
 	    make
@@ -137,7 +137,7 @@ In that case, You may add the line to the pipeline script run.sh, a template scr
     Example install by non-root user:
 
 	    cd $HOME/app
-	    wget https://sourceforge.net/projects/samtools/files/samtools/1.3.1/samtools-1.3.1.tar.bz2/download --no-check-certificate
+	    wget https://sourceforge.net/projects/samtools/files/samtools/1.3.1/samtools-1.3.1.tar.bz2/download --no-check-certificate -O samtools-1.3.1.tar.bz2
 	    tar xvfj samtools-1.3.1.tar.bz2
 	    ./configure
 	    make
@@ -157,7 +157,7 @@ In that case, You may add the line to the pipeline script run.sh, a template scr
     Example install by non-root user:
         
         cd $HOME/app
-	    wget https://sourceforge.net/projects/prinseq/files/standalone/prinseq-lite-0.20.4.tar.gz/download --no-check-certificate
+	    wget https://sourceforge.net/projects/prinseq/files/standalone/prinseq-lite-0.20.4.tar.gz/download --no-check-certificate -O prinseq-lite-0.20.4.tar.gz
 	    tar xvfz prinseq-lite-0.20.4.tar.gz
 	    cd prinseq-lite-0.20.4
 	    chmod +x prinseq-lite.pl

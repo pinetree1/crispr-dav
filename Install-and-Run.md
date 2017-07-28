@@ -113,7 +113,7 @@ In that case, You may add the line to the pipeline script run.sh, a template scr
     
 	    mkdir -p $HOME/app/ABRA
 	    cd $HOME/app/ABRA
-	    wget https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar -O abra-0.97-SNAPSHOT-jar-with-dependencies.jar	
+	    wget https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar 
 	
 - BWA: Burrows-Wheeler Aligner. **Make sure your version supports "bwa mem -M" command, and bwa must be put in PATH for use by ABRA.** Recommended version: [0.7.15](https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2/download). 
 
@@ -147,7 +147,7 @@ In that case, You may add the line to the pipeline script run.sh, a template scr
     Example install by non-root user:
 
 	    cd $HOME/app
-	    wget https://github.com/arq5x/bedtools2/releases/download/v2.25.0/bedtools-2.25.0.tar.gz -O bedtools-2.25.0.tar.gz
+	    wget https://github.com/arq5x/bedtools2/releases/download/v2.25.0/bedtools-2.25.0.tar.gz 
 	    tar xvfz bedtools-2.25.0.tar.gz
 	    cd bedtools2
 	    make

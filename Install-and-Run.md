@@ -105,7 +105,6 @@ But if the module is installed in a local path, you'll need to add the path to @
 
 	export PERL5LIB=$HOME/perlmod/lib/perl5:$PERL5LIB
 
-In that case, You may add the line to the pipeline script run.sh, a template script in crispr-dav directory.
 
 **B. NGS tools**
 
@@ -140,16 +139,16 @@ In that case, You may add the line to the pipeline script run.sh, a template scr
             mv sparsehash sparsehash.old
             ln -s ~/temp/sparsehash/src/sparsehash
             
-            Still in abra-0.97/src/main/c, create links to jni.h and jni_md.h in your java library:
+            Still in abra-0.97/src/main/c, create links to java library files(jni.h and jni_md.h):
             
-            which java: this shows /usr/bin/java
-            ls -l /usr/bin/java: shows it links to /System/Library/Frameworks/JavaVM.framework/Versions/Current/Commands/Java. Then the 2 header files can be found in "Current" directory.
+            which java: this shows /usr/bin/java, for example.
+            ls -l /usr/bin/java: shows it links to /System/Library/Frameworks/JavaVM.framework/Versions/Current/Commands/Java. Then the two header files can be found in "Current" directory.
             ln -s /System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers/jni.h
             ln -s /System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers/jni_md.h
             
-        Third, build the jar file. You'll need to have Maven installed, along with java 1.7 and g++.
+        Third, build the jar file. You'll need Maven and g++.
         
-            which mvn: shows the mvn path, indicating that maven is installed. Otherwise install it from Apache.
+            which mvn: shows the mvn path. Otherwise install it from Apache.
             cd ~/temp/abra-0.97
             make
             mv target/abra-0.97-SNAPSHOT-jar-with-dependencies.jar $HOME/app/ABRA
@@ -164,10 +163,8 @@ In that case, You may add the line to the pipeline script run.sh, a template scr
 	    tar xvfj bwa-0.7.15.tar.bz2
 	    cd bwa-0.7.15
 	    make
-
-    The binary executable 'bwa' can be moved to somewhere else and the source tree can then be removed. For simplicity the example skipped this step.
     
-    Be sure to put bwa in your PATH, for example, by adding this line to $HOME/.bashrc assuming you are using bash:
+    Be sure to put executable 'bwa' in your PATH, for example, by adding this line to $HOME/.bashrc assuming you are using bash:
     
 	    export PATH=$HOME/app/bwa-0.7.15:$PATH
  	
@@ -206,10 +203,13 @@ In that case, You may add the line to the pipeline script run.sh, a template scr
 
 - R packages: ggplot2, reshape2, naturalsort
 
+    To check whether a package is already installed, at R prompt, type, for example:
+    >libarary(ggplot2). Absence of output means it is already installed.
+    
     To install the packages, after starting R, type:
 
         >install.packages("ggplot2")
-        >install.packages("reshape2")
+        >install.packages("reshape2")  
         >install.packages("naturalsort")
 
     If you get permission errors, check with your admin. 
@@ -268,7 +268,7 @@ You should add the module path to the pipeline's run.sh script, for example:
     
         export PYTHONPATH=$PYTHONPATH:$HOME/lib/python2.7/site-packages
 
-On Linux system, you may drop the version numbers (e.g, ==0.8.4) to install the most recent versions (pip install pysam, etc). However, on MacOS (at least X El Capitan), the recent verions (0.11.x) of pysam seems problematic with installation, but pysam 0.8.4 and pysamstats 0.24.3 work alright.
+On Linux system, you may drop the version numbers (e.g, ==0.8.4) to install the most recent versions. However, on MacOS (at least X El Capitan), the recent verions (0.11.x) of pysam seem problematic, but the pair of pysam 0.8.4 and pysamstats 0.24.3 works alright.
 
 #### 3. Test run 
 

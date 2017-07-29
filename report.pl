@@ -296,7 +296,7 @@ sub getToggleLink {
     my $fname = $hide ? "plus.jpg" : "minus.jpg";
     my $style = $hide ? "none"     : "block";
 
-	# In IE, we have to specify no border.
+    # In IE, we have to specify no border.
     my $str =
       "<a href=\"javascript:hideshow(\'$sn.div\');toggleImg(\'$sn.img\')\">";
     $str .= "<img style='border:0;' src=Assets/$fname width=15 height=15 id=\'$sn.img\'></a>";

@@ -5,7 +5,7 @@ The CRISPR-DAV pipeline can be run via a docker container or a physical installa
 
 ### I. Running via docker container
 
-The docker repository for CRISPR-DAV is called [**pinetree1/crispr-dav**](https://hub.docker.com/r/pinetree1/crispr-dav/). It's based on the official Fedora image at Docker Hub, and has included the pipeline and prerequisite tools. No physical installation of them is required but you need to be able to run docker on your system. 
+The docker repository for CRISPR-DAV is called [**pinetree1/crispr-dav**](https://hub.docker.com/r/pinetree1/crispr-dav/). It's based on the official Fedora image at Docker Hub, and has included the pipeline and prerequisite tools. No physical installation of them is required but you need to be able to run docker on your system.
 
 The pipeline includes two example projects. Here are steps to test run example1. Running example2 is quite similar. You may replace /Users/xyz/temp with your own absolute path in the following commands. 
 
@@ -58,6 +58,8 @@ Start the pipeline by: sh run.sh. The results will be present in the project dir
 
 ### II. Running via a physical installation
 
+The pipeline runs on Linux and MacOS. The installation on Linux is a bit simpler than on MacOS. 
+
 #### 1. Clone the repository
   
     git clone https://github.com/pinetree1/crispr-dav.git
@@ -84,7 +86,7 @@ If there is no output, the module is already installed. Error message will show 
 
 If you have root privilege, installing a perl module could be simple:
 
-    cpanm <module>, e.g. cpanm Config::Tiny
+    sudo cpanm <module>, e.g. cpanm Config::Tiny
  
 If you prefer to install modules as a non-root user, these steps show how to install Config::Tiny into local directory $HOME/perlmod:   
 
@@ -109,11 +111,49 @@ In that case, You may add the line to the pipeline script run.sh, a template scr
 
 - ABRA: Assembly Based ReAligner. Recommended version: [0.97]( https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar). **Java 1.7 or later is needed to run the realigner.**
 
-    Example installation by non-root user:
+    Example installation by non-root user on Linux:
     
 	    mkdir -p $HOME/app/ABRA
 	    cd $HOME/app/ABRA
-	    wget https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar 
+	    wget https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar (Pre-built jar for 64-bit Linux)
+	    
+    On MacOS, the jar file has to be re-built. The steps are a bit complex:
+    
+        First, clone and make Google sparsehash temporarily:
+            
+            mkdir ~/temp
+            cd ~/temp
+            git clone https://github.com/sparsehash/sparsehash.git
+            cd sparsehash
+            ./configure
+            make
+        
+        Second, download ABRA source file:
+        
+            cd ~/temp
+            wget https://github.com/mozack/abra/archive/v0.97.tar.gz
+            tar xvfz v0.97.tar.gz
+            cd abra-0.97/src/main/c
+            
+            Now replace the abra's sparsehash with the new one:
+            
+            mv sparsehash sparsehash.old
+            ln -s ~/temp/sparsehash/src/sparsehash
+            
+            Still in abra-0.97/src/main/c, create links to jni.h and jni_md.h in your java library:
+            
+            which java: this shows /usr/bin/java
+            ls -l /usr/bin/java: shows it links to /System/Library/Frameworks/JavaVM.framework/Versions/Current/Commands/Java. Then the 2 header files can be found in "Current" directory.
+            ln -s /System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers/jni.h
+            ln -s /System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers/jni_md.h
+            
+        Third, build the jar file. You'll need to have Maven installed, along with java 1.7 and g++.
+        
+            which mvn: shows the mvn path, indicating that maven is installed. Otherwise install it from Apache.
+            cd ~/temp/abra-0.97
+            make
+            mv target/abra-0.97-SNAPSHOT-jar-with-dependencies.jar $HOME/app/ABRA
+            
 	
 - BWA: Burrows-Wheeler Aligner. **Make sure your version supports "bwa mem -M" command, and bwa must be put in PATH for use by ABRA.** Recommended version: [0.7.15](https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2/download). 
 
@@ -189,7 +229,13 @@ In that case, You may add the line to the pipeline script run.sh, a template scr
 
 Required: Pysamstats https://github.com/alimanfoo/pysamstats 
 
-To install it as root, check the web site for instructions. 
+To install it as root, the simple steps are:
+
+    sudo pip install pysam==0.8.4
+    sudo pip install pysamstats==0.24.3
+    
+    These modules will be installed in system-wide location. No export of PYTHONPATH is needed.
+    
 
 To install it in home directory, you may try these steps:
 
@@ -205,11 +251,9 @@ Then make pysam module searchable:
 
 - ***Install pysamstats:***
 
-        git clone https://github.com/alimanfoo/pysamstats.git 
-        cd pysamstats
-        python setup.py install --prefix=$HOME
+        pip install --install-option="--prefix=$HOME" pysamstats==0.24.3
 
-This would install an executable script pysamstats in $HOME/bin and pysamstats module in the same place as pysam.
+This would install pysamstats module in the same place as pysam module, and install an executable script $HOME/bin/pysamstats.
 
 Check whether the modules can be loaded:
 
@@ -224,6 +268,7 @@ You should add the module path to the pipeline's run.sh script, for example:
     
         export PYTHONPATH=$PYTHONPATH:$HOME/lib/python2.7/site-packages
 
+On Linux system, you may drop the version numbers (e.g, ==0.8.4) to install the most recent versions (pip install pysam, etc). However, on MacOS (at least X El Capitan), the recent verions (0.11.x) of pysam seems problematic with installation, but pysam 0.8.4 and pysamstats 0.24.3 work alright.
 
 #### 3. Test run 
 

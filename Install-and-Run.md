@@ -265,9 +265,7 @@ Check whether the modules can be loaded:
 
 If there is no output, the installation is successful. 
 
-You should add the module path to the pipeline's run.sh script, for example:
-    
-        export PYTHONPATH=$PYTHONPATH:$HOME/lib/python2.7/site-packages
+You should add the export command to the pipeline's run.sh script, if the modules are installed by non-root user.
 
 On Linux system, you may drop the version numbers (e.g, ==0.8.4) to install the most recent versions. However, on MacOS (at least X El Capitan), the recent verions (0.11.x) of pysam seem problematic, but the pair of pysam 0.8.4 and pysamstats 0.24.3 works alright.
 

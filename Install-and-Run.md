@@ -203,8 +203,9 @@ But if the module is installed in a local path, you'll need to add the path to @
 
 - R packages: ggplot2, reshape2, naturalsort
 
-    To check whether a package is already installed, at R prompt, type, for example:
-    >libarary(ggplot2). Absence of output means it is already installed.
+    To check whether a package is already installed, at R prompt, type for example:
+    
+        >libarary(ggplot2). Absence of output means it is already installed.
     
     To install the packages, after starting R, type:
 

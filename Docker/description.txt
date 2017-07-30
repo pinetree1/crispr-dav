@@ -1,0 +1,53 @@
+CRISPR Data Analysis and Visualization Pipeline
+
+CRISPR-DAV is a pipeline for analyzing CRISPR (Clustered Regularly Interspaced Short Palindromic Repeats) data and presenting the results in plots. The data were from amplicon-based Next Generation Sequencing. The pipeline starts with quality filtering of Fastq reads via PRINSEQ, then utilizes BWA (Burrows-Wheeler Aligner) for initial alignment and indel detection, and ABRA (assembly-based realignment) to improve detection of large indels, and finally produces an HTML report with a comprehensive set of plots and an interactive alignment view of guide sequence, WT reads and indel reads. The pipeline also used a set of other bioinformatics tools including Samtools, Bedtools, and Pysamstats, and was implemented mainly in Perl and R. All these were included in the docker image created from the official fedora repository.
+
+To run this pipeline in a docker container, you must have Docker daemon already running in your system.
+
+The pipeline includes two example projects. Here are steps to test run example1. Running example2 is quite similar. You may replace /Users/xyz/temp with your own absolute path.
+
+(1) Start the container interactively and mount a path of host to the container:
+
+docker run -it -v /Users/xyz/temp:/Users/xyz/temp pinetree1/crispr-dav 
+
+The docker container takes a few minutes to start up. This command mounts /Users/xyz/temp in the host to /Users/xyz/temp in the container. Inside the container, the pipeline's path is /crispr-dav.
+
+(2) After starting up, at the container prompt, go to example1 directory:
+
+cd /crispr-dav/Examples/example1
+
+(3) Start the pipeline:
+
+sh run.sh
+
+(4) When the pipeline is finished, move the results to the shared directory in container:
+
+mv deliverables /Users/xyz/temp
+
+(5) Exit from the container:
+
+exit
+
+(6) On the host, open a browser to view the report index.html file in /Users/xyz/temp/deliverables/GENEX_CR1.
+
+The general steps for analyzing your own project via docker are similar. You'll need to prepare a set of input files: conf.txt, amplicon.bed, site.bed, sample.site, fastq.list, and run.sh, similar to those in the examples; and prepare reference genome or amplicon sequence. The important thing is to share your data directories with the container. For example, assuming that there are 3 directories on the host related to your project:
+
+/Users/xyz/temp/project: contains the input files.
+
+/Users/xyz/temp/rawfastq: contains the fastq files.
+
+/Users/xyz/temp/genome: contains the genome files.
+
+You'll mount these directories to the container using the same paths:
+
+docker run -it -v /Users/xyz/temp/project:/Users/xyz/temp/project \
+-v /Users/xyz/temp/rawfastq:/Users/xyz/temp/rawfastq \
+-v /Users/xyz/temp/genome:/Users/xyz/temp/genome \
+pinetree1/crispr-dav 
+
+cd /Users/xyz/temp/project
+
+Then edit conf.txt, fastq.list, and run.sh to reflect the paths in the container.
+
+Start the pipeline by: sh run.sh. The results will be present in the project directory of the container and the host.
+

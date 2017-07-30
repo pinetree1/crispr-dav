@@ -11,13 +11,13 @@ The pipeline includes two example projects. Here are steps to test run example1.
 
 (1) Start the container interactively and mount a path of host to the container:
 
-        docker run -it -v /Users/xyz/temp:/Users/xyz/temp pinetree1/crispr-dav bash
+        docker run -it -v /Users/xyz/temp:/Users/xyz/temp pinetree1/crispr-dav 
 
-The docker image is about 1GB, and takes a few minutes to start up for the first time. This command mounts /Users/xyz/temp in the host to /Users/xyz/temp in the container. Inside the container, the pipeline's path is /opt/crispr-dav.
+The docker image is about 1GB, and takes a few minutes to start up for the first time. This command mounts /Users/xyz/temp in the host to /Users/xyz/temp in the container. Inside the container, the pipeline's path is /crispr-dav.
 
 (2) After starting up, at the container prompt, go to example1 directory:
 
-        cd /opt/crispr-dav/Examples/example1
+        cd /crispr-dav/Examples/example1
 
 (3) Start the pipeline:
       
@@ -47,7 +47,7 @@ You'll mount these directories to the container (using the same paths for conven
     docker run -it -v /Users/xyz/temp/project:/Users/xyz/temp/project \
     -v /Users/xyz/temp/rawfastq:/Users/xyz/temp/rawfastq \
     -v /Users/xyz/temp/genome:/Users/xyz/temp/genome \
-    pinetree1/crispr-dav bash
+    pinetree1/crispr-dav 
 
     cd /Users/xyz/temp/project
 

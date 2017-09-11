@@ -20,7 +20,7 @@ function toggleImg(id) {
 		theImg.src="Assets/plus.jpg"
 }
 
-function showCharts( crispr_name ) {
+function showCharts( crispr_name, hdr_snp_flag ) {
     var sample=document.getElementById("select1").value;
 	var high_res=document.getElementById("high_res").value;
 	var plot_ext= high_res ? ".tif" : ".png";
@@ -37,6 +37,12 @@ function showCharts( crispr_name ) {
 
         // chart for snp
         str += "<tr><td colspan=2><img src=Assets/" + sample + "." + crispr_name + ".snp" + plot_ext + "></td></tr>";
+
+        //chart for hdr snp
+        if ( hdr_snp_flag ) {
+            str += "<tr><td colspan=2 align=center><img src=Assets/" + sample + "." + crispr_name + ".hdr.snp" + plot_ext + "></td></tr>";
+        }
+
         str += "</table>";
     }
     document.getElementById("charts").innerHTML = str;

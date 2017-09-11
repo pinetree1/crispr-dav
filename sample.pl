@@ -36,6 +36,7 @@ my $ngs = new NGS(
     samtools => $h{samtools},
     bedtools => $h{bedtools},
     bwa      => $h{bwa},
+    pysamstats=> $h{pysamstats},
     tmpdir   => $h{tmpdir},
     verbose  => $h{verbose},
     errorfile=> $fail_flag 
@@ -106,7 +107,6 @@ $ngs->variantStat(
     bam_inf    => $bamfile,
     ref_fasta  => $h{ref_fasta},
     outfile    => $varstat,
-    pysamstats => $h{pysamstats},
     chr        => $h{chr},
     start      => $h{amplicon_start},
     end        => $h{amplicon_end}
@@ -145,7 +145,8 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
     Util::run( $cmd, "Failed to generate amplicon-wide plots",
         $h{verbose}, $fail_flag );
 
-    ## create a plot of base changes in crispr site and surronding regions
+    ## create a plot of base changes in crispr site and surronding regions, but does not require
+    ## all bases at different positions to be on the same read
     my $rangeStart = $target_start - $h{wing_length};
     my $rangeEnd   = $target_end + $h{wing_length};
     $cmd = "$h{rscript} $Bin/Rscripts/snp.R --inf=$varstat" .
@@ -160,11 +161,13 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
     Util::run( $cmd, "Failed to generate base-change plot",
         $h{verbose}, $fail_flag );
 
+
     ## For target and indels
     my $tseqfile = "$outdir/$sample.$target_name.tgt";
     my $pctfile  = "$outdir/$sample.$target_name.pct";
     my $lenfile  = "$outdir/$sample.$target_name.len";
     my $hdrfile  = "$outdir/$sample.$target_name.hdr";
+    my $hdr_var   = "$outdir/$sample.$target_name.hdr.var";
 
     my $target_reads = $ngs->targetSeq(
         bam_inf           => $bamfile,
@@ -191,8 +194,24 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
             base_changes => $hdr_changes,
             sample       => $sample,
             min_mapq     => $h{min_mapq},
-            stat_outf    => $hdrfile
+            stat_outf    => $hdrfile,
+            ref_fasta    => $h{ref_fasta},
+            var_outf     => $hdr_var 
         );
+
+        ## create a plot of base changes in HDR regions and require
+        ## all bases at different positions to be on the same read
+        $cmd = "$h{rscript} $Bin/Rscripts/snp.R --inf=$hdr_var" .
+            " --outf=$outdir/$sample.$target_name.hdr.snp.$plot_ext" . 
+            " --outtsv=$outdir/$sample.$target_name.hdr.snp" .
+            " --sample=$sample --hname=$target_name" . 
+            " --hstart=$target_start --hend=$target_end" .
+            " --chr=$h{genome} $chr --sameRead=1"; 
+        $cmd .= " --high_res=$h{high_res}" if $h{high_res};
+        print STDERR "\nPlotting HDR SNP data.\n" ;
+        Util::run( $cmd, "Failed to generate HDR base-change plot",
+            $h{verbose}, $fail_flag );
+
     }
 
 	# OK to continue processing even if there is no spanning read.

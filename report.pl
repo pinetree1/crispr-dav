@@ -79,6 +79,7 @@ my $rc_tog = getToggleLink("rc");         ## read count
 my $pp_tog = getToggleLink( "pp", 1 );    ## preprocessing
 
 my $plot_ext = $h{high_res} ? "tif" : "png";
+my $hdr_snp_flag = $hdr ? 1 : 0;
 
 print $fh "<html lang='en'>
 	<head>
@@ -110,7 +111,7 @@ print $fh "<html lang='en'>
 
 		<!--select box for individual sample-->
 		<p><b>Charts for Individual Sample</b>
-		<select id='select1' onchange='showCharts(\"$site_name\")'>
+		<select id='select1' onchange='showCharts(\"$site_name\",$hdr_snp_flag)'>
 			<option value=''>Select a sample to view</option>
 ";
 
@@ -145,10 +146,13 @@ my %category_header = (
     "cov" => "Amplicon Coverage",
     "ins" => "Insertion Distribution in Amplicon",
     "del" => "Deletion Distribution in Amplicon",
-    "snp" => "SNP Frequency at CRISPR Site"
+    "snp" => "SNP Frequency at CRISPR Site (Not all positions are on same read)",
+	"hdr.snp" =>"SNP Frequency in HDR region (All positions are on same read)"
 );
 
 my @cats = ( "cov", "ins", "del", "len", "snp" );
+push(@cats, "hdr.snp") if $hdr; 
+ 
 foreach my $cat (@cats) {
     my $tab = getCategoryTable( $cat, $plot_ext );
     my $tog = getToggleLink( $cat, 1 );
@@ -217,12 +221,13 @@ print $fh "<p><b>Spreadsheet Data:</b>$tog
 		<tr><td><a href=Assets/${site_name}_cnt.xlsx>Read stats</a></td></tr>
 		<tr><td><a href=Assets/${site_name}_pct.xlsx>Indel summary</a></td></tr>
 		<tr><td><a href=Assets/${site_name}_len.xlsx>Allele data</a></td></tr>
-		<tr><td><a href=Assets/${site_name}_snp.xlsx>SNP data</a></td></tr>
+		<tr><td><a href=Assets/${site_name}_snp.xlsx>SNP data(Not all positions are on same read)</a></td></tr>
 ";
 
 if ($hdr) {
     print $fh
-      "<tr><td><a href=Assets/${site_name}_hdr.xlsx>HDR data</a></td></tr>";
+      "<tr><td><a href=Assets/${site_name}_hdr.snp.xlsx>SNP data (All positions are on same read)</a></td></tr>
+      <tr><td><a href=Assets/${site_name}_hdr.xlsx>HDR data</a></td></tr>";
 }
 
 print $fh "</table>

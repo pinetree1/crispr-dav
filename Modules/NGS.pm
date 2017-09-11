@@ -33,6 +33,7 @@ sub new {
         samtools => 'samtools',
         bedtools => 'bedtools',
         bwa      => 'bwa',
+        pysamstats=> 'pysamstats',
         verbose  => 0,
         tmpdir   => '/tmp',
         @_,
@@ -755,12 +756,11 @@ sub variantStat {
         chr         => '',
         start       => 0,
         end         => 0,
-        pysamstats  => 'pysamstats',
         @_,
     );
 
     required_args( \%h, 'bam_inf', 'ref_fasta', 'outfile' );
-    my $cmd = "$h{pysamstats} --type $h{type} --max-depth $h{max_depth}" .
+    my $cmd = $self->{pysamstats} . " --type $h{type} --max-depth $h{max_depth}" .
         " --window-size $h{window_size} --fasta $h{ref_fasta}" .
         " --fields chrom,pos,ref,reads_all,matches,mismatches," . 
         "deletions,insertions,A,C,T,G,N";
@@ -1058,7 +1058,7 @@ sub _isOverlap {
 
  Usage   : $obj->categorizeHDR(bam_inf=>, ...)
  Function: To classify oligos in HDR (homology directed repair) region into different categories 
- Args    : bam_inf, chr, base_changes, sample, stat_outf 
+ Args    : bam_inf, chr, base_changes, sample, stat_outf, ref_fasta, var_outf 
 	base_changes is a comma-separated strings of positons and bases. Format: <pos><base>,...
 	for example, 101900208C,101900229G,101900232C,101900235A. Bases are on positive strand, and 
 	are intended new bases, not reference bases. 
@@ -1073,7 +1073,7 @@ sub categorizeHDR {
     );
 
     required_args( \%h, 'bam_inf', 'chr', 'base_changes', 'sample',
-        'stat_outf' );
+        'stat_outf', 'ref_fasta', 'var_outf');
 
     my $sample = $h{sample};
     my $chr    = $h{chr};
@@ -1195,6 +1195,25 @@ sub categorizeHDR {
     print $outf join( "\t", $sample, $total, @values, @pcts ) . "\n";
 
     close $outf;
+
+    # calculate SNP rate in HDR region. Require all bases in HDR region to be in the same read.
+    $self->variantStat( bam_inf=>$hdr_bam, ref_fasta=>$h{ref_fasta}, outfile=>$h{var_outf}, 
+                        chr=> $h{chr}, start=>$hdr_start, end=>$hdr_end);	
+	
+    # remove records before and after HDR region.
+    open(my $inf, $h{var_outf}) or die "Cannot open $h{var_outf}\n";
+    open(my $outf, ">$h{var_outf}.tmp") or die $!;
+    my $line=<$inf>; 
+    print $outf $line;
+    while ($line=<$inf>) {
+        my @a=split(/\t/, $line);
+        if ( $a[1] >= $hdr_start and $a[1] <= $hdr_end ) {
+            print $outf $line;
+        }
+    }
+    close $outf;
+    close $inf;
+    rename("$h{var_outf}.tmp", $h{var_outf});
 }
 
 =head2 extractHDRseq 

@@ -132,9 +132,9 @@ sub crispr_data {
             push (@samp, $s) if !$failed_samples->{$s};
         }
 
-        foreach my $ext ( "cnt", "chr", "snp", "pct", "len", "can", "hdr" ) {
+        foreach my $ext ( "cnt", "chr", "snp", "pct", "len", "can", "hdr", "hdr.snp" ) {
             next if ( $ext eq "can" && !$h{canvasXpress} );
-            next if ( $ext eq "hdr" && !$hdr_bases );
+            next if ( ($ext eq "hdr" or $ext eq "hrd.snp")  && !$hdr_bases );
 
             my $outfile = "$h{align_dir}/$crispr" . "_$ext.txt";
             my (@infiles, $f);

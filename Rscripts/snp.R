@@ -15,18 +15,18 @@ if(length(args) < 1) {
 }
 
 if ( "--help" %in% args ) {
-	stop(cat(script.name, "
+	stop(cat(script.name, "Create SNP plot", "
 	Arguments:
 	--inf=pysamstats variation file. Required.
 	--sample=sample name. No space. Required. 
 	--chr=chromosome, e.g. 'hg19 chr3'. Optional.
-    --sameRead=1 or 0. Optional. Default: 0 (all positions not necessarily on same read)
+	--sameRead=1 or 0. Optional. Default: 0 (all positions not necessarily on same read)
 	--hstart=highlight region start position, e.g. sgRNA start position. Required.
 	--hend=highlight region end position, e.g. sgRNA end position. Required.
 	--hname=name of highlight region, e.g. sgRNA. Required 
-	--rangeStart=start of SNP plot range.  
-    --rangeEnd=end of SNP plot range. 
-    --high_res=1 or 0. 1-create high resolution .tif image. 0-create png file.
+	--rangeStart=start of SNP plot range. Required. 
+	--rangeEnd=end of SNP plot range. Required. 
+	--high_res=1 or 0. 1-create high resolution .tif image. 0-create png file.
 	--outf=output plot file. Required.
 	--outtsv=output tsv file. Required.
 	--help Print this message
@@ -42,6 +42,8 @@ if (is.null(argsL$inf)
 	| is.null(argsL$sample)
 	| is.null(argsL$hstart)
 	| is.null(argsL$hend)
+	| is.null(argsL$rangeStart)
+	| is.null(argsL$rangeEnd)
 	| is.null(argsL$hname)
 	| is.null(argsL$outf) 
 	| is.null(argsL$outtsv)
@@ -53,6 +55,8 @@ infile <- argsL$inf
 sample <- argsL$sample
 hstart <- as.numeric(argsL$hstart)
 hend <- as.numeric(argsL$hend)
+rangeStart <- as.numeric(argsL$rangeStart)
+rangeEnd <- as.numeric(argsL$rangeEnd)
 outfile <- argsL$outf
 outtsv <- argsL$outtsv
 chr <- argsL$chr
@@ -60,20 +64,6 @@ chr <- argsL$chr
 if (file.exists(infile)==FALSE) exit(paste("Can not find", infile))
 high_res = ifelse(is.null(argsL$high_res), 0, as.numeric(argsL$high_res))
 dat <- read.table(infile, sep="\t", header=TRUE, stringsAsFactors=FALSE)
-
-pos_cn = 2 # position column number in input file 
-if (is.null(argsL$rangeStart)) {
-	rangeStart <- as.numeric(dat[1, pos_cn]) 
-} else {
-	rangeStart <- as.numeric(argsL$rangeStart)
-}
-
-
-if (is.null(argsL$rangeEnd)) {
-	rangeEnd <- as.numeric(dat[nrow(dat), pos_cn]) 
-} else {
-	rangeEnd <- as.numeric(argsL$rangeEnd)
-}
 
 blank_plot <- function(dat, xtitle, ytitle, mtitle, outfile) {
 	p <- ggplot(dat, aes(x=pos, y=reads_all)) + theme_bw() +
@@ -189,6 +179,9 @@ if ( high_res ) {
 	tiff(filename=outfile, width=wt, height=ht, units='in', res=1200)
 } else {
 	wt <- 12*nrow(dat)
+	if ( wt < 500 ) {
+		wt <- 500
+	}
 	ht <- 400
 	png(filename=outfile, width=wt, height=ht)
 }

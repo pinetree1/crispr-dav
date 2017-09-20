@@ -63,7 +63,15 @@ RUN wget https://sourceforge.net/projects/prinseq/files/standalone/prinseq-lite-
 	&& mv prinseq-lite-0.20.4/prinseq-lite.pl /usr/local/bin \
 	&& chmod +x /usr/local/bin/prinseq-lite.pl \
 	&& rm -r prinseq-lite-0.20.4*
- 
+
+# install flash
+RUN git clone https://github.com/dstreett/FLASH2.git \
+	&& cd FLASH2 \
+	&& make \
+	&& mv flash2 /usr/local/bin \
+	&& cd .. \
+	&& rm -r FLASH2
+
 # install R packages
 RUN echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.us.r-project.org'; options(repos = r);" > ~/.Rprofile
 RUN Rscript -e "install.packages('ggplot2')"

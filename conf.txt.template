@@ -24,6 +24,9 @@ prinseq = /path/to/prinseq-lite-0.20.4/prinseq-lite.pl
 # Path of samtools. By default use samtools in PATH.
 samtools = /path/to/samtools-1.3.1/samtools 
 
+# Path of flash. By default use flash in PATH.
+flash = /path/to/flash2 
+
 # bedtools (e.g. v2.25) must support: bedtools intersect -F 
 # Default is bedtools in PATH.
 bedtools = /path/to/bedtools2.25/bin/bedtools

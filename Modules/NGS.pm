@@ -33,12 +33,44 @@ sub new {
         samtools => 'samtools',
         bedtools => 'bedtools',
         bwa      => 'bwa',
+        prinseq  => 'prinseq-lite.pl',
         pysamstats=> 'pysamstats',
+        flash    => 'flash',
         verbose  => 0,
         tmpdir   => '/tmp',
         @_,
     );
     bless \%h, $self;
+}
+
+
+=head2 merge_reads
+
+ Usage   : $obj->merge_reads(r1_fastq_inf=>'dir1/S1.fastq.gz', r2_fastq_inf='dir2/S1.fastq.gz', ...)
+ Function: merge paired-end reads with flash
+ Returns : number indicating success or failure code  
+ Args    : Required: r1_fastq_inf, r2_fastq_inf, outdir, prefix. 
+           Optional: params: flash parameters in quotes if there is space.   
+
+=cut
+
+sub merge_reads {
+    my $self = shift;
+    my %h    = (
+        params => '',
+        @_
+   	);
+ 
+    required_args( \%h, 'r1_fastq_inf', 'r2_fastq_inf',
+        'outdir', 'prefix'); 
+
+    my $cmd = $self->{flash}." -d $h{outdir} -o $h{prefix} $h{params} -t 1 -z";
+    $cmd .= " $h{r1_fastq_inf} $h{r2_fastq_inf} &> $h{outdir}/$h{prefix}.flash.log";
+    print STDERR "\nMerging paired-end reads.\n";
+    print STDERR "$cmd\n" if $self->{verbose};
+    my $status = system($cmd);
+    print STDERR "\nFailed in merging paired-end reads.\n" if $status;
+    return $status;
 }
 
 =head2 filter_reads
@@ -53,7 +85,6 @@ sub new {
 sub filter_reads {
     my $self = shift;
     my %h    = (
-        prinseq       => 'prinseq-lite.pl',
         min_qual_mean => 30,
         min_len       => 50,
         ns_max_p      => 3,
@@ -84,9 +115,10 @@ sub filter_reads {
     my $OTHER_FAILURE  = 2;
 
     my $log = "$read1_outf.filter.log";
+	my $prinseq = $self->{prinseq};
     if ( !-f $f2 ) {
         print STDERR "\nFiltering single-end fastq.\n";
-        $cmd = "(gunzip -c $f1 | $h{prinseq} -fastq stdin" .
+        $cmd = "(gunzip -c $f1 | $prinseq -fastq stdin" .
             " -out_good $read1_outf -out_bad null $param) &>$log";
         print STDERR "$cmd\n" if $self->{verbose};
         $status = system($cmd);
@@ -109,7 +141,7 @@ sub filter_reads {
     else {
         print STDERR "\nFiltering paired-end fastqs.\n";
         $cmd = "gunzip -c $f1 > $read1_outf && gunzip -c $f2 > $read2_outf" . 
-            " && ($h{prinseq} -fastq $read1_outf -fastq2 $read2_outf" .
+            " && ($prinseq -fastq $read1_outf -fastq2 $read2_outf" .
             " -out_good $read1_outf -out_bad null $param) &>$log";
         print STDERR "$cmd\n" if $self->{verbose};
         $status = system($cmd);
@@ -131,7 +163,7 @@ sub filter_reads {
         }
     }
 
-    print STDERR "\nFailed in filtering reads.\n" if $status;
+    #print STDERR "\nFailed in filtering reads.\n" if $status;
     return $status;
 }
 
@@ -237,7 +269,6 @@ sub bwa_align {
         id           => '',            # read group ID
         sm           => '',            # read group sample name
         pl           => 'ILLUMINA',    # read group platform
-        primary_only => 1,             # 1-keep only primary aligned reads
         @_
     );
 
@@ -250,14 +281,8 @@ sub bwa_align {
     }
     $cmd .= " $h{idxbase} $h{read1_inf}";
     $cmd .= " $h{read2_inf}" if -f $h{read2_inf};
-
-    if ( $h{primary_only} ) {
-        $cmd .= " |$samtools view -S -b -F 256 -";
-        $cmd .= " |$samtools view -b -F 2048 -";
-    }
-    else {
-        $cmd .= " |$samtools view -S -b -";
-    }
+    $cmd .= " |$samtools view -S -b -F 256 -";
+    $cmd .= " |$samtools view -b -F 2048 -";
     $cmd .= " -o $h{bam_outf}";
 
     $cmd = "($cmd) &> $h{bam_outf}.bwa.log";
@@ -310,6 +335,29 @@ sub clean_header {
     print STDERR "\nCleaning BAM header line.\n";
     my $status = system($cmd);
     print STDERR "Failed in cleaning bam header.\n" if $status;
+    return $status;
+}
+
+=head2 merge_bam
+
+ Usage   : merge_bam(bam_inf_aref=>, bam_outf=>, sort_index=>1)
+ Function: merge bam files with optional sorting and indexing. 
+ Returns : command status
+ Args    : Required arguments: bam_inf_aref (array reference), bam_outf
+
+=cut
+
+sub merge_bam {
+    my $self = shift;
+    my %h    = (sort_index=>0, @_);
+    required_args (\%h, 'bam_inf_aref', 'bam_outf');
+    my $cmd = $self->{samtools} . " merge $h{bam_outf} " . join(" ", @{$h{bam_inf_aref}}); 
+    print STDERR "\nMerging bam files.\n";
+    print STDERR "$cmd\n" if $self->{verbose};
+    my $status = system($cmd);
+    if ( $h{sort_index} ) {
+        $status = $self->sort_index_bam(bam_inf=>$h{bam_outf});
+    }
     return $status;
 }
 
@@ -644,18 +692,18 @@ sub makeBed {
 
 =head2 readStats
  
- Usage   : $obj->readStats(r1_fastq_inf=>, outfile=>, ...)
+ Usage   : $obj->readStats(fastq_aref=>[], outfile=>, ...)
  Function: Count reads in different stages
- Args    : r1_fastq_inf, bamstat_aref, sample, outfile, etc
+ Args    : fastq_aref, bamstat_aref, sample, outfile, etc
 	start and end are 1-based.
 
 =cut 
 
 sub readStats {
     my $self = shift;
+    # gz: whether the fastq file is gzipped or not.
     my %h    = (
         gz           => 1,
-        r2_fastq_inf => '',
 
         # Below are required for region read count
         chr         => '',
@@ -666,7 +714,7 @@ sub readStats {
         @_
     );
 
-    required_args( \%h, 'r1_fastq_inf', 'bamstat_aref', 'sample', 'outfile' );
+    required_args( \%h, 'fastq_aref', 'bamstat_aref', 'sample', 'outfile' );
 
     open( my $cntf, ">$h{outfile}" );
     print $cntf join( "\t",
@@ -675,9 +723,11 @@ sub readStats {
         "PctDup",      "UniqueReads", "AmpliconReads" )
       . "\n";
 
-    my $raw_reads = $self->fastqReadCount( $h{r1_fastq_inf}, $h{gz} );
-    if ( $h{r2_fastq_inf} ) {
-        $raw_reads += $self->fastqReadCount( $h{r2_fastq_inf}, $h{gz} );
+    my $raw_reads = 0;
+    foreach my $f ( @{$h{fastq_aref}} ) {
+        if ( -s $f ) {
+            $raw_reads += $self->fastqReadCount( $f, $h{gz} );
+        }
     }
 
     my ( $bam_reads, $mapped_reads, $duplicate_reads, $uniq_reads ) =
@@ -737,6 +787,40 @@ sub chromCount {
     close $outf;
 }
 
+=head2 combineChromCount
+
+ Usage   : $obj->combineChromCount(inf_aref=>[], outfile)
+ Function: combine the chromosome read counts across multiple chrom count files
+ Args    : inf_aref (array ref of chrom count files), outfile.
+
+=cut
+
+sub combineChromCount {
+    my $self = shift;
+    my %h    = ('rm'=>0, #remove input files after combined.
+                @_);
+    required_args (\%h, 'inf_aref', 'outfile');
+    my %count;
+    foreach my $f ( @{$h{inf_aref}} ) {
+        open(my $inf, $f) or die $!;
+        my $line=<$f>;
+        while ($line=<$f>){
+            chomp $line;
+            my @a = split(/\t/, $line);
+            $h{"$a[0]\t$a[1]"} += $a[2];
+        }
+        close $inf;
+        unlink $f if $h{rm};
+    }
+
+    open(my $outf, ">$h{outfile}") or die $!;
+    print $outf join("\t", "Sample", "Chromosome", "ReadCount") . "\n";
+    foreach my $key ( sort keys %count ) {
+       print $outf "$key\t" . $count{$key} . "\n";
+    }
+    close $outf;
+}
+ 
 =head2 variantStat
 
  Usage   : $obj->variantStat(bam_inf=>, outfile=>, )

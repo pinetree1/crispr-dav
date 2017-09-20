@@ -221,7 +221,7 @@ print $fh "<p><b>Spreadsheet Data:</b>$tog
 		<tr><td><a href=Assets/${site_name}_cnt.xlsx>Read stats</a></td></tr>
 		<tr><td><a href=Assets/${site_name}_pct.xlsx>Indel summary</a></td></tr>
 		<tr><td><a href=Assets/${site_name}_len.xlsx>Allele data</a></td></tr>
-		<tr><td><a href=Assets/${site_name}_snp.xlsx>SNP data(Not all positions are on same read)</a></td></tr>
+		<tr><td><a href=Assets/${site_name}_snp.xlsx>SNP data (Not all positions are on same read)</a></td></tr>
 ";
 
 if ($hdr) {

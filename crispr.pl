@@ -226,7 +226,7 @@ sub prepare_command {
 
     my $cmd = "$Bin/sample.pl $sample $fastqs[0] $h{align_dir}";
     $cmd .= " --read2fastq $fastqs[1]" if $fastqs[1];
-    $cmd .= " --picard $h{picard}"     if $h{picard};
+    $cmd .= " --merge --flash $h{flash}" if $h{merge};
     $cmd .= " --abra $h{abra} --prinseq $h{prinseq}" .
        " --samtools $h{samtools}" . 
        " --java $h{java} --bedtools $h{bedtools}" . 
@@ -307,6 +307,7 @@ Usage: $0 [options]
         sites. No header. Each line starts with sample name, followed by one or more sgRNA
         guide sequences. This file controls what samples to be analyzed. 
 
+    --merge Merge paired-end reads before filtering and alignment.
     --sge Submit jobs to SGE queue. The system must already have been configured for SGE.
     --outdir <str> Output directory. Default: current directory.
     --help  Print this help message.
@@ -319,8 +320,8 @@ Usage: $0 [options]
     GetOptions(
         \%h,           'conf=s',     'genome=s',  'amp_fasta=s',
         'codon_start=i', 'outdir=s',   'help',      'region=s',
-        'crispr=s',    'fastqmap=s', 'sitemap=s', 'sge',
-        'verbose'
+        'crispr=s',    'fastqmap=s', 'sitemap=s', 'merge', 
+        'sge', 'verbose'
     ) or exit;
 
     die $usage if ( $h{help} or @all_args == 0 );
@@ -360,7 +361,7 @@ Usage: $0 [options]
     
     # app section
     foreach my $tool (
-        "abra", "prinseq",  "samtools", 
+        "abra", "prinseq", "flash", "samtools", 
         "java", "bedtools", "pysamstats", "rscript"
       )
     {
@@ -375,7 +376,6 @@ Usage: $0 [options]
                     $cfg->{app}{$tool} = $tool;
                 }
 
-                #if ( system("which $cfg->{app}{$tool} > /dev/null") ) {
                 $cfg->{app}{$tool}=qx(which $cfg->{app}{$tool}) or 
                     die "$tool must either be specified under [app]" .  
                         " in $h{conf} or accessible in your PATH\n"; 
@@ -419,7 +419,7 @@ Usage: $0 [options]
     $h{tmpdir}    = "$h{align_dir}/tmp";
     make_path( $h{align_dir}, $h{deliv_dir}, $h{tmpdir} );
 
-	check_rpkg($h{rscript}, $h{outdir});
+    check_rpkg($h{rscript}, $h{outdir});
 
     if ( $h{genome} ) {
         $h{genome} =~ s/\s//g;
@@ -799,7 +799,7 @@ sub check_pysam {
     my $pysamstats = shift;
     if ( system("$pysamstats --help > /dev/null") ) {
         my $msg = "$pysamstats did not run properly. If there is error";
-		$msg .= " importing a module, please include the module path in";
+        $msg .= " importing a module, please include the module path in";
         $msg .= " environment variable PYTHONPATH.";
         die "$msg\n";
     }
@@ -843,7 +843,7 @@ sub stop_processing {
     my %jobnames = %{$href};
     my $job_cnt = 0;
     while ( my ( $j, $s ) = each %jobnames ) {
-		$job_cnt ++;
+        $job_cnt ++;
         if ( -f "$h{align_dir}/$s.log" ) {
             $log_cnt++;
         }
@@ -871,7 +871,7 @@ sub process_custom_seq {
     } else {
         die "Error: Custom seq file $seq_infile is not in fasta format!\n";
     }
-	
+
     while ($line=<$inf>) {
         if ( $line =~ /^>/ ) {
             die "Custom seq file $seq_infile can have only one sequence!\n";
@@ -880,7 +880,7 @@ sub process_custom_seq {
             if ( uc($line) =~ /[^ACGT]/ ) {
                  die "Error: $seq_infile contained non-ACGT alphabet.\n" 
             }
-			$seq .= uc($line);
+            $seq .= uc($line);
         }
     }
     close $inf;

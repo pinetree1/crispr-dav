@@ -34,6 +34,9 @@ java = /usr/bin/java
 # Path of pysamstats executable. By default use pysamstats in PATH.
 pysamstats = /usr/bin/pysamstats
 
+# Path of flash
+flash = /usr/local/bin/flash2
+
 # R must have ggplot2, reshape2, and naturalsort packages
 #  By default use Rscript in PATH.
 rscript = /usr/bin/Rscript

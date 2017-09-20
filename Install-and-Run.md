@@ -193,11 +193,20 @@ But if the module is installed in a local path, you'll need to add the path to @
 
     Example install by non-root user:
         
-        cd $HOME/app
+	    cd $HOME/app
 	    wget https://sourceforge.net/projects/prinseq/files/standalone/prinseq-lite-0.20.4.tar.gz/download --no-check-certificate -O prinseq-lite-0.20.4.tar.gz
 	    tar xvfz prinseq-lite-0.20.4.tar.gz
 	    cd prinseq-lite-0.20.4
 	    chmod +x prinseq-lite.pl
+
+- FLASH: Recommended version: [2](https://github.com/dstreett/FLASH2), for merging paired-end reads.
+
+    Example install by non-root user:
+    
+	    cd $HOME/app
+	    git clone https://github.com/dstreett/FLASH2.git
+	    cd FLASH2
+	    make
 
 **C. R packages**
 

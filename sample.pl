@@ -11,6 +11,7 @@ use NGS;
 use Exon;
 use Util;
 use Data::Dumper;
+use File::Path qw(make_path);
 
 my %h = get_input();
 print STDERR Dumper( \%h ) if $h{verbose};
@@ -19,6 +20,7 @@ my $outdir        = $h{outdir};
 my $sample        = $h{sample};
 my $read1_outfile = "$outdir/$sample.R1.fastq.gz";
 my $read2_outfile = "$outdir/$sample.R2.fastq.gz";
+my $merge_outfile = "$outdir/$sample.MG.fastq.gz";
 my $bamfile       = "$outdir/$sample.bam";
 my $readcount = "$outdir/$sample.cnt";    # to combine into readcount.txt
 my $readchr   = "$outdir/$sample.chr";
@@ -31,36 +33,25 @@ if ( -z $h{read1fastq} or ( $h{read2fastq} && -z $h{read2fastq} ) ) {
     quit($fail_flag, "Source fastq file empty");
 }
 
+if ( $h{merge} && (!-f $h{read1fastq} or !-f $h{read2fastq}) ) {
+    print STDERR "\nError: --merge is invalid because only one fastq file is provided.\n";
+    quit($fail_flag, "Invalid merge option");
+}
+	
 my $ngs = new NGS(
     java     => $h{java},
     samtools => $h{samtools},
     bedtools => $h{bedtools},
     bwa      => $h{bwa},
+    prinseq  => $h{prinseq},
     pysamstats=> $h{pysamstats},
+    flash    => $h{flash},
     tmpdir   => $h{tmpdir},
     verbose  => $h{verbose},
     errorfile=> $fail_flag 
 );
 
-## filter fastq files
-my $status = $ngs->filter_reads(
-    read1_inf     => $h{read1fastq},
-    read2_inf     => $h{read2fastq},
-    read1_outf    => $read1_outfile,
-    read2_outf    => $read2_outfile,
-    prinseq       => $h{prinseq},
-    min_qual_mean => $h{min_qual_mean},
-    min_len       => $h{min_len},
-    ns_max_p      => $h{ns_max_p}
-);
-
-if ( $status == 1 ) {
-	quit($fail_flag, "No quality reads after filtering");
-} elsif ( $status == 2 ) {
-    quit($fail_flag, "Other filtering error");
-}
-
-## Alignment and processing to create bam file
+make_path($outdir) if !-d $outdir;
 
 my $ampbed = "$outdir/$sample.amp.bed";
 $ngs->makeBed(
@@ -70,37 +61,181 @@ $ngs->makeBed(
     outfile => $ampbed
 );
 
-my @bamstats = $ngs->create_bam(
-    sample             => $sample,
-    read1_inf          => $read1_outfile,
-    read2_inf          => $read2_outfile,
-    idxbase            => $h{idxbase},
-    bam_outf           => $bamfile,
-    abra               => $h{abra},
-    target_bed         => $ampbed,
-    ref_fasta          => $h{ref_fasta},
-    realign            => $h{realign},
-    picard             => $h{picard},
-    remove_duplicate   => $h{unique},
-    chromCount_outfile => $readchr
-);
+if ( !$h{merge} ) {
 
-quit($fail_flag, "Alignment error") if scalar(@bamstats) == 1;
+    ## filter fastq files
+    my $status = $ngs->filter_reads(
+        read1_inf     => $h{read1fastq},
+        read2_inf     => $h{read2fastq},
+        read1_outf    => $read1_outfile,
+        read2_outf    => $read2_outfile,
+        min_qual_mean => $h{min_qual_mean},
+        min_len       => $h{min_len},
+        ns_max_p      => $h{ns_max_p}
+    );
+
+    if ( $status == 1 ) {
+        quit($fail_flag, "No quality reads after filtering");
+    } elsif ( $status == 2 ) {
+        quit($fail_flag, "Other filtering error");
+    }
+
+    ## Alignment and processing to create bam file
+    my @bamstats = $ngs->create_bam(
+        sample             => $sample,
+        read1_inf          => $read1_outfile,
+        read2_inf          => $read2_outfile,
+        idxbase            => $h{idxbase},
+        bam_outf           => $bamfile,
+        abra               => $h{abra},
+        target_bed         => $ampbed,
+        ref_fasta          => $h{ref_fasta},
+        realign            => $h{realign},
+        picard             => $h{picard},
+        remove_duplicate   => $h{unique},
+        chromCount_outfile => $readchr
+    );
+
+    quit($fail_flag, "Alignment error") if scalar(@bamstats) == 1;
+
+    ## Count reads in processing stages
+    $ngs->readStats(
+        bamstat_aref => \@bamstats,
+        fastq_aref   => [$h{read1fastq}, $h{read2fastq}],
+        gz           => 1,
+        bam_inf      => $bamfile,
+        chr          => $h{chr},
+        start        => $h{amplicon_start},
+        end          => $h{amplicon_end},
+        sample       => $sample,
+        outfile      => $readcount
+    );
+
+} else {
+    # merge paired-end reads
+    my $status = $ngs->merge_reads(
+        r1_fastq_inf  => $h{read1fastq},
+        r2_fastq_inf  => $h{read2fastq},
+        outdir => $outdir,
+        prefix => $sample,
+        params => '-m 15 -M 150'
+    );
+
+    quit($fail_flag, "Failed in merging paired-end reads") if $status; 
+
+    # filter merged fastq file
+    my $merged_fastq = "$outdir/$sample.extendedFrags.fastq.gz";
+    my $merged_filt  = "$outdir/$sample.extendedFrags.filt.fastq.gz";
+    if ( -s $merged_fastq ) {
+        $status = $ngs->filter_reads (
+            read1_inf     => $merged_fastq,
+            read1_outf    => $merged_filt,
+            min_qual_mean => $h{min_qual_mean},
+            min_len       => $h{min_len},
+            ns_max_p      => $h{ns_max_p}
+        );
+
+        if ( $status == 2 ) {
+            quit($fail_flag, "Failed in filtering merged fastq file");
+        }
+    }
+
+    # filter un-merged fastq file
+    my $un_merged_fastq1 = "$outdir/$sample.notCombined_1.fastq.gz";
+    my $un_merged_fastq2 = "$outdir/$sample.notCombined_2.fastq.gz";
+    my $un_merged_filt1 = "$outdir/$sample.notCombined_1.filt.fastq.gz";
+    my $un_merged_filt2 = "$outdir/$sample.notCombined_2.filt.fastq.gz";
+    if ( -s $un_merged_fastq1 ) {
+        $status = $ngs->filter_reads (
+            read1_inf     => $un_merged_fastq1,
+            read2_inf     => $un_merged_fastq2,
+            read1_outf    => $un_merged_filt1,
+            read2_outf    => $un_merged_filt2,
+            min_qual_mean => $h{min_qual_mean},
+            min_len       => $h{min_len},
+            ns_max_p      => $h{ns_max_p}
+        );
+
+        if ( $status == 2 ) {
+            quit($fail_flag, "Failed in filtering un-merged fastq files");
+        }
+    }
+
+    # align merged fastq file
+    my @mg_bamstats;
+    my $merged_filt_bamfile = "$outdir/$sample.extendedFrags.bam"; 
+    if ( -s $merged_filt ) {
+        @mg_bamstats = $ngs->create_bam(
+            sample             => $sample,
+            read1_inf          => $merged_filt,
+            idxbase            => $h{idxbase},
+            bam_outf           => $merged_filt_bamfile,
+            abra               => $h{abra},
+            target_bed         => $ampbed,
+            ref_fasta          => $h{ref_fasta},
+            realign            => $h{realign},
+            picard             => $h{picard},
+            remove_duplicate   => $h{unique},
+            chromCount_outfile => "$readchr.merge"
+        );
+    }
+
+    # align un-merged fastq files
+    my @um_bamstats;
+    my $un_merged_filt_bamfile = "$outdir/$sample.notCombined.bam"; 
+    my @um_bamstats = $ngs->create_bam(
+        sample             => $sample,
+        read1_inf          => $un_merged_filt1,
+        read2_inf          => $un_merged_filt2,
+        idxbase            => $h{idxbase},
+        bam_outf           => $un_merged_filt_bamfile,
+        abra               => $h{abra},
+        target_bed         => $ampbed,
+        ref_fasta          => $h{ref_fasta},
+        realign            => $h{realign},
+        picard             => $h{picard},
+        remove_duplicate   => $h{unique},
+        chromCount_outfile => "$readchr.un_merge"
+    );
+
+    # combined two bam file
+    $ngs->merge_bam(bam_inf_aref=>[$merged_filt_bamfile, $un_merged_filt_bamfile],
+                    bam_outf=>$bamfile, 
+                    sort_index=>1);
+
+    ## Count reads in processing stages
+    my @bamstats;
+    for (my $i=0; $i< @mg_bamstats; $i++) {
+        if ( $mg_bamstats[$i] eq "NA" or $um_bamstats[$i] eq "NA" ) {
+            $bamstats[$i] = "NA";
+        } else {
+            $bamstats[$i] = $mg_bamstats[$i] + $um_bamstats[$i];
+        }
+    }
+
+    $ngs->readStats(
+        bamstat_aref => \@bamstats,
+        fastq_aref => [$merged_fastq, $un_merged_fastq1, $un_merged_fastq2],
+        gz           => 1,
+        bam_inf      => $bamfile,
+        chr          => $h{chr},
+        start        => $h{amplicon_start},
+        end          => $h{amplicon_end},
+        sample       => $sample,
+        outfile      => $readcount
+    );
+
+    # Combine chr counts from merged and un-merged counts
+    $ngs->combineChromCount(inf_aref=>["$readchr.merge", "$readchr.un_merge"], 
+                          outfile=>$readchr, 
+                          rm=>1);
+
+    clean_up( $merged_filt, $un_merged_filt1, $un_merged_filt2, 
+        $merged_filt_bamfile,"$merged_filt_bamfile.bai", 
+        $un_merged_filt_bamfile, "$un_merged_filt_bamfile.bai", 
+        );
+}
 unlink $ampbed;
-
-## Count reads in processing stages
-$ngs->readStats(
-    bamstat_aref => \@bamstats,
-    r1_fastq_inf => $h{read1fastq},
-    r2_fastq_inf => $h{read2fastq},
-    gz           => 1,
-    bam_inf      => $bamfile,
-    chr          => $h{chr},
-    start        => $h{amplicon_start},
-    end          => $h{amplicon_end},
-    sample       => $sample,
-    outfile      => $readcount
-);
 
 ## Gather variant stats in amplicon.
 $ngs->variantStat(
@@ -206,7 +341,8 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
             " --outtsv=$outdir/$sample.$target_name.hdr.snp" .
             " --sample=$sample --hname=$target_name" . 
             " --hstart=$target_start --hend=$target_end" .
-            " --chr=$h{genome} $chr --sameRead=1"; 
+            " --chr=$h{genome} $chr --sameRead=1" . 
+        	" --rangeStart=$rangeStart --rangeEnd=$rangeEnd";
         $cmd .= " --high_res=$h{high_res}" if $h{high_res};
         print STDERR "\nPlotting HDR SNP data.\n" ;
         Util::run( $cmd, "Failed to generate HDR base-change plot",
@@ -214,7 +350,7 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
 
     }
 
-	# OK to continue processing even if there is no spanning read.
+    # OK to continue processing even if there is no spanning read.
 
     ## prepare data for alignment visualization by Canvas Xpress.
     if ( !$h{nocx} ) {
@@ -260,9 +396,11 @@ sub get_input {
                            Make sure intersect command supports -F option.
 	--pysamstats     <str> Path of pysamstats. Default: executable in PATH.
 	--rscript        <str> Path of Rscript. Default: executable in PATH.
+	--flash          <str> Path of flash2. Default: executable in PATH.
 	--tmpdir         <str> Path of temporary directory. Default: /tmp 
 
 	--read2fastq     <str> Optional. Fastq file of read2
+	--merge          Optional. Merge paired-end reads.
 
 	--min_qual_mean  <int> prinseq parameter. Default: 30
 	--min_len        <int> prinseq parameter. Default: 50
@@ -300,6 +438,7 @@ sub get_input {
         'java=s',           'bedtools=s',
         'pysamstats=s',     'rscript=s',
         'tmpdir=s',         'read2fastq=s',
+        'flash=s',          'merge',
         'unique',           'realign',
         'min_mapq=i',       'min_qual_mean=i',
         'min_len=i',        'ns_max_p=i',
@@ -342,6 +481,7 @@ sub get_input {
         rscript       => 'Rscript',
         tmpdir        => '/tmp',
         pysamstats    => 'pysamstats',
+        flash         => 'flash',
         min_qual_mean => 30,
         min_len       => 50,
         ns_max_p      => 3,
@@ -365,4 +505,10 @@ sub quit {
         qx(touch $flag_file);
     }
     exit 1;
+}
+
+sub clean_up {
+    foreach my $f ( @_ ) {
+        unlink $f;
+    }
 }

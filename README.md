@@ -3,7 +3,9 @@
 
 ### Introduction
 
-CRISPR-DAV is a pipeline to analyze amplicon-based NGS data of CRISPR clones in a high throughput manner. In the pipeline, BWA alignment and ABRA realignment are performed to detect insertion and deletion. The realignment with ABRA has improved detection of large indels. Results are presented in a comprehensive set of charts and an interactive alignment view.
+CRISPR-DAV is a pipeline to analyze amplicon-based NGS data of CRISPR clones in a high throughput manner. In the pipeline, BWA alignment and ABRA realignment are performed to detect insertion and deletion. The realignment with ABRA has improved detection of large indels. Results are presented in a comprehensive set of charts and an interactive alignment view. 
+
+For more details, please check our manuscript [https://doi.org/10.1093/bioinformatics/btx518](https://doi.org/10.1093/bioinformatics/btx518).
 
 ### Installing and running the pipeline
 

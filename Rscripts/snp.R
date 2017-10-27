@@ -23,7 +23,6 @@ if ( "--help" %in% args ) {
 	--sameRead=1 or 0. Optional. Default: 0 (all positions not necessarily on same read)
 	--hstart=highlight region start position, e.g. sgRNA start position. Required.
 	--hend=highlight region end position, e.g. sgRNA end position. Required.
-	--hname=name of highlight region, e.g. sgRNA. Required 
 	--rangeStart=start of SNP plot range. Required. 
 	--rangeEnd=end of SNP plot range. Required. 
 	--high_res=1 or 0. 1-create high resolution .tif image. 0-create png file.
@@ -44,7 +43,6 @@ if (is.null(argsL$inf)
 	| is.null(argsL$hend)
 	| is.null(argsL$rangeStart)
 	| is.null(argsL$rangeEnd)
-	| is.null(argsL$hname)
 	| is.null(argsL$outf) 
 	| is.null(argsL$outtsv)
 ){

@@ -22,7 +22,7 @@ if("--help" %in% args) {
       --sample=sample name. No space. Required.
       --ampStart=start of amplicon. Required.
       --ampEnd=end of amplicon. Required. 
-      --hname=name of highlight region, e.g. sgRNA. Optional but required if --hstart is provided.
+      --hname=name of highlight region, e.g. sgRNA. 
       --hstart=highlight region start position, e.g. sgRNA start position. Optional.
       --hend=highlight region end position, e.g. sgRNA end position. Optional.
       --type=type of data: coverage, insertion, deletion. Optional. All types will be plotted by default. 
@@ -53,13 +53,13 @@ ampEnd <- as.numeric(argsL$ampEnd)
 
 hstart <- NULL
 hend <- NULL
-hname <- NULL
+hname <- "CRISPR" 
 if (!is.null(argsL$hstart)) hstart <- as.numeric(argsL$hstart)
 if (!is.null(argsL$hend)) hend <- as.numeric(argsL$hend)
 if (!is.null(argsL$hname)) hname <- as.character(argsL$hname)
 if (!is.null(argsL$hstart)) {
-	if ( is.null(argsL$hend) | is.null(argsL$hname) ) {
-		exit("Missing --hend or --hname")
+	if ( is.null(argsL$hend) ) {
+		exit("Missing --hend")
 	}
 }
 

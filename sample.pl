@@ -271,7 +271,7 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
     ## create plots of coverage, insertion and deletion on amplicon
     my $cmd = "$h{rscript} $Bin/Rscripts/amplicon.R --inf=$varstat" .
         " --outf=$outdir/$sample.$target_name  --sample=$sample" . 
-        " --hname=$target_name --hstart=$target_start --hend=$target_end" .
+        " --hstart=$target_start --hend=$target_end" .
         " --chr=$h{genome} $chr --ampStart=$h{amplicon_start}" .
         " --ampEnd=$h{amplicon_end}"; 
     $cmd .= " --high_res=$h{high_res}" if $h{high_res};
@@ -287,7 +287,7 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
     $cmd = "$h{rscript} $Bin/Rscripts/snp.R --inf=$varstat" .
         " --outf=$outdir/$sample.$target_name.snp.$plot_ext" . 
         " --outtsv=$outdir/$sample.$target_name.snp" .
-        " --sample=$sample --hname=$target_name" . 
+        " --sample=$sample" . 
         " --hstart=$target_start --hend=$target_end" .
         " --chr=$h{genome} $chr --rangeStart=$rangeStart" .
         " --rangeEnd=$rangeEnd";
@@ -339,7 +339,7 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
         $cmd = "$h{rscript} $Bin/Rscripts/snp.R --inf=$hdr_var" .
             " --outf=$outdir/$sample.$target_name.hdr.snp.$plot_ext" . 
             " --outtsv=$outdir/$sample.$target_name.hdr.snp" .
-            " --sample=$sample --hname=$target_name" . 
+            " --sample=$sample" . 
             " --hstart=$target_start --hend=$target_end" .
             " --chr=$h{genome} $chr --sameRead=1" . 
         	" --rangeStart=$rangeStart --rangeEnd=$rangeEnd";

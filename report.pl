@@ -96,7 +96,7 @@ print $fh "<html lang='en'>
 			<tr align=center><td>Amplicon</td><td>$ref</td><td>$amp_chr</td>
 				<td>$amp_start</td><td>$amp_end</td><td>$amp_strand</td><td></td>
 				<td></td></tr>
-			<tr align=center><td>$site_name</td><td>$ref</td><td>$chr</td>
+			<tr align=center><td>CRISPR</td><td>$ref</td><td>$chr</td>
 				<td>$start</td> <td>$end</td><td>$strand</td><td>$seq</td>
 				<td>$hdr</td></tr>
 		</table>

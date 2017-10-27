@@ -631,7 +631,7 @@ sub html_key {
     return <<EOF;
 <h2>Label Key</h2>
 <span style='color:red'>Deletion 2bp [42567] 32%</span> : The allele is a deletion of 2 base pairs, with 42,567 reads making up 32% of all reads<br />
-<span style='color:purple'>Guide</span> : Shows the location of the Guide sequence, used to target the CRISPR mutations.<br />
+<span style='color:purple'>Guide</span> : Shows the location of the Guide sequence, used to target the CRISPR mutations. Bases not in coding sequence will not be shown in the diagram. <br />
 <span style='color:green'>{Reference} Wildtype</span> : This row is showing WildType sequence; {Reference} indicates that it was not (significantly) observed and is being shown for comparison purposes only.<br />
 <span style='color:green'>!! Wildtype [52932] 98%</span> : This row is WildType; '!!' means it <b>was</b> observed, in this case 52,932 reads (98% of all reads)<br />
 

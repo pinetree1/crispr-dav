@@ -180,7 +180,8 @@ sub crispr_data {
         # plot HDR 
         if ( $hdr_bases ) {
             $infile="$h{align_dir}/$crispr" . "_hdr.txt";
-            $cmd = "$h{rscript} $Bin/Rscripts/hdr.R --inf=$infile --sub=$crispr" .
+            #$cmd = "$h{rscript} $Bin/Rscripts/hdr.R --inf=$infile --sub=$crispr" .
+            $cmd = "$h{rscript} $Bin/Rscripts/hdr.R --inf=$infile" . 
                    " --outf=$dest/$crispr.hdr.$plot_ext";
             $cmd .= " --high_res=$h{high_res}" if $h{high_res};
             Util::run( $cmd, "Failed to create HDR plot", $h{verbose});

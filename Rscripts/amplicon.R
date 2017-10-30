@@ -53,7 +53,7 @@ ampEnd <- as.numeric(argsL$ampEnd)
 
 hstart <- NULL
 hend <- NULL
-hname <- "CRISPR" 
+hname <- "CRISPR Guide" 
 if (!is.null(argsL$hstart)) hstart <- as.numeric(argsL$hstart)
 if (!is.null(argsL$hend)) hend <- as.numeric(argsL$hend)
 if (!is.null(argsL$hname)) hname <- as.character(argsL$hname)

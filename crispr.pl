@@ -45,12 +45,16 @@ sub process_samples {
         print STDERR "\nProcessing $sample ...\n";
         if ( $h{sge} ) {
             my $jobname = Util::getJobName( "C", "$i" );
-            my $cores_per_job = 2;
+
+            my $parallel_opt = "";
+            if ( $h{parallel_env} && $h{cores_per_job} ) {
+                $parallel_opt = "-pe $h{parallel_env} $h{cores_per_job}";
+            }
 
             # set this to at least 2 so as not to overwhelm the 
             # system when there are too many samples.
-            $cmd = "qsub -cwd -pe orte $cores_per_job -V -o $h{align_dir}/$sample.log" . 
-                " -j y -b y -N $jobname $cmd";
+            $cmd = "qsub -cwd $parallel_opt -V" . 
+                " -o $h{align_dir}/$sample.log -j y -b y -N $jobname $cmd";
             print STDERR "$cmd\n" if $h{verbose};
             if ( system($cmd) ) {
                 die "Failed to submit job for $sample\n";
@@ -519,6 +523,8 @@ Usage: $0 [options]
     $h{min_mapq}         = $cfg->{other}{min_mapq};
     $h{wing_length}      = $cfg->{other}{wing_length};
     $h{high_res}         = $cfg->{other}{high_res};
+    $h{parallel_env}     = $cfg->{other}{parallel_env};
+    $h{cores_per_job}    = $cfg->{other}{cores_per_job};
 
     # Defaults:
     $h{remove_duplicate} ||= "N";

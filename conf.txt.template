@@ -62,3 +62,8 @@ min_mapq = 20
 
 # number of bases on each side of sgRNA to view base changes (default: 40) 
 wing_length = 12 
+
+# To control how many cores are needed to process one sample in SGE cluster
+# The list of parallel environments can be found by 'qconf -spl'
+parallel_env = orte
+cores_per_job = 2

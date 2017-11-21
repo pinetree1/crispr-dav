@@ -51,8 +51,6 @@ sub process_samples {
                 $parallel_opt = "-pe $h{parallel_env} $h{cores_per_job}";
             }
 
-            # set this to at least 2 so as not to overwhelm the 
-            # system when there are too many samples.
             $cmd = "qsub -cwd $parallel_opt -V" . 
                 " -o $h{align_dir}/$sample.log -j y -b y -N $jobname $cmd";
             print STDERR "$cmd\n" if $h{verbose};
@@ -545,7 +543,8 @@ Usage: $0 [options]
 
     ## amplicon and crisprs
     my ( $amp, $crisprs, $sample_crisprs, $crispr_samples ) =
-      process_beds( $h{region}, $h{crispr}, $h{sitemap} );
+      process_beds( $h{region}, $h{crispr}, $h{sitemap}, 
+		$h{ref_fasta}, $h{tmpdir}, $h{bedtools} );
 
     $h{chr}            = $amp->[0];
     $h{amplicon_start} = $amp->[1] + 1;
@@ -597,7 +596,7 @@ sub check_yn {
 }
 
 sub process_beds {
-    my ( $amp_bed, $crispr_bed, $sitemap ) = @_;
+    my ( $amp_bed, $crispr_bed, $sitemap, $ref_fasta, $tmpdir, $bedtools ) = @_;
     die "Could not find $amp_bed!\n"    if !-f $amp_bed;
     die "Could not find $crispr_bed!\n" if !-f $crispr_bed;
     die "Could not find $sitemap!\n"    if !-f $sitemap;
@@ -647,6 +646,7 @@ sub process_beds {
     open( my $cb, $crispr_bed ) or die "Could not find $crispr_bed.\n";
     my %crispr_names;    # {seq}=>name. Ensure unique CRISPR sequences
     my %seen_names; # to ensure unique CRISPR names 
+	my %hdr_refbases; 
     while ( my $line = <$cb> ) {
         next if ( $line !~ /\w/ || $line =~ /^#/ );
         $line =~ s/ //g;
@@ -684,9 +684,25 @@ sub process_beds {
         }
         $crispr_names{$seq} = $name;
         $seen_names{$name} = 1;
+
+		# make sure all bases in hdr are mutant bases.
+		if ( $hdr && ! defined $hdr_refbases{$hdr} ) { 
+			$hdr_refbases{$hdr} = check_hdr($hdr, $chr, $ref_fasta, $tmpdir, $bedtools);
+		}
+
         $crisprs{$name} = join( ",", $chr, $start, $end, $seq, $strand, $hdr );
     }
     close $cb;
+
+	if ( %hdr_refbases ) {
+		my $err='';
+		foreach my $hdr ( keys %hdr_refbases ) {
+			if ( $hdr_refbases{$hdr} ) {
+				$err .= "Error: $hdr has non-mutants: $hdr_refbases{$hdr}\n";
+			}
+		}
+		die $err if $err;
+	}
 
     ## Find crispr names for each sample
     my %sample_crisprs;    # {sample}{crispr_name}=>1
@@ -898,3 +914,42 @@ sub process_custom_seq {
     return ($seqid, length($seq));
 }
 
+# Ensure all bases in HDR field is mutant compared to reference sequence  
+sub check_hdr {
+	my ($base_changes, $chr, $ref_fasta, $tmpdir, $bedtools)=@_;
+	my %alt;    # pos=>base
+	foreach my $mut ( split /,/, $base_changes ) {
+		my ( $pos, $base ) = ( $mut =~ /(\d+)(\D+)/ );
+		$alt{$pos} = uc($base);
+	}
+
+	# create bed file spanning the HDR SNPs. Position format: [Start, end).
+	my $bedfile   = "$tmpdir/tmp-hdr.bed";	
+	my @pos       = sort { $a <=> $b } keys %alt;
+	my $hdr_start = $pos[0];
+	my $hdr_end   = $pos[-1];
+	open(my $tmpf, ">$bedfile") or die "Cannot create $bedfile.\n";
+	print $tmpf join("\t", $chr, $hdr_start-1, $hdr_end) . "\n";
+	close $tmpf;
+	
+	# extract reference sequence in hdr region
+	my $hdr_ref = "$tmpdir/tmp-hdr.ref";
+	my $cmd = "$bedtools getfasta -fi $ref_fasta -bed $bedfile -fo $hdr_ref -tab";
+	die "Failed to extract HDR reference sequence!\n" if system($cmd);
+	open(my $inf, $hdr_ref);
+	my $line=<$inf>; chomp $line;
+	my @a = split(/\t/, $line);
+	my $seq = uc($a[1]);
+
+	# check the mutants against the reference
+	my @ref_bases;
+	foreach my $pos ( keys %alt ) {
+		if ( $alt{$pos} eq substr($seq, $pos-$hdr_start, 1) ) {
+			push(@ref_bases, $pos . $alt{$pos}); 	
+		}	
+	}			
+
+	if ( @ref_bases ) {
+		return join(",", @ref_bases); 
+	}
+}

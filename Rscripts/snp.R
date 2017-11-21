@@ -177,8 +177,8 @@ if ( high_res ) {
 	tiff(filename=outfile, width=wt, height=ht, units='in', res=1200)
 } else {
 	wt <- 12*nrow(dat)
-	if ( wt < 500 ) {
-		wt <- 500
+	if ( wt < 600 ) {
+		wt <- 600
 	}
 	ht <- 400
 	png(filename=outfile, width=wt, height=ht)

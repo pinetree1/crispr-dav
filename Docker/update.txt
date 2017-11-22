@@ -1,0 +1,17 @@
+### Steps to recreate docker image after code has been updated in https://github.com/pinetree1/crispr-dav
+On a mac or linux (may need to be outside a firewall) with docker started:
+
+cd ~/temp
+git clone https://github.com/pinetree1/crispr-dav
+cd crispr-dav/Docker/
+
+# v2.2.0 is new version to be created. Change accordingly.
+docker build -t pinetree1/crispr-dav:v2.2.0  .   
+docker login
+docker push pinetree1/crispr-dav:v2.2.0  
+
+# now create the “latest” tag:
+docker tag pinetree1/crispr-dav:v2.2.0 pinetree1/crispr-dav:latest   
+docker push pinetree1/crispr-dav:latest  
+This would replace the existing, if any.
+

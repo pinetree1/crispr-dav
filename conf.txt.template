@@ -61,7 +61,14 @@ realign_flag = Y
 min_mapq = 20
 
 # number of bases on each side of sgRNA to view base changes (default: 40) 
-wing_length = 12 
+wing_length = 40 
+
+# Whether to use very high resolution in plots. 
+# Default: 0. This creates PNG images of 72 ppi resolution. Good for web viewing.
+# If set to 1, TIFF images of 1200 ppi will be created and may be good for publication.  
+# TIFF images may not be viewable in major web browsers, but can be opened 
+# using common graphics software. 
+high_res = 0
 
 # To control how many cores are needed to process one sample in SGE cluster
 # The list of parallel environments can be found by 'qconf -spl'

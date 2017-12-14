@@ -225,7 +225,7 @@ sub crispr_data {
 sub prepare_command {
     my $sample = shift;
     my @fastqs = split( /,/, $h{sample_fastqs}{$sample} );
-    die "Fastq input is empty for $sample!\n" if !@fastqs;
+    die "\nError: Fastq input is empty for $sample!\n" if !@fastqs;
 
     my $cmd = "$Bin/sample.pl $sample $fastqs[0] $h{align_dir}";
     $cmd .= " --read2fastq $fastqs[1]" if $fastqs[1];
@@ -336,7 +336,7 @@ Usage: $0 [options]
     }
 
     if ( !-f $h{conf} ) {
-        die "Error: Could not find $h{conf}.\n"; 
+        die "\nError: Could not find $h{conf}.\n"; 
     }
 
     if ( ( !$h{genome} && !$h{amp_fasta} ) or ( $h{genome} && $h{amp_fasta} ) )
@@ -359,7 +359,7 @@ Usage: $0 [options]
 
     ## sections
     for my $s ( "app", "other" ) {
-        die "Error: section [$s] is missing in $h{conf}.\n" if !$cfg->{$s};
+        die "\nError: section [$s] is missing in $h{conf}.\n" if !$cfg->{$s};
     }
     
     # app section
@@ -393,14 +393,14 @@ Usage: $0 [options]
         $h{$tool} = $cfg->{app}{$tool};
         if ( $tool ne "abra" ) {
             if ( $h{$tool} =~ /\// && ! -x $h{$tool} ) {
-                die "Error: $h{$tool} is not executable. Run: chmod +x $h{$tool}\n"; 
+                die "\nError: $h{$tool} is not executable. Run: chmod +x $h{$tool}\n"; 
             }
         }
     }
     
     # Ensure bwa is in PATH
     my $bwa= qx(which bwa 2>/dev/null) or 
-        die "Error: bwa not found. It must be in your PATH\n";
+        die "\nError: bwa not found. It must be in your PATH\n";
     chomp $bwa;
     $h{bwa} = $bwa;
 
@@ -502,7 +502,7 @@ Usage: $0 [options]
     ## Make sure ref_fasta's directory is writable for pysamstats 
     ## or samtools faidx to create FASTA index if not present.
     if ( ! -w dirname($h{ref_fasta}) ) {
-        die "Error: $h{ref_fasta}\'s directory is not writable.\n";
+        die "\nError: $h{ref_fasta}\'s directory is not writable.\n";
     } 
 
     ## prinseq
@@ -544,7 +544,7 @@ Usage: $0 [options]
     ## amplicon and crisprs
     my ( $amp, $crisprs, $sample_crisprs, $crispr_samples ) =
       process_beds( $h{region}, $h{crispr}, $h{sitemap}, 
-		$h{ref_fasta}, $h{tmpdir}, $h{bedtools} );
+		$h{ref_fasta}, $h{tmpdir}, $h{bedtools}, $h{wing_length} );
 
     $h{chr}            = $amp->[0];
     $h{amplicon_start} = $amp->[1] + 1;
@@ -575,7 +575,7 @@ Usage: $0 [options]
     ## ensure all samples in sitemap are present in fastqmap
     foreach my $s ( keys %{ $h{sample_crisprs} } ) {
         if ( !defined $h{sample_fastqs}{$s} ) {
-            die "Error: Sample $s in $h{sitemap} is not found in $h{fastqmap}!\n";
+            die "\nError: Sample $s in $h{sitemap} is not found in $h{fastqmap}!\n";
         }
     }
 
@@ -596,7 +596,8 @@ sub check_yn {
 }
 
 sub process_beds {
-    my ( $amp_bed, $crispr_bed, $sitemap, $ref_fasta, $tmpdir, $bedtools ) = @_;
+    my ( $amp_bed, $crispr_bed, $sitemap, $ref_fasta, 
+		$tmpdir, $bedtools, $wing_length ) = @_;
     die "Could not find $amp_bed!\n"    if !-f $amp_bed;
     die "Could not find $crispr_bed!\n" if !-f $crispr_bed;
     die "Could not find $sitemap!\n"    if !-f $sitemap;
@@ -619,10 +620,10 @@ sub process_beds {
         die "Could not find amplicon information $amp_bed.\n";
     }
     elsif ( @amp < 6 ) {
-        die "Error: $amp_bed does not have 6 columns.\n";
+        die "\nError: $amp_bed does not have 6 columns.\n";
     }
     else {
-        check_bed_coord( $amp[1], $amp[2], "Error in $amp_bed" );
+        check_bed_coord( $amp[1], $amp[2], "\nError in $amp_bed" );
     }
 
     if ( $cnt > 1 ) {
@@ -652,7 +653,7 @@ sub process_beds {
         $line =~ s/ //g;
         chomp $line;
         my @a = split(/\t/, $line);
-        die "Error: In $crispr_bed, This entry does not have at least " .  
+        die "\nError: In $crispr_bed, This entry does not have at least " .  
            "6 tab-separated columns:\n$line\n" if scalar(@a) < 6;  
 
         my ($chr, $start, $end, $name, $seq, $strand, $hdr) = @a;
@@ -660,34 +661,35 @@ sub process_beds {
         $seq = uc($seq);
         $seq =~ s/U/T/g;
 
-        check_bed_coord( $start, $end, "Error in $crispr_bed" );
+        check_bed_coord( $start, $end, "\nError in $crispr_bed" );
 
         if ( $chr ne $amp[0] ) {
-            die "Error: CRISPR $name\'s chromosome $chr does not" . 
+            die "\nError: CRISPR $name\'s chromosome $chr does not" . 
                 " match $amp[0] in amplicon bed.\n";
         }
 
         if ( $start < $amp[1] || $start > $amp[2] ) {
-            die "Error: CRISPR $name start is not inside amplicon.\n";
+            die "\nError: CRISPR $name start is not inside amplicon.\n";
         }
 
         if ( $end < $amp[1] || $end > $amp[2] ) {
-            die "Error: CRISPR $name end is not inside amplicon.\n";
+            die "\nError: CRISPR $name end is not inside amplicon.\n";
         }
 
         if ( $crispr_names{$seq} ) {
-            die "Error: CRISPR sequence $seq is duplicated in $crispr_bed.\n";
+            die "\nError: CRISPR sequence $seq is duplicated in $crispr_bed.\n";
         }
 
         if ( $seen_names{$name} ) {
-             die "Error: CRISPR name $name is duplicated in $crispr_bed.\n";
+             die "\nError: CRISPR name $name is duplicated in $crispr_bed.\n";
         }
         $crispr_names{$seq} = $name;
         $seen_names{$name} = 1;
 
 		# make sure all bases in hdr are mutant bases.
 		if ( $hdr && ! defined $hdr_refbases{$hdr} ) { 
-			$hdr_refbases{$hdr} = check_hdr($hdr, $chr, $ref_fasta, $tmpdir, $bedtools);
+			$hdr_refbases{$hdr} = check_hdr($hdr, $chr, $start+1-$wing_length,
+				$end+$wing_length, $ref_fasta, $tmpdir, $bedtools);
 		}
 
         $crisprs{$name} = join( ",", $chr, $start, $end, $seq, $strand, $hdr );
@@ -698,7 +700,7 @@ sub process_beds {
 		my $err='';
 		foreach my $hdr ( keys %hdr_refbases ) {
 			if ( $hdr_refbases{$hdr} ) {
-				$err .= "Error: $hdr has non-mutants: $hdr_refbases{$hdr}\n";
+				$err .= "\nError: $hdr has non-mutants: $hdr_refbases{$hdr}\n";
 			}
 		}
 		die $err if $err;
@@ -730,12 +732,12 @@ sub process_beds {
         foreach my $seq (@a) {
             next if !$seq;
             $seq = uc($seq);
-            die "Sequence $seq contained non-ACGT letter!\n" if $seq !~ /[ACGT]/;
-            die "Error: $seq in $sitemap is not in $crispr_bed!\n" if !$crispr_names{$seq};
+            die "\nError: Sequence $seq contained non-ACGT letter!\n" if $seq !~ /[ACGT]/;
+            die "\nError: $seq in $sitemap is not in $crispr_bed!\n" if !$crispr_names{$seq};
             $found_seq  = 1;
 
             if ( $dup{$sample}{$seq} ) {
-                 die "Error: $sample and $seq combination is duplicated.\n";
+                 die "\nError: $sample and $seq combination is duplicated.\n";
             }
             $dup{$sample}{$seq} = 1;
             $sample_crisprs{$sample}{ $crispr_names{$seq} } = 1;
@@ -848,7 +850,7 @@ sub check_rpkg {
         "library(reshape2)\n";
     close $tmpf;
     if ( system("$rscript_path $script") ) {
-        die "Error: Missing required R package.\n"; 
+        die "\nError: Missing required R package.\n"; 
     }
     unlink $script;
 }
@@ -892,7 +894,7 @@ sub process_custom_seq {
     if ( $line =~ /^>(\S+)/ ) {
         $seqid=$1;
     } else {
-        die "Error: Custom seq file $seq_infile is not in fasta format!\n";
+        die "\nError: Custom seq file $seq_infile is not in fasta format!\n";
     }
 
     while ($line=<$inf>) {
@@ -901,7 +903,7 @@ sub process_custom_seq {
         } else {
             $line =~ s/[^A-Za-z]//g;
             if ( uc($line) =~ /[^ACGT]/ ) {
-                 die "Error: $seq_infile contained non-ACGT alphabet.\n" 
+                 die "\nError: $seq_infile contained non-ACGT alphabet.\n" 
             }
             $seq .= uc($line);
         }
@@ -916,10 +918,17 @@ sub process_custom_seq {
 
 # Ensure all bases in HDR field is mutant compared to reference sequence  
 sub check_hdr {
-	my ($base_changes, $chr, $ref_fasta, $tmpdir, $bedtools)=@_;
+	my ($base_changes, $chr, $min_pos, $max_pos, 
+		$ref_fasta, $tmpdir, $bedtools)=@_;
+
+	my $err="\nError: HDR base position out of range $min_pos - $max_pos. ";
+	$err .= "The range is determined as sgRNA start + 1 - wing_length to ";
+	$err .= "sgRNA end + wing_length. Please verify the HDR base positions ";
+	$err .= "or set wing_length accordingly.\n"; 
 	my %alt;    # pos=>base
 	foreach my $mut ( split /,/, $base_changes ) {
 		my ( $pos, $base ) = ( $mut =~ /(\d+)(\D+)/ );
+		die $err if ($pos < $min_pos or $pos > $max_pos);   
 		$alt{$pos} = uc($base);
 	}
 
@@ -935,7 +944,7 @@ sub check_hdr {
 	# extract reference sequence in hdr region
 	my $hdr_ref = "$tmpdir/tmp-hdr.ref";
 	my $cmd = "$bedtools getfasta -fi $ref_fasta -bed $bedfile -fo $hdr_ref -tab";
-	die "Failed to extract HDR reference sequence!\n" if system($cmd);
+	die "\nError: Failed to extract HDR reference sequence!\n" if system($cmd);
 	open(my $inf, $hdr_ref);
 	my $line=<$inf>; chomp $line;
 	my @a = split(/\t/, $line);

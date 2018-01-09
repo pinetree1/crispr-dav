@@ -61,7 +61,7 @@ create_plot <- function (data, type, imgfile, cols, ytitle, maintitle, high_res)
 			theme(legend.text=element_text(face='bold', size=11), 
 				legend.position='bottom', legend.direction='horizontal') +
 			geom_text(aes(label=value), position=position_dodge(width=0.5), 
-				check_overlap=TRUE, vjust=-0.5, size=3)
+				check_overlap=TRUE, vjust=-0.5, size=4)
 	} else {
 		ymax <- ifelse(type=='count', 1000, 105)
 		p <- ggplot(data, aes(x=Sample, y=value, fill=variable)) +

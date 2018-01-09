@@ -191,11 +191,15 @@ sub crispr_data {
 
         # generate data for interactive alignment view
         $infile="$h{align_dir}/$crispr" . "_can.txt";
-        foreach my $pct ( 0 .. 1 ) {
-            $cmd = "$Bin/crispr2cx.pl -input $infile -perc $pct >" .
-                   " $h{deliv_dir}/$crispr/${crispr}_cx$pct.html";
-            Util::run( $cmd, "Failed to create canvasXpress alignment view",
-                        $h{verbose});
+        if ( -f $infile ) {
+            foreach my $pct ( 0 .. 1 ) {
+           	    $cmd = "$Bin/crispr2cx.pl -input $infile -perc $pct >" .
+                    " $h{deliv_dir}/$crispr/${crispr}_cx$pct.html";
+           	    Util::run( $cmd, "Failed to create canvasXpress alignment view",
+                    $h{verbose});
+            }
+        } else {
+           $h{canvasXpress} = 0; 
         }
 
         ## move the image files for individual sample to dest

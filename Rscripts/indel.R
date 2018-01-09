@@ -78,7 +78,7 @@ create_plot <- function (data, type, imgfile, cols, ytitle, maintitle, high_res)
 		w<-ifelse(n>10, 0.5*n, h)
 		tiff(filename=imgfile, width=w, height=h, units='in', res=1200)
 	} else {
-		h<-400
+		h<-450
 		w<- ifelse(n>10, 50*n, h)
 		png(filename=imgfile, height=h, width=w)
 	}

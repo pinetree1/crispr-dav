@@ -11,8 +11,6 @@ use Getopt::Long;
 use FindBin qw($Bin);
 use lib "$Bin/Modules";
 use Config::Tiny;
-use NGS;
-use Exon;
 use Util;
 use Data::Dumper;
 $| = 1;

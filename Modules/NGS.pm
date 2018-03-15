@@ -1175,8 +1175,19 @@ sub categorizeHDR {
     # create bed file spanning the HDR SNPs. Position format: [Start, end).
     my $bedfile   = "$outdir/$sample.hdr.bed";
     my @pos       = sort { $a <=> $b } keys %alt;
-    my $hdr_start = $pos[0];
-    my $hdr_end   = $pos[-1];
+
+    my $MIN_HDR_LENGTH = 21;
+    my ($hdr_start, $hdr_end); # 1-based
+    # range: length of sequence covering mutation bases
+    my $range = $pos[-1] - $pos[0] + 1;
+    if ( $range < $MIN_HDR_LENGTH ) {
+        $hdr_start = $pos[0] - int(($MIN_HDR_LENGTH - $range)/2);
+        $hdr_end = $hdr_start + $MIN_HDR_LENGTH - 1;  
+    } else { 
+        $hdr_start = $pos[0];
+        $hdr_end   = $pos[-1];
+    }
+
     $self->makeBed(
         chr     => $h{chr},
         start   => $hdr_start,
@@ -1200,14 +1211,65 @@ sub categorizeHDR {
     $self->extractHDRseq( $hdr_bam, $chr, $hdr_start, $hdr_end, $hdr_seq_file,
         $h{min_mapq} );
 
-    ## parse HDR seq file to categorize HDR
-    my %alts;    # key position is offset by $start
-    foreach my $coord ( keys %alt ) {
-        $alts{ $coord - $hdr_start } = $alt{$coord};
-    }
+    # calculate the HDR rates
+    $self->rateHDR(base_changes=>$h{base_changes}, hdr_seq_file=>$hdr_seq_file, 
+        seq_start=>$hdr_start, sample=>$sample, stat_outf=>$h{stat_outf});
 
-    my @p     = sort { $a <=> $b } keys %alts;
-    my $snps  = scalar(@p);                    # number of intended base changes
+
+    # calculate SNP rate in HDR region. Require all bases in HDR region to be in the same read.
+    $self->variantStat( bam_inf=>$hdr_bam, ref_fasta=>$h{ref_fasta}, outfile=>$h{var_outf}, 
+                        chr=> $h{chr}, start=>$hdr_start, end=>$hdr_end);	
+	
+    # remove records before and after HDR region.
+    open(my $inf, $h{var_outf}) or die "Cannot open $h{var_outf}\n";
+    open(my $outf, ">$h{var_outf}.tmp") or die $!;
+    my $line=<$inf>; 
+    print $outf $line;
+    while ($line=<$inf>) {
+        my @a=split(/\t/, $line);
+        if ( $a[1] >= $hdr_start and $a[1] <= $hdr_end ) {
+            print $outf $line;
+        }
+    }
+    close $outf;
+    close $inf;
+    rename("$h{var_outf}.tmp", $h{var_outf});
+}
+
+=head2 rateHDR
+
+ Usage   : $obj->rateHDR(base_changes=>, ...)
+ Function: To calculate rate of HDR (homology directed repair) 
+ Args    : base_changes, hdr_seq_file, seq_start, outf 
+	base_changes: is a comma-separated strings of positons and bases. Format: <pos><base>,...
+	  for example, 101900208C,101900229G,101900232C,101900235A. Bases are on positive strand, and 
+	  are intended new bases, not reference bases. 
+	hdr_seq_file: contains annotations of sequence covering HDR region.
+	seq_start: the 1-based chr pos of the first base of the hdr_seq.
+	sample: sampe name
+	outf: output file
+
+=cut
+
+sub rateHDR {
+    my $self = shift;
+    my %h    = (
+        @_
+    );
+
+    required_args( \%h, 'base_changes', 'hdr_seq_file', 'seq_start', 
+         'sample', 'stat_outf');
+
+    # intended base changes
+    my %alt;    # pos=>base
+    foreach my $mut ( split /,/, $h{base_changes} ) {
+        my ( $pos, $base ) = ( $mut =~ /(\d+)(\D+)/ );
+        $alt{$pos} = uc($base);
+    }
+    print STDERR Dumper(\%alt) . "\n" if $h{verbose};
+
+    my @pos       = sort { $a <=> $b } keys %alt;
+
     my $total = 0;                             # total reads
     my $perfect_oligo = 0;                     # perfect HDR reads.
     my $edit_oligo = 0;    
@@ -1217,41 +1279,64 @@ sub categorizeHDR {
     my $non_oligo = 0;    
       # reads without any desired base changes, regardless of indel
 
-    open( my $inf, $hdr_seq_file );
+    open( my $inf, $h{hdr_seq_file} );
     while ( my $line = <$inf> ) {
         next if $line !~ /\w/;
         chomp $line;
-        my ( $qname, $hdr_seq, $insertion ) = split( /\t/, $line );
+        my ( $qname, $hdr_seq, $indelstr ) = split( /\t/, $line );
+
         my $isEdited = 0;
-        if ( $insertion =~ /I/ or $hdr_seq =~ /\-/ ) {
-            $isEdited = 1;
+        ## Determine whether indels happen between the mutation positions
+        if ( $indelstr =~ /[ID]/ ) {
+            my @tmp = split(/:/, $indelstr);
+            for(my $i=2; $i<@tmp; $i += 4 ) {
+                if ( $tmp[$i] eq "I" ) {
+                    # insertion occurs within desired mutation boundary
+                    if ($tmp[$i-1] >= $pos[0] and $tmp[$i-1] <= $pos[-1]) {
+                        $isEdited = 1;
+                        last;
+                    } 
+                } else {
+                    # deletion occurs within desired mutation boundary
+                    for(my $j=$tmp[$i-2]; $j<=$tmp[$i-1]; $j++) {
+                        if ( $j >= $pos[0] and $j <= $pos[-1] ) {
+                            $isEdited = 1; 
+                            last;
+                        }
+                    }
+                    last if $isEdited;
+                }
+            } 
         }
 
         my @bases = split( //, $hdr_seq );
         my $alt_cnt = 0;    # snp base cnt
-        foreach my $i (@p) {
-            if ( $bases[$i] eq $alts{$i} ) {
-                $alt_cnt++;
+        for (my $i=0; $i<@bases; $i++) {
+            my $loc = $i + $h{seq_start};
+            if ( $loc >= $pos[0] and $loc <= $pos[-1] ) {
+                if ( $alt{$loc} and $bases[$i] eq $alt{$loc} ) {
+                    $alt_cnt++;
+                } 
             }
         }
 
         if ( $alt_cnt == 0 ) {
             $non_oligo++;
-            print STDERR "$line\tNonOligo\n" if $h{verbose};
+            print STDERR "$line\t$alt_cnt\tNonOligo\n" if $h{verbose};
         }
         else {
             if ($isEdited) {
                 $edit_oligo++;
-                print STDERR "$line\tEdit\n" if $h{verbose};
+                print STDERR "$line\t$alt_cnt\tEdit\n" if $h{verbose};
             }
             else {
-                if ( $alt_cnt == $snps ) {
+                if ( $alt_cnt == scalar(@pos) ) {
                     $perfect_oligo++;
-                    print STDERR "$line\tPerfect\n" if $h{verbose};
+                    print STDERR "$line\t$alt_cnt\tPerfect\n" if $h{verbose};
                 }
                 else {
                     $partial_oligo++;
-                    print STDERR "$line\tPartial\n" if $h{verbose};
+                    print STDERR "$line\t$alt_cnt\tPartial\n" if $h{verbose};
                 }
             }
         }
@@ -1274,30 +1359,10 @@ sub categorizeHDR {
         push( @pcts, $total ? sprintf( "%.2f", $v * 100 / $total ) : 0 );
     }
 
-    print $outf join( "\t", "Sample", "TotalReads", @cnames, @pct_cnames )
-      . "\n";
-    print $outf join( "\t", $sample, $total, @values, @pcts ) . "\n";
+    print $outf join( "\t", "Sample", "TotalReads", @cnames, @pct_cnames)."\n";
+    print $outf join( "\t", $h{sample}, $total, @values, @pcts ) . "\n";
 
     close $outf;
-
-    # calculate SNP rate in HDR region. Require all bases in HDR region to be in the same read.
-    $self->variantStat( bam_inf=>$hdr_bam, ref_fasta=>$h{ref_fasta}, outfile=>$h{var_outf}, 
-                        chr=> $h{chr}, start=>$hdr_start, end=>$hdr_end);	
-	
-    # remove records before and after HDR region.
-    open(my $inf, $h{var_outf}) or die "Cannot open $h{var_outf}\n";
-    open(my $outf, ">$h{var_outf}.tmp") or die $!;
-    my $line=<$inf>; 
-    print $outf $line;
-    while ($line=<$inf>) {
-        my @a=split(/\t/, $line);
-        if ( $a[1] >= $hdr_start and $a[1] <= $hdr_end ) {
-            print $outf $line;
-        }
-    }
-    close $outf;
-    close $inf;
-    rename("$h{var_outf}.tmp", $h{var_outf});
 }
 
 =head2 extractHDRseq 

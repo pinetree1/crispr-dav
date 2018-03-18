@@ -61,7 +61,7 @@ realign_flag = Y
 min_mapq = 20
 
 # number of bases on each side of sgRNA to view base changes (default: 40) 
-wing_length = 40 
+wing_length = 100 
 
 # Whether to use very high resolution in plots. 
 # Default: 0. This creates PNG images of 72 ppi resolution. Good for web viewing.

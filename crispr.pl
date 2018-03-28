@@ -111,7 +111,7 @@ sub process_samples {
 
 sub crispr_data {
     ## merge crispr-wide data
-  	my $failed_samples = shift; # hash ref 
+    my $failed_samples = shift; # hash ref 
     my $dir       = $h{align_dir};
     my $hasHeader = 1;
     my @crisprs   = sort keys %{ $h{crispr_samples} };

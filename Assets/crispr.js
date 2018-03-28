@@ -22,18 +22,18 @@ function toggleImg(id) {
 
 function showCharts( crispr_name, hdr_snp_flag ) {
     var sample=document.getElementById("select1").value;
-	var high_res=document.getElementById("high_res").value;
-	var plot_ext= high_res ? ".tif" : ".png";
+    var high_res=document.getElementById("high_res").value;
+    var plot_ext= high_res ? ".tif" : ".png";
     var str = "";
     if ( sample) {
         var types = ["cov", "ins", "del", "len"];
         str = "<table border=0>";
         for (i=0; i< types.length; i++) {
-            if ( i%2 ==0 ) { str +="<tr>"; }
+            if ( i%2 ==0 ) { str +="<tr><td><table><tr>"; }
             str += "<td><img src=Assets/" + sample + "." + crispr_name + "." + types[i] + plot_ext + "></td>";
-            if ( i%2 == 1 ) { str +="</tr>"; }
+            if ( i%2 == 1 ) { str +="</tr></table></td></tr>"; }
         }
-        str += "</tr>";
+        str += "</tr></table></td></tr>";
 
         // chart for snp
         str += "<tr><td colspan=2><img src=Assets/" + sample + "." + crispr_name + ".snp" + plot_ext + "></td></tr>";

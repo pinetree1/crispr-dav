@@ -81,7 +81,8 @@ my $pp_tog = getToggleLink( "pp", 1 );    ## preprocessing
 my $plot_ext = $h{high_res} ? "tif" : "png";
 my $hdr_snp_flag = $hdr ? 1 : 0;
 
-print $fh "<html lang='en'>
+print $fh "<!DOCTYPE html>
+<html lang='en'>
 	<head>
 		<meta charset='utf-8'>
 		<script src=Assets/crispr.js></script>

@@ -596,7 +596,8 @@ sub HTML_START {
     }
     
     return <<EOF;
-<html>
+<!DOCTYPE html>
+<html lang='en'>
     <head>
     <style>
     .prot { color: purple; }

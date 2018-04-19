@@ -939,7 +939,7 @@ sub targetSeq {
         outfile => $bedfile
     );
     my $cmd = "$self->{bedtools} intersect -a $h{bam_inf} -b $bedfile" . 
-        " -F $ratio -u | $self->{samtools} view -";
+        " -F 1 -u | $self->{samtools} view -";
 
     open( P, "$cmd|" ) or quit($self->{errorfile}, "Bedtools failed");
 
@@ -1031,7 +1031,7 @@ sub extractReadRange {
         $tlen,  $seq,   $qual
     ) = split( /\t/, $sam_record );
 
-    if ( $min_mapq && $mapq < $min_mapq ) {
+    if ( ($chr ne $refchr) or ($min_mapq && $mapq < $min_mapq) ) {
         return;
     }
 
@@ -1076,10 +1076,7 @@ sub extractReadRange {
 
             # keep the insertion if it overlaps the target region by 1 base.
             if ( _isOverlap( $start, $end, $chr_pos, $chr_pos + 1, 1 ) ) {
-                $indelstr .=
-                    ( $chr_pos + 1 ) . ":"
-                  . ( $chr_pos + 2 )
-                  . ":I:$inserted_seq:";
+                $indelstr .= $chr_pos . ":" . ( $chr_pos + 1 ) . ":I:$inserted_seq:";
                 $indel_length += $len;
             }
         }    # end if

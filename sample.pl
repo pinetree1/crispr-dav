@@ -306,7 +306,6 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
 
     my $target_reads = $ngs->targetSeq(
         bam_inf           => $bamfile,
-        min_overlap       => $target_end - $target_start + 1,
         sample            => $sample,
         ref_name          => $h{genome},
         target_name       => $target_name,

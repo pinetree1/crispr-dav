@@ -896,7 +896,6 @@ sub targetSeq {
     my $self = shift;
     my %h    = (
         min_mapq    => 0,
-        min_overlap => 1,
         target_name => '',    # DGKA_CR1
         ref_name    => '',    # hg19
         sample      => '',
@@ -930,7 +929,6 @@ sub targetSeq {
         "IndelLength", "FrameShift", "FlankingSeq" )
       . "\n";
 
-    my $ratio = $h{min_overlap} / ( $h{target_end} - $h{target_start} + 1 );
     my $bedfile = "$h{bam_inf}.tmp.target.bed";
     $self->makeBed(
         chr     => $h{chr},
@@ -943,7 +941,7 @@ sub targetSeq {
 
     open( P, "$cmd|" ) or quit($self->{errorfile}, "Bedtools failed");
 
-    # reads overlapping target region that meet min_mapq and min_overlap
+    # reads spanning target region that meet min_mapq 
     my $overlap_reads = 0;
 
     # among total reads, those with at least 1 base of indel inside target region.

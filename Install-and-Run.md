@@ -53,7 +53,7 @@ You'll mount these directories to the container (using the same paths for conven
 
 Then edit conf.txt, fastq.list, and run.sh to reflect the paths in the container. 
 
-Start the pipeline by: sh run.sh. The results will be present in the project directory of the container and the host. Due to the nature of BWA, your results could be slightly different from what's shown in Git repository README file. 
+Start the pipeline by: sh run.sh. The results will be present in the project directory of the container and the host. 
 
 
 ### II. Running via a physical installation

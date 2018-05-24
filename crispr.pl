@@ -414,7 +414,8 @@ Usage: $0 [options]
 
     if ( $h{sge} ) {
         if ( !( qx(which qsub 2>/dev/null) && qx(env|grep SGE_ROOT) ) ) {
-            die "SGE was not set up. Could not use --sge option.\n";
+            print STDERR "SGE was not set up in the system. Processing will be carried out in serial.\n";
+            $h{sge} = 0;
         }
     }
 

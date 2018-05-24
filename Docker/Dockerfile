@@ -39,11 +39,11 @@ RUN wget https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2/downl
 
 # install samtools
 RUN wget https://sourceforge.net/projects/samtools/files/samtools/1.3.1/samtools-1.3.1.tar.bz2/download -O samtools-1.3.1.tar.bz2 \
-    && tar xvfj samtools-1.3.1.tar.bz2 \
-    && cd samtools-1.3.1 \
-    && ./configure --without-curses \
+	&& tar xvfj samtools-1.3.1.tar.bz2 \
+	&& cd samtools-1.3.1 \
+	&& ./configure --without-curses \
 	&& make \
-    && mv samtools /usr/local/bin \
+	&& mv samtools /usr/local/bin \
 	&& cd .. \
 	&& rm -r samtools-1.3.1*
 
@@ -78,7 +78,7 @@ RUN Rscript -e "install.packages('ggplot2')"
 RUN Rscript -e "install.packages('naturalsort')"
 
 # clone crispr-dav pipeline
-RUN git clone https://github.com/pinetree1/crispr-dav.git \
-	&& cp crispr-dav/Docker/conf.txt crispr-dav/Examples/example1 \
-	&& cp crispr-dav/Docker/conf.txt crispr-dav/Examples/example2
+RUN mkdir -p /bfx/app/crispr-dav /bfx/genome \  
+	&& git clone https://github.com/pinetree1/crispr-dav.git /bfx/app/crispr-dav \
+	&& unzip -d /bfx/genome /bfx/app/crispr-dav/Examples/genomex.zip 
 

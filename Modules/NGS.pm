@@ -23,7 +23,7 @@ use Data::Dumper;
  Function: Create a NGS object
  Returns : Returns a NGS object
  Args    : java, samtools, bedtools, bwa, verbose, tmpdir. 
-		bedtools must be at least version 2
+           bedtools must be at least version 2
 =cut
 
 sub new {
@@ -59,8 +59,8 @@ sub merge_reads {
     my %h    = (
         params => '',
         @_
-   	);
- 
+    );
+
     required_args( \%h, 'r1_fastq_inf', 'r2_fastq_inf',
         'outdir', 'prefix'); 
 

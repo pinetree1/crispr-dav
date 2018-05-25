@@ -219,10 +219,10 @@ sub getFastqFiles {
  
     my @files;
     foreach my $f ( @fs ) {
-        if ( basename($f) =~ /^${sample_id}*_I[12]_*/ ) { 
+        if ( basename($f) =~ /^${sample_id}.*_I[12]_.*/ ) { 
             # This may be index files. Skip.
             next;
-        } elsif ( basename($f) =~ /^${sample_id}[_\.-]/ ) {
+        } elsif ( basename($f) =~ /^${sample_id}/ ) {
             push(@files, $f);
         }
     }    
@@ -239,15 +239,17 @@ sub getFastqFiles {
  Function: Parse samplesheet tsv or xlsx file. The samplesheet has 2 header rows.
            The column order is: genesym, genome, amplicon range, guide sequence, HDR,
                  sample name, sample ID, projectID, fastq dir path 
- Args    : samplesheet, genome reference(returned by getGenomes), fastqdir
-           The fastqdir is optionl. If specified, it overwrites the fastq dirpath in samplesheet.
+ Args    : samplesheet, genome reference(returned by getGenomes), fastqdir, projectid
+           Fastqdir is optionl. If specified, it overwrites the fastq dirpath in samplesheet.
+           Projectid is optional. If specified, it overwrites the project in samplesheet.
+          
 
  Returns : a series of hashes 
 
 =cut
 
 sub parseSamplesheet {
-    my ($self, $infile, $genomes, $fastqdir) = @_;
+    my ($self, $infile, $genomes, $fastqdir, $projectid) = @_;
 
     if ($fastqdir && $fastqdir !~ /^s3:/ && !-d $fastqdir) {
         croak "Fastq directory $fastqdir does not exist!";
@@ -313,8 +315,8 @@ sub parseSamplesheet {
         my ($genesym, $genome, $range, $sgRNA, $hdr, $sampleName, $sampleID, 
              $project, $fqdir) = split(/\t/, $line);
 
-        if (!$genesym or !$genome or !$range or !$sampleName or !$sampleID or !$project) {
-            push(@errors, "Line $i: Empty value for genesym, genome, amplicon, sampleName, sampleID or project. If the affected field is not empty, this error could be caused by inserted or missing columns.");
+        if (!$genesym or !$genome or !$range or !$sampleName or !$sampleID ) {
+            push(@errors, "Line $i: Empty value for genesym, genome, amplicon, sampleName or sampleID. If the affected field is not empty, this error could be caused by inserted or missing columns.");
             next;
         }
 
@@ -371,11 +373,16 @@ sub parseSamplesheet {
 
         # sample name: meaningful name to scientist
         $sampleName =~ s/,//g;
-       
+      
+        # Project ID
+        $project = $projectid if $projectid;
+ 
         # fastq path 
         $fqdir = $fastqdir if $fastqdir;
 
-        if ( $fqdir =~ /^s3:/ ) { 
+        if ( $fqdir !~ /\w/ ) {
+            push(@errors, "Line $i: Fastq directory is empty and not specified on command line");
+        } elsif ( $fqdir =~ /^s3:/ ) { 
             push(@errors, "Line $i: Fastq directory should not be s3 path!");
         } elsif ( ! -d $fqdir ) {
             push(@errors, "Line $i: $fqdir does not exist!");
@@ -657,7 +664,7 @@ sub getRefGeneInfo {
 =cut
 
 sub createRunScript {
-    my ($self, $amp_dir, $genome, $script_name) = @_;
+    my ($self, $amp_dir, $genome, $script_name, $merge_flag, $sge_flag) = @_;
     my @required=("amplicon.bed", "conf.txt", "fastq.list", 
            "project.conf", "sample.site", "site.bed");
     my @missing;
@@ -675,9 +682,11 @@ sub createRunScript {
         print $outf "source $Bin/setup_env.sh\n";
     }
 
-    print $outf "$Bin/crispr.pl --conf conf.txt --region amplicon.bed --crispr site.bed \\
-   --sitemap sample.site --fastqmap fastq.list --genome $genome --sge --verbose
-";
+    my $cmd = "$Bin/crispr.pl --conf conf.txt --region amplicon.bed --crispr site.bed \\\n";
+    $cmd .= " --sitemap sample.site --fastqmap fastq.list --genome $genome --verbose";
+    $cmd .= " --merge" if $merge_flag;
+    $cmd .= " --sge" if $sge_flag; 
+    print $outf "$cmd\n";
     close $outf;
 }
 

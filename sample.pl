@@ -260,7 +260,7 @@ my $obj = new Exon(
 my $amplicon_seq =
   $obj->getSeq( 'start' => $h{amplicon_start}, 'end' => $h{amplicon_end} );
 
-## Determine indel pct and length in each CRISPR site
+## Determine indel pct and length in each CRISPR site(target)
 for my $target_name ( sort split( /,/, $h{target_names} ) ) {
     print STDERR "\nCreating plots and results for CRISPR $target_name ...\n";
 
@@ -326,6 +326,8 @@ for my $target_name ( sort split( /,/, $h{target_names} ) ) {
             bam_inf      => $bamfile,
             chr          => $chr,
             base_changes => $hdr_changes,
+            sgRNA_start  => $target_start,
+            sgRNA_end    => $target_end,
             sample       => $sample,
             min_mapq     => $h{min_mapq},
             stat_outf    => $hdrfile,

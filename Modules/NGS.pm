@@ -1137,10 +1137,11 @@ sub _isOverlap {
 
  Usage   : $obj->categorizeHDR(bam_inf=>, ...)
  Function: To classify oligos in HDR (homology directed repair) region into different categories 
- Args    : bam_inf, chr, base_changes, sample, stat_outf, ref_fasta, var_outf 
+ Args    : bam_inf, chr, base_changes, sgRNA_start, sgRNA_end, sample, stat_outf, ref_fasta, var_outf 
 	base_changes is a comma-separated strings of positons and bases. Format: <pos><base>,...
 	for example, 101900208C,101900229G,101900232C,101900235A. Bases are on positive strand, and 
-	are intended new bases, not reference bases. 
+	are intended new bases, not reference bases. Coorindates are 1-based. 
+        sgRNA_start and sgRNA_end are 1-based. The region to examine HDR covers sgRNA and all HDR bases.
 
 =cut
 
@@ -1151,17 +1152,28 @@ sub categorizeHDR {
         @_
     );
 
-    required_args( \%h, 'bam_inf', 'chr', 'base_changes', 'sample',
+    required_args( \%h, 'bam_inf', 'chr', 'base_changes', 
+        'sgRNA_start', 'sgRNA_end', 'sample',
         'stat_outf', 'ref_fasta', 'var_outf');
 
     my $sample = $h{sample};
     my $chr    = $h{chr};
 
+    # HDR region range: covers sgRNA region and all intended mutation bases
+    my $hdr_start = $h{sgRNA_start}; # initialization
+    my $hdr_end = $h{sgRNA_end}; # initialization 
+
     # intended base changes
     my %alt;    # pos=>base
+    $h{base_changes} =~ s/ //g; 
     foreach my $mut ( split /,/, $h{base_changes} ) {
         my ( $pos, $base ) = ( $mut =~ /(\d+)(\D+)/ );
         $alt{$pos} = uc($base);
+        if ( $pos < $hdr_start ) {
+            $hdr_start = $pos;
+        } elsif ( $pos > $hdr_end ) {
+            $hdr_end = $pos;
+        }
     }
 
     my $outdir = dirname( $h{stat_outf} );
@@ -1171,18 +1183,6 @@ sub categorizeHDR {
     my $bedfile   = "$outdir/$sample.hdr.bed";
     my @pos       = sort { $a <=> $b } keys %alt;
 
-    my $MIN_HDR_LENGTH = 21;
-    my ($hdr_start, $hdr_end); # 1-based
-    # range: length of sequence covering mutation bases
-    my $range = $pos[-1] - $pos[0] + 1;
-    if ( $range < $MIN_HDR_LENGTH ) {
-        $hdr_start = $pos[0] - int(($MIN_HDR_LENGTH - $range)/2);
-        $hdr_end = $hdr_start + $MIN_HDR_LENGTH - 1;  
-    } else { 
-        $hdr_start = $pos[0];
-        $hdr_end   = $pos[-1];
-    }
-
     $self->makeBed(
         chr     => $h{chr},
         start   => $hdr_start,
@@ -1190,7 +1190,7 @@ sub categorizeHDR {
         outfile => $bedfile
     );
 
-    # create bam file containing HDR bases.
+    # create bam file containing HDR region.
     my $hdr_bam = "$outdir/$sample.hdr.bam";
 
     my $samtools = $self->{samtools};
@@ -1275,70 +1275,62 @@ sub rateHDR {
       # reads without any desired base changes, regardless of indel
 
     open( my $inf, $h{hdr_seq_file} );
+    open( my $annotf, ">$h{hdr_seq_file}.annot");
+    print $annotf join("\t", "Read", "sgRNA+HDR Region Seq", "IndelStr",
+                     "Offset IndelStr", "Strand", "IndelLength",
+                     "Bases at HDR Pos", "#Repaired", "Category") . "\n";
+
     while ( my $line = <$inf> ) {
         next if $line !~ /\w/;
         chomp $line;
         my ( $qname, $hdr_seq, $indelstr ) = split( /\t/, $line );
 
-        my $isEdited = 0;
-        ## Determine whether indels happen between the mutation positions
-        if ( $indelstr =~ /[ID]/ ) {
-            my @tmp = split(/:/, $indelstr);
-            for(my $i=2; $i<@tmp; $i += 4 ) {
-                if ( $tmp[$i] eq "I" ) {
-                    # insertion occurs within desired mutation boundary
-                    if ($tmp[$i-1] >= $pos[0] and $tmp[$i-1] <= $pos[-1]) {
-                        $isEdited = 1;
-                        last;
-                    } 
-                } else {
-                    # deletion occurs within desired mutation boundary
-                    for(my $j=$tmp[$i-2]; $j<=$tmp[$i-1]; $j++) {
-                        if ( $j >= $pos[0] and $j <= $pos[-1] ) {
-                            $isEdited = 1; 
-                            last;
-                        }
-                    }
-                    last if $isEdited;
-                }
-            } 
-        }
+        my $isEdited = $indelstr =~ /[ID]/ ? 1 : 0;
 
         my @bases = split( //, $hdr_seq );
         my $alt_cnt = 0;    # snp base cnt
+        my $hdr_str = ''; # concatenation of bases at HDR locations
         for (my $i=0; $i<@bases; $i++) {
             my $loc = $i + $h{seq_start};
             if ( $loc >= $pos[0] and $loc <= $pos[-1] ) {
-                if ( $alt{$loc} and $bases[$i] eq $alt{$loc} ) {
-                    $alt_cnt++;
+                if ( $alt{$loc} ) {
+                    $hdr_str .= $bases[$i]; # assuming study of point mutations
+                    if ( $bases[$i] eq $alt{$loc} ) {
+                        $alt_cnt++;
+                    }
                 } 
             }
         }
 
+        my $type;
         if ( $alt_cnt == 0 ) {
             $non_oligo++;
-            print STDERR "$line\t$alt_cnt\tNonOligo\n" if $h{verbose};
+            $type = "NonOligo";
         }
         else {
             if ($isEdited) {
                 $edit_oligo++;
-                print STDERR "$line\t$alt_cnt\tEdit\n" if $h{verbose};
+                $type = "Edit";
             }
             else {
                 if ( $alt_cnt == scalar(@pos) ) {
                     $perfect_oligo++;
-                    print STDERR "$line\t$alt_cnt\tPerfect\n" if $h{verbose};
+                    $type = "Perfect";
                 }
                 else {
                     $partial_oligo++;
-                    print STDERR "$line\t$alt_cnt\tPartial\n" if $h{verbose};
+                    $type = "Partial";
                 }
             }
         }
-
+        print $annotf join("\t", $line, $hdr_str, $alt_cnt, $type) ."\n";
         $total++;
 
     }    # end while
+    close $annotf;
+    if ( $total ) {
+        rename("$h{hdr_seq_file}.annot", $h{hdr_seq_file});
+    } 
 
     open( my $outf, ">$h{stat_outf}" );
 

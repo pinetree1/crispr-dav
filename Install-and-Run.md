@@ -7,17 +7,25 @@ The CRISPR-DAV pipeline can be run via a docker container or a physical installa
 
 The docker repository for CRISPR-DAV is called [**pinetree1/crispr-dav**](https://hub.docker.com/r/pinetree1/crispr-dav/). It's based on the official Fedora image at Docker Hub, and has included the pipeline and prerequisite tools. No physical installation of them is required but you need to be able to run docker on your system.
 
-The pipeline includes two example projects. Here are steps to test run example1. Running example2 is quite similar. You may replace /Users/xyz/temp with your own absolute path in the following commands. 
+The pipeline includes three examples:
+
+(1) Example 1: uses a standard reference as genome. You'll prepare a few input files: amplicon.bed, conf.txt, fastq.list, sample.site, site.bed, fastq files, and run.sh. 
+
+(2) Example 2: uses a fastq sequence as genome. You'll also prepare similar set of files.
+
+(3) Example 3: uses the same fastq and reference as the example1. The conf.txt defaults to the one in the crispr-dav pipeline root path. Instead of several files (amplicon.bed, site.bed etc), only a single tab-delimited text file (e.g. samplesheet.txt) is prepared. The crispr-dav/prepare_run.pl will generate these small files. Compared to example 1, this example simplifies the preparation work. For example, it does not require you to write down the coordinates of sgRNA sequence.
+
+Here are steps to test run example1. Running other examples is quite similar. You may replace /Users/xyz/temp with your own absolute path in the following commands. 
 
 (1) Start the container interactively and mount a path of host to the container:
 
         docker run -it -v /Users/xyz/temp:/Users/xyz/temp pinetree1/crispr-dav 
 
-The docker image is about 1GB, and takes a few minutes to start up for the first time. This command mounts /Users/xyz/temp in the host to /Users/xyz/temp in the container. Inside the container, the pipeline's path is /crispr-dav.
+The docker image takes a few minutes to start up for the first time. This command also mounts /Users/xyz/temp from the host to /Users/xyz/temp in the container. Inside the container, the pipeline is in /bfx/app/crispr-dav.
 
 (2) After starting up, at the container prompt, go to example1 directory:
 
-        cd /crispr-dav/Examples/example1
+        cd /bfx/app/crispr-dav/Examples/example1
 
 (3) Start the pipeline:
       
@@ -33,6 +41,7 @@ The docker image is about 1GB, and takes a few minutes to start up for the first
 
 (6) On the host, open a browser to view the report, index.html, in /Users/xyz/temp/deliverables/GENEX_CR1.
 
+For example3, first run './prepare_run.pl samplesheet.txt' and then cd to the resulting amplicon directory to run the run.sh.
 
 The general steps for analyzing your own project via the docker are similar. You'll need to prepare a set of input files: conf.txt, amplicon.bed, site.bed, sample.site, fastq.list, and run.sh, similar to those in the examples; and prepare reference genome or amplicon sequence. The important thing is to share your data directories with the container. For example, assuming that there are 3 directories on the host related to your project:
 
@@ -49,6 +58,10 @@ You'll mount these directories to the container (using the same paths for conven
     -v /Users/xyz/temp/genome:/Users/xyz/temp/genome \
     pinetree1/crispr-dav 
 
+In this case, since these directories are under the same parent, you could actually just mount the parent:
+
+    docker run -it -v /Users/xyz/temp:/Users/xyz/temp pinetree1/crispr-dav
+    
     cd /Users/xyz/temp/project
 
 Then edit conf.txt, fastq.list, and run.sh to reflect the paths in the container. 
@@ -76,6 +89,7 @@ The following modules are required but may not be present in default perl instal
 
     Config::Tiny
     Excel::Writer::XLSX
+    Spreadsheet::XLSX (Required only if the sample sheet is an Excel file rather than tab-delimited text file)
     JSON
 
 Run this command to check whether they are already installed: 
@@ -280,7 +294,7 @@ On Linux system, you may drop the version numbers (e.g, ==0.8.4) to install the 
 
 #### 3. Test run 
 
-CRISPR-DAV includes two examples in Examples directory. The example1 uses a genome as reference, whereas example2 uses an amplicon sequence as reference. The procedure to run the pipelines is similar in the examples.
+CRISPR-DAV includes two examples in Examples directory. The example1 uses a genome as reference, whereas example2 uses an amplicon sequence as reference. Example3 simpifies run preparation, as described above. The procedure to run the pipelines is similar in the examples.
  
         cd crispr-dav/Examples/example1
 
@@ -364,6 +378,7 @@ Please note that none of the tab-delimited files should have a column header row
 
 For convenience, you may use run.sh.template to create a wrapper script run.sh to start the pipeline. Edit the file accordingly. You may set module paths there.
 
+**The above small files can be produced via the script prepare_run.pl which accepts a tab-delimited text file as input. See Example3 for details.**
 
 ### IV. Troubleshooting
 

@@ -292,7 +292,7 @@ You should add the export command to the pipeline's run.sh script, if the module
 
 On Linux system, you may drop the version numbers (e.g, ==0.8.4) to install the most recent versions. However, on MacOS (at least X El Capitan), the recent verions (0.11.x) of pysam seem problematic, but the pair of pysam 0.8.4 and pysamstats 0.24.3 works alright.
 
-#### 3. Test run 
+#### 3. Test-run Examples 
 
 CRISPR-DAV includes two examples in Examples directory. The example1 uses a genome as reference, whereas example2 uses an amplicon sequence as reference. Example3 simpifies run preparation, as described above. The procedure to run the pipelines is similar in the examples.
  
@@ -308,9 +308,9 @@ The pipeline would create these directories:
 
     Make sure not to put your source fastq files in this directory. They could be overwritten there.
 
-- deliverables: contains the results. The HTML report file index.html is in a subdirectory. Due to the nature of BWA, your results could be slightly different from what's shown in Git repository README file.
+- deliverables: contains the results. The HTML report file index.html is in a subdirectory.
 
-### III. Preparing input files for the pipeline
+### III. Preparing input files for and running your pipeline
 
 - **Fastq files:**
 
@@ -347,6 +347,30 @@ Go to UCSC Genome Broser (http://genome.ucsc.edu/cgi-bin/hgBlat), click Tools an
     
 The downloaded tab-delimited file should have these columns: bin, name, chrom, strand, txStart, txEnd, cdsStart, cdsEnd, exonStarts, exonEnds,...
 
+- **conf.txt:**
+
+This file specifies the reference genomes, software paths, and pipeline parameters. Usually this file rarely changes once it is set. Modify the conf.txt in the script directory according to your settings.
+
+- **setup_env.sh:**
+
+This file specifies the Perl/Python modules and PATH variable. Modify the setup_env.sh in the script directory according to your environment. This file need change only once.
+
+- **samplesheet.txt:**
+
+The samplesheet will be used to prepare the inputs for the pipeline. Use the samplesheet.txt.template or Examples/example3/samplesheet.txt as example. Information for this file include Gene symbol, Genome, Amplicon range, Guide Sequence, HDR Intended Bases, Sample Name, Sample ID, Project ID, and Fastq Path. All coordinates are 1-based in this file. Place the samplesheet.txt in a project directory. The last two columns are optional. 
+
+
+To run pipeline, do these:
+
+    prepare_run.pl samplesheet.txt    (or add -f <path> option to specify fastq directory)
+    
+    Then go to each resulting amplicon directory and start the pipeline: sh run.sh. It's convenient to run it in the background and store any output in a log file, like this: sh run.sh &> r.log &
+    
+See Test-run Examples for instructions to find results.
+    
+### Description of files created by prepare_run.pl script:
+    
+
 - **amplicon.bed:**
 
 A tab-delimited text file with 6 columns for: chr, start, end, genesymbol, refseq_accession, strand. Only one amplicon is allowed. The start and end are 0-based, conforming to BED format. Genesymbol should have no space. Refseq_accession must match the value in the "name" field (2nd column) in genome's refGene table for the gene.
@@ -370,15 +394,16 @@ A tab-delimited text file with 2 or 3 columns for: sample name, read1 file, opti
 
 - **conf.txt:**
 
-Use the conf.txt.template in crispr.pl script directory as template, modify the paths and settings accordingly.
-
-Please note that none of the tab-delimited files should have a column header row. Each field should not contain space. The names of the input files can be changed. 
+This file is copied over from the crispr-dav root directory.
 
 - **run.sh:**
 
-For convenience, you may use run.sh.template to create a wrapper script run.sh to start the pipeline. Edit the file accordingly. You may set module paths there.
+This is the wrapper script for starting the pipeline.
 
-**The above small files can be produced via the script prepare_run.pl which accepts a tab-delimited text file as input. See Example3 for details.**
+- **project.conf:**
+
+The file captures some major information in the project. It is not required for the pipeline itself. It's intended for use by downstream processing if any.
+
 
 ### IV. Troubleshooting
 

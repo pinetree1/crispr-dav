@@ -231,7 +231,12 @@ sub prepare_command {
 
     my $cmd = "$Bin/sample.pl $sample $fastqs[0] $h{align_dir}";
     $cmd .= " --read2fastq $fastqs[1]" if $fastqs[1];
-    $cmd .= " --merge --flash $h{flash}" if $h{merge};
+    if ( $h{merge} eq "Y" ) {
+        $cmd .= " --merge Y --flash $h{flash}";
+    } else {
+        $cmd .= " --merge N";
+    }
+
     $cmd .= " --abra $h{abra} --prinseq $h{prinseq}" .
        " --samtools $h{samtools}" . 
        " --java $h{java} --bedtools $h{bedtools}" . 
@@ -312,7 +317,7 @@ Usage: $0 [options]
         sites. No header. Each line starts with sample name, followed by one or more sgRNA
         guide sequences. This file controls what samples to be analyzed. 
 
-    --merge Merge paired-end reads before filtering and alignment.
+    --merge Y or N. Default: Y. Merge paired-end reads before filtering and alignment.
     --sge Submit jobs to SGE queue. The system must already have been configured for SGE.
     --outdir <str> Output directory. Default: current directory.
     --help  Print this help message.
@@ -325,7 +330,7 @@ Usage: $0 [options]
     GetOptions(
         \%h,           'conf=s',     'genome=s',  'amp_fasta=s',
         'codon_start=i', 'outdir=s',   'help',      'region=s',
-        'crispr=s',    'fastqmap=s', 'sitemap=s', 'merge', 
+        'crispr=s',    'fastqmap=s', 'sitemap=s', 'merge=s', 
         'sge', 'verbose'
     ) or exit;
 
@@ -349,6 +354,10 @@ Usage: $0 [options]
     $h{pid} = $$;
 
     $h{outdir} //= ".";
+    $h{merge} //= "Y";
+    if ( $h{merge} ne "Y" and $h{merge} ne "N" ) {
+        die "--merge must be Y or N. Default is Y.\n";
+    }
 
     print STDERR "Main command: $0 @all_args\n" if $h{verbose};
 
@@ -402,7 +411,7 @@ Usage: $0 [options]
     
     # Ensure bwa is in PATH
     my $bwa= qx(which bwa 2>/dev/null) or 
-        die "\nError: bwa not found. It must be in your PATH\n";
+        die "\nError: bwa not found. It must be searchable in your environment PATH specified locations.\n";
     chomp $bwa;
     $h{bwa} = $bwa;
 

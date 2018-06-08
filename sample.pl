@@ -33,9 +33,9 @@ if ( -z $h{read1fastq} or ( $h{read2fastq} && -z $h{read2fastq} ) ) {
     quit($fail_flag, "Source fastq file empty");
 }
 
-if ( $h{merge} && (!-f $h{read1fastq} or !-f $h{read2fastq}) ) {
-    print STDERR "\nError: --merge is invalid because only one fastq file is provided.\n";
-    quit($fail_flag, "Invalid merge option");
+if ( $h{merge} eq "Y"  && -f $h{read1fastq} && !-f $h{read2fastq} ) {
+    print STDERR "\nNo merge will be done because only one fastq file is provided.\n";
+    $h{merge} = "N";
 }
 	
 my $ngs = new NGS(
@@ -61,7 +61,7 @@ $ngs->makeBed(
     outfile => $ampbed
 );
 
-if ( !$h{merge} ) {
+if ( $h{merge} ne "Y" or !-f $h{read2fastq}) {
 
     ## filter fastq files
     my $status = $ngs->filter_reads(
@@ -118,7 +118,7 @@ if ( !$h{merge} ) {
         r2_fastq_inf  => $h{read2fastq},
         outdir => $outdir,
         prefix => $sample,
-        params => '-m 15 -M 150'
+        params => '-m 15 -M 300'
     );
 
     quit($fail_flag, "Failed in merging paired-end reads") if $status; 
@@ -401,13 +401,12 @@ sub get_input {
 	--tmpdir         <str> Path of temporary directory. Default: /tmp 
 
 	--read2fastq     <str> Optional. Fastq file of read2
-	--merge          Optional. Merge paired-end reads.
+	--merge          Y (Default) or N. Merge paired-end reads.
 
 	--min_qual_mean  <int> prinseq parameter. Default: 30
 	--min_len        <int> prinseq parameter. Default: 50
 	--ns_max_p       <int> prinseq parameter. Default: 3
 
-	--unique         Optional. Remove duplicate reads from bam file using Picard. 
 	--realign        Optional. Realign reads using ABRA. 
 	--min_mapq       <int> Optional. Minimum mapping score for reads to be selected.
 
@@ -439,7 +438,7 @@ sub get_input {
         'java=s',           'bedtools=s',
         'pysamstats=s',     'rscript=s',
         'tmpdir=s',         'read2fastq=s',
-        'flash=s',          'merge',
+        'flash=s',          'merge=s',
         'unique',           'realign',
         'min_mapq=i',       'min_qual_mean=i',
         'min_len=i',        'ns_max_p=i',
@@ -461,6 +460,8 @@ sub get_input {
             die "$f must be gzipped and with .gz extension.\n";
         }
     }
+
+    $h{merge} //= "Y";
 
     # check required options
     my @required = (

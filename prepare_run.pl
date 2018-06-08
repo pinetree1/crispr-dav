@@ -12,8 +12,8 @@ my $usage = "Usage: $0 [options] {samplesheet}
   --conf     <str>  Crispr configuration file. Default: $Bin/conf.txt
   --outdir   <str>  Output directory. Default: current directory.
   --fastqdir <str>  Raw fastq path. This overwrite paths in the samplesheet.
-  --project         Project ID. This overwrite the project ID in samplesheet.
-  --merge           Merge paired-end reads before filtering and alignment.
+  --project  <str>  Project ID. This overwrite the project ID in samplesheet.
+  --no-merge        Do not merge paired-end reads.
   --sge             Submit jobs to SGE queue if available. 
 ";
 
@@ -21,7 +21,7 @@ GetOptions('conf=s'=>\my $conf,
         'outdir=s'=>\my $outdir,
         'fastqdir=s'=>\my $fastqdir,
         'projectid=s'=>\my $projectid,
-        'merge'=>\my $merge_flag,
+        'no-merge'=>\my $no_merge_flag,
         'sge'=>\my $sge_flag
        );
 
@@ -91,7 +91,7 @@ foreach my $amp ( @$ordered_amps ) {
 
     # create run script
     my $run_scriptname = "run.sh";
-    $p->createRunScript($amp_path, $genome, $run_scriptname, $merge_flag, $sge_flag);
+    $p->createRunScript($amp_path, $genome, $run_scriptname, $no_merge_flag, $sge_flag);
 
     if ( !-f "$amp_path/$run_scriptname" ) {
         die "Failed to create run script for amplicon $genome $chrom:$amp_start-$amp_end.\n"; 

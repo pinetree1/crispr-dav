@@ -664,7 +664,7 @@ sub getRefGeneInfo {
 =cut
 
 sub createRunScript {
-    my ($self, $amp_dir, $genome, $script_name, $merge_flag, $sge_flag) = @_;
+    my ($self, $amp_dir, $genome, $script_name, $no_merge_flag, $sge_flag) = @_;
     my @required=("amplicon.bed", "conf.txt", "fastq.list", 
            "project.conf", "sample.site", "site.bed");
     my @missing;
@@ -684,7 +684,7 @@ sub createRunScript {
 
     my $cmd = "$Bin/crispr.pl --conf conf.txt --region amplicon.bed --crispr site.bed \\\n";
     $cmd .= " --sitemap sample.site --fastqmap fastq.list --genome $genome --verbose";
-    $cmd .= " --merge" if $merge_flag;
+    $cmd .= " --merge N" if $no_merge_flag;
     $cmd .= " --sge" if $sge_flag; 
     print $outf "$cmd\n";
     close $outf;

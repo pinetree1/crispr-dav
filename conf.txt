@@ -9,39 +9,40 @@
 ## Absolute path must be used for genome files when a samplesheet is used to prepare run.sh. 
 
 [genomex]
-ref_fasta = genomex/genomex.fa
-bwa_idx = genomex/genomex.fa
-refGene = genomex/refgenex.txt
+ref_fasta = /bfx/app/crispr-dav/Examples/example1/genome/genomex.fa
+bwa_idx   = /bfx/app/crispr-dav/Examples/example1/genome/genomex.fa
+refGene   = /bfx/app/crispr-dav/Examples/example1/genome/refgenex.txt
 
 [hg38]
 ref_fasta = /bfx/genome/hg38/hg38.fa
-bwa_idx = /bfx/genome/hg38/hg38.fa
-refGene = /bfx/genome/hg38/hg38_UCSCrefGene.txt
+bwa_idx   = /bfx/genome/hg38/hg38.fa
+refGene   = /bfx/genome/hg38/hg38_UCSCrefGene.txt
 
 [hg19]
 ref_fasta = /bfx/genome/hg19/hg19.fa
-bwa_idx = /bfx/genome/hg19/hg19.fa
-refGene = /bfx/genome/hg19/UCSCrefGene.txt
+bwa_idx   = /bfx/genome/hg19/hg19.fa
+refGene   = /bfx/genome/hg19/UCSCrefGene.txt
 
 [mm10]
 ref_fasta = /bfx/genome/mm10/mm10.fa
-bwa_idx = /bfx/genome/mm10/mm10.fa
-refGene = /bfx/genome/mm10/mm10_UCSCrefGene.txt
+bwa_idx   = /bfx/genome/mm10/mm10.fa
+refGene   = /bfx/genome/mm10/mm10_UCSCrefGene.txt
 
 [rn6]
 ref_fasta = /bfx/genome/rn6/rn6.fa
-bwa_idx = /bfx/genome/rn6/rn6.fa
-refGene = /bfx/genome/rn6/rn6_UCSCrefGene.txt
+bwa_idx   = /bfx/genome/rn6/rn6.fa
+refGene   = /bfx/genome/rn6/rn6_UCSCrefGene.txt
 
 [canFam3]
 ref_fasta = /bfx/genome/canFam3/canFam3.fa
-bwa_idx = /bfx/genome/canFam3/canFam3.fa
-refGene = /bfx/genome/canFam3/canFam3_UCSCrefGene.txt
+bwa_idx   = /bfx/genome/canFam3/canFam3.fa
+refGene   = /bfx/genome/canFam3/canFam3_UCSCrefGene.txt
+
 
 [criGri1]
 ref_fasta = /bfx/genome/criGri1/criGri1.fa
-bwa_idx = /bfx/genome/criGri1/criGri1.fa
-refGene = /bfx/genome/criGri1/criGri1_UCSCrefGene.txt
+bwa_idx   = /bfx/genome/criGri1/criGri1.fa
+refGene   = /bfx/genome/criGri1/criGri1_UCSCrefGene.txt
 
 ## Required tools 
 

@@ -227,12 +227,12 @@ if ( $h{merge} ne "Y" or !-f $h{read2fastq}) {
 
     # Combine chr counts from merged and un-merged counts
     $ngs->combineChromCount(inf_aref=>["$readchr.merge", "$readchr.un_merge"], 
-                          outfile=>$readchr, 
-                          rm=>1);
+                          outfile=>$readchr); 
 
     clean_up( $merged_filt, $un_merged_filt1, $un_merged_filt2, 
         $merged_filt_bamfile,"$merged_filt_bamfile.bai", 
         $un_merged_filt_bamfile, "$un_merged_filt_bamfile.bai", 
+        "$readchr.merge", "$readchr.un_merge"
         );
 }
 unlink $ampbed;

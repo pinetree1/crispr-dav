@@ -26,7 +26,7 @@ RUN pip install pysamstats==0.24.3
 
 # install ABRA 
 RUN wget https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar \
-    -O /usr/local/bin/abra-0.97-SNAPSHOT-jar-with-dependencies.jar
+	-O /usr/local/bin/abra-0.97-SNAPSHOT-jar-with-dependencies.jar
 
 # install BWA
 RUN wget https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.15.tar.bz2/download --no-check-certificate -O bwa-0.7.15.tar.bz2 \
@@ -78,6 +78,8 @@ RUN Rscript -e "install.packages('ggplot2')"
 RUN Rscript -e "install.packages('naturalsort')"
 
 # clone crispr-dav pipeline
-RUN mkdir -p /bfx/app/crispr-dav \  
-	&& git clone https://github.com/pinetree1/crispr-dav.git /bfx/app/crispr-dav
+RUN git clone https://github.com/pinetree1/crispr-dav.git \
+	&& cp /crispr-dav/Docker/conf.txt /crispr-dav/Examples/example1 \
+	&& cp /crispr-dav/Docker/conf.txt /crispr-dav/Examples/example2 \
+	&& cp /crispr-dav/Docker/conf.txt /crispr-dav/
 

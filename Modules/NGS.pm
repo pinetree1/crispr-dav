@@ -695,7 +695,7 @@ sub makeBed {
  Usage   : $obj->readStats(fastq_aref=>[], outfile=>, ...)
  Function: Count reads in different stages
  Args    : fastq_aref, bamstat_aref, sample, outfile, etc
-	start and end are 1-based.
+           start and end are 1-based.
 
 =cut 
 
@@ -719,9 +719,8 @@ sub readStats {
     open( my $cntf, ">$h{outfile}" );
     print $cntf join( "\t",
         "Sample",      "RawReads",    "QualityReads",
-        "MappedReads", "PctMap",      "Duplicates",
-        "PctDup",      "UniqueReads", "AmpliconReads" )
-      . "\n";
+        "MappedReads", "PctMap",      "Duplicates", 
+        "PctDup",      "UniqueReads", "AmpliconReads" ) . "\n";
 
     my $raw_reads = 0;
     foreach my $f ( @{$h{fastq_aref}} ) {
@@ -754,7 +753,7 @@ sub readStats {
 
     print $cntf join( "\t",
         $h{sample},    $raw_reads,  $bam_reads,
-        $mapped_reads, $pct_map,    $duplicate_reads,
+        $mapped_reads, $pct_map,    $duplicate_reads, 
         $pct_dup,      $uniq_reads, $region_reads )
       . "\n";
     close $cntf;
@@ -803,16 +802,15 @@ sub combineChromCount {
     my %count;
     foreach my $f ( @{$h{inf_aref}} ) {
         open(my $inf, $f) or die $!;
-        my $line=<$f>;
-        while ($line=<$f>){
+        my $line=<$inf>;
+        while ($line=<$inf>){
             chomp $line;
             my @a = split(/\t/, $line);
-            $h{"$a[0]\t$a[1]"} += $a[2];
+            $count{"$a[0]\t$a[1]"} += $a[2];
         }
         close $inf;
         unlink $f if $h{rm};
     }
-
     open(my $outf, ">$h{outfile}") or die $!;
     print $outf join("\t", "Sample", "Chromosome", "ReadCount") . "\n";
     foreach my $key ( sort keys %count ) {

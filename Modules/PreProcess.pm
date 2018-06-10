@@ -56,6 +56,7 @@ sub getGenomes {
  Function: Make sure the genome has fasta file, bwa index, and refGene coordinates
  Args    : hash of genomes, and genome name of interest
  Return  : Return 1 if successful. Exit if not.  
+
 =cut
 
 sub checkGenome {

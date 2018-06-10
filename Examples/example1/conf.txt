@@ -1,1 +1,81 @@
-../../conf.txt
+### Case sensitive for all section names, parameters, and values
+
+## Add a genome section to reflect the genome of interest. 
+## If there are multiple genomes, each genome must have its own section.
+## When amplicon sequence is used as reference, this section is ignored.
+
+## A genome musgt have ref_fasta and bwa_idx. 
+## The refGene entry is optional. It's used for visual alignment view of coding sequence.
+## Absolute path must be used for genome files when a samplesheet is used to prepare run.sh. 
+
+[genomex]
+ref_fasta = genome/genomex.fa
+bwa_idx = genome/genomex.fa
+refGene = genome/refgenex.txt
+
+## Required tools 
+
+[app]
+
+# The paths of prinseq and abra must be provided. 
+# For others, if path is not provided, it must be accessible 
+# in your environment  
+ 
+abra = /bfx/app/bin/abra-0.97-SNAPSHOT-jar-with-dependencies.jar 
+
+# Path to prinseq-lite.pl. Make sure prinseq path is executable.
+prinseq = /bfx/app/bin/prinseq-lite.pl 
+
+# bwa (e.g. 0.7.15) must support bwa mem -M, and be searchable in environment variable PATH
+
+# samtools
+samtools = /bfx/app/bin/samtools 
+
+# Path of flash. By default use flash in PATH.
+flash = /bfx/app/bin/flash2
+
+# bedtools (e.g. v2.25) must support: bedtools intersect -F 
+bedtools = /bfx/app/bin/bedtools 
+
+# java must be 1.7 or later
+java = /usr/bin/java 
+
+# pysamstats
+pysamstats = /bfx/app/bin/pysamstats 
+
+# R must have ggplot2, reshape2, and naturalsort packages
+rscript = /bfx/app/bin/Rscript 
+
+## Filtering parameters
+
+[prinseq]
+# remove reads with quality score mean below this value (default: 30) 
+min_qual_mean = 30
+
+# remove reads with length less than this value (default: 50) 
+min_len	= 50
+
+# remove reads with percentage of Ns over this value (default: 3).
+ns_max_p = 3 
+
+[other]
+# realign for large indel detection with ABRA: Y(default) or N
+realign_flag = Y 
+
+# require minimum BWA mapping quality score (default: 20) 
+min_mapq = 20
+
+# number of bases on each side of sgRNA to view base changes (default: 40) 
+wing_length = 100 
+
+# Whether to use very high resolution in plots.
+# Default: 0. This creates PNG images of 72 ppi resolution. Good for web viewing.
+# If set to 1, TIFF images of 1200 ppi will be created and may be good for publication.
+# TIFF images may not be viewable in major web browsers, but can be opened
+# using common graphics software.
+high_res = 0
+
+# To control how many cores are needed to process one sample in SGE cluster
+# The list of parallel environments can be found by 'qconf -spl'
+parallel_env = orte
+cores_per_job = 12 

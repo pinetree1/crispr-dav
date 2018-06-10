@@ -11,9 +11,9 @@ The pipeline includes three examples:
 
 (1) Example 1: uses a standard reference as genome. You'll prepare a few input files: amplicon.bed, conf.txt, fastq.list, sample.site, site.bed, fastq files, and run.sh. 
 
-(2) Example 2: uses a fastq sequence as genome. You'll also prepare similar set of files.
+(2) Example 1_a: uses the same fastq and reference as the example1. The conf.txt defaults to the one in the crispr-dav pipeline root path. Instead of several files (amplicon.bed, site.bed etc), only a single tab-delimited text file (e.g. samplesheet.txt) is prepared. The crispr-dav/prepare_run.pl will generate these small files. Compared to example 1, this example simplifies the preparation work. For example, it does not require you to write down the coordinates of sgRNA sequences.
 
-(3) Example 3: uses the same fastq and reference as the example1. The conf.txt defaults to the one in the crispr-dav pipeline root path. Instead of several files (amplicon.bed, site.bed etc), only a single tab-delimited text file (e.g. samplesheet.txt) is prepared. The crispr-dav/prepare_run.pl will generate these small files. Compared to example 1, this example simplifies the preparation work. For example, it does not require you to write down the coordinates of sgRNA sequence.
+(3) Example 2: uses a fastq sequence as genome. You'll also prepare a set of files similar to Example 1.
 
 Here are steps to test run example1. Running other examples is quite similar. You may replace /Users/xyz/temp with your own absolute path in the following commands. 
 
@@ -41,9 +41,9 @@ The docker image takes a few minutes to start up for the first time. This comman
 
 (6) On the host, open a browser to view the report, index.html, in /Users/xyz/temp/deliverables/GENEX_CR1.
 
-For example3, first run './prepare_run.pl samplesheet.txt' and then cd to the resulting amplicon directory to run the run.sh.
+For example1_a, first run './prepare_run.pl samplesheet.txt' and then cd to the resulting amplicon directory to run the run.sh.
 
-The general steps for analyzing your own project via the docker are similar. You'll need to prepare a set of input files: conf.txt, amplicon.bed, site.bed, sample.site, fastq.list, and run.sh, similar to those in the examples; and prepare reference genome or amplicon sequence. The important thing is to share your data directories with the container. For example, assuming that there are 3 directories on the host related to your project:
+The general steps for analyzing your own project via the docker are similar. You'll need to prepare samplesheet (or a set of input files: conf.txt, amplicon.bed, site.bed, sample.site, fastq.list, and run.sh, similar to those in the examples); and prepare reference genome or amplicon sequence. The important thing is to share your data directories with the container when starting the container. For example, assuming that there are 3 directories on the host related to your project:
 
     /Users/xyz/temp/project: contains the input files.
       
@@ -353,11 +353,11 @@ This file specifies the reference genomes, software paths, and pipeline paramete
 
 - **setup_env.sh:**
 
-This file specifies the Perl/Python modules and PATH variable. Modify the setup_env.sh in the script directory according to your environment. This file need change only once.
+This file specifies the Perl/Python modules and PATH variable. Modify the setup_env.sh in the script directory according to your environment. This file need change only once. If you can access these modules and bwa without setting these paths, then this file is not needed.
 
 - **samplesheet.txt:**
 
-The samplesheet will be used to prepare the inputs for the pipeline. Use the samplesheet.txt.template or Examples/example3/samplesheet.txt as example. Information for this file include Gene symbol, Genome, Amplicon range, Guide Sequence, HDR Intended Bases, Sample Name, Sample ID, Project ID, and Fastq Path. All coordinates are 1-based in this file. Place the samplesheet.txt in a project directory. The last two columns are optional. 
+The samplesheet will be used to prepare the inputs for the pipeline. Use the samplesheet.txt.template or Examples/example1_a/samplesheet.txt as example. Information for this file include Gene symbol, Genome, Amplicon range, Guide Sequence, HDR Intended Bases, Sample Name, Sample ID, Project ID, and Fastq Path. All coordinates are 1-based in this file. Place the samplesheet.txt in a project directory. The last two columns are optional. 
 
 
 To run pipeline, do these:

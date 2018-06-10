@@ -14,11 +14,13 @@ RUN dnf install -y java
 RUN dnf install -y R
 RUN dnf install -y python-devel
 RUN dnf install -y cpanminus
+RUN dnf install -y dos2unix
 
 #install perl modules
 RUN cpanm https://cpan.metacpan.org/authors/id/R/RS/RSAVAGE/Config-Tiny-2.23.tgz 
 RUN cpanm https://cpan.metacpan.org/authors/id/J/JM/JMCNAMARA/Excel-Writer-XLSX-0.95.tar.gz 
 RUN cpanm https://cpan.metacpan.org/authors/id/I/IS/ISHIGAKI/JSON-2.94.tar.gz
+RUN cpanm http://search.cpan.org/CPAN/authors/id/M/MI/MIKEB/Spreadsheet-XLSX-0.15.tar.gz 
 
 #install pysamstats
 RUN pip install pysam==0.8.4

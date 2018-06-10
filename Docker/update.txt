@@ -3,6 +3,8 @@ On a mac or linux (may need to be outside a firewall):
 
 Start docker. 
 Remove all local containers and images related to crispr-dav.
+docker rm -f $(docker ps -a -q)
+docker rmi -f $(docker images -a -q)
 
 cd ~/temp
 git clone https://github.com/pinetree1/crispr-dav

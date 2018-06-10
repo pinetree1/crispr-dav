@@ -45,9 +45,16 @@ docker run -it -v /Users/xyz/temp/project:/Users/xyz/temp/project \
 -v /Users/xyz/temp/genome:/Users/xyz/temp/genome \
 pinetree1/crispr-dav 
 
+In this case, since these directories are under the same parent, you could actually just mount the parent:
+
+    docker run -it -v /Users/xyz/temp:/Users/xyz/temp pinetree1/crispr-dav
+
 cd /Users/xyz/temp/project
 
 Then edit conf.txt, fastq.list, and run.sh to reflect the paths in the container.
 
 Start the pipeline by: sh run.sh. The results will be present in the project directory of the container and the host.
+
+
+In example1_a, a sample sheet is used to prepare for the pipeline. To test the example, first run './prepare_run.pl samplesheet.txt' and then cd to the resulting amplicon directory to run the run.sh.
 

@@ -21,11 +21,11 @@ Here are steps to test run example1. Running other examples is quite similar. Yo
 
         docker run -it -v /Users/xyz/temp:/Users/xyz/temp pinetree1/crispr-dav 
 
-The docker image takes a few minutes to start up for the first time. This command also mounts /Users/xyz/temp from the host to /Users/xyz/temp in the container. Inside the container, the pipeline is in /bfx/app/crispr-dav.
+The docker image takes a few minutes to start up for the first time. This command also mounts /Users/xyz/temp from the host to /Users/xyz/temp in the container. Inside the container, the pipeline is in /crispr-dav.
 
 (2) After starting up, at the container prompt, go to example1 directory:
 
-        cd /bfx/app/crispr-dav/Examples/example1
+        cd /crispr-dav/Examples/example1
 
 (3) Start the pipeline:
       

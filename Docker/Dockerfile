@@ -78,7 +78,6 @@ RUN Rscript -e "install.packages('ggplot2')"
 RUN Rscript -e "install.packages('naturalsort')"
 
 # clone crispr-dav pipeline
-RUN mkdir -p /bfx/app/crispr-dav /bfx/genome \  
-	&& git clone https://github.com/pinetree1/crispr-dav.git /bfx/app/crispr-dav \
-	&& unzip -d /bfx/genome /bfx/app/crispr-dav/Examples/genomex.zip 
+RUN mkdir -p /bfx/app/crispr-dav \  
+	&& git clone https://github.com/pinetree1/crispr-dav.git /bfx/app/crispr-dav
 

@@ -86,6 +86,7 @@ print $fh "<!DOCTYPE html>
 	<head>
 		<meta charset='utf-8'>
 		<script src=Assets/crispr.js></script>
+        <link href='Assets/crispr.css' type='text/css' rel='stylesheet' />
 	<body>
 		<h2>CRISPR Analysis Results</h2><p>
         <p><b>Gene: $gene</b><p>
@@ -104,6 +105,17 @@ print $fh "<!DOCTYPE html>
         </td></tr></table>
 		<div id='high_res' style='display:none'>$h{high_res}</div>
 		<p><b>Read Counts and Percentages at CRISPR Site:</b>$rc_tog
+        <div class='descr'>
+The count plot shows the number of reads (wild type, indel, and inframe indel) at the
+ CRISPR site. The reads must span the sgRNA sequence region. Reads that only overlap with the sgRNA
+ sequence partially are ignored. Wild type reads refer to reads that have no insertions or deletions
+ (indel) in the sgRNA region. Indel reads have insertion and/or deletion of at least one base inside
+ the sgRNA region. The deleted sequence can extend continously beyound the sgRNA region. Inframe
+ indel reads are those indel reads that have net indel lengths as multiples of 3 and thus do not
+ cause frame shift in translation.   
+ <p>The percentage plot shows the percentage of read types with regard to total reads (WT reads +
+ indel reads). 
+ </div><p>
 		<table><tr>
 			<td><img src=Assets/$site_name.indelcnt.$plot_ext /></td>$rowsep
 			<td><img src=Assets/$site_name.indelpct.$plot_ext /></td>
@@ -122,6 +134,13 @@ foreach my $s (@samples) {
 print $fh "</select>
 	<p id='charts'></p>
 	<p><b>Preprocessing of Reads: </b>$pp_tog
+    <div class='descr'>
+      The first plot shows counting of reads at various stages: raw reads, quality reads, reads mapped
+ to genome, and reads mapped to amplicon. 
+      <br>The second plot shows the numbers of reads on different
+ chromosomes. If reads are mapped to multiple chromosomes, that usually indicates non-specific
+ amplifiction of the reads in the sample.
+    </div><p>
 	<table><tr>
 		<td><img src=Assets/$site_name.readcnt.$plot_ext></td>$rowsep
 		<td><img src=Assets/$site_name.readchr.$plot_ext></td>
@@ -153,11 +172,15 @@ my %category_header = (
 
 my @cats = ( "cov", "ins", "del", "len", "snp" );
 push(@cats, "hdr.snp") if $hdr; 
+
+my %des = getDescriptions();
  
 foreach my $cat (@cats) {
     my $tab = getCategoryTable( $cat, $plot_ext );
     my $tog = getToggleLink( $cat, 1 );
-    print $fh "<p><b>$category_header{$cat}:</b>$tog\n$tab</div>\n\n";
+    print $fh "<p><b>$category_header{$cat}:</b>$tog
+   <div class='descr'>$des{$cat}</div><br> 
+$tab</div>\n\n";
 }
 
 ## HDR chart
@@ -165,14 +188,18 @@ if ($hdr) {
     my $hdr_tog = getToggleLink( "hdr", 1 );
     print $fh "
 	<p><b>Homology Directed Repair Rates: </b>$hdr_tog
+    <div class='descr'>
+This plot compares the HDR rates across all samples. Read seqences in HDR/sgRNA region
+ are categorized into four types: Non-Oligo, Partial, Edited, Perfect. The rate of
+ perfect repair is labelled in the plot bars if it's greater than 0.1%. 
+    </div><p>
         <table border=0><tr><td width=30></td><td>
 		<table border=0>
-		<tr><tr><td>When categorizing oligo types, the region from the first to the last base 
-			change was examined.</td></tr>
         <tr><td>Non-Oligo: None of the intended base changes occurs, regardless of indel.</td></tr>
         <tr><td>Partial Oligo: Some but not all intended base changes occur, and no indel.</td></tr>
-        <tr><td>Edited Oligo: One or more intended base changes occur, and there is indel(s).</td></tr>
-		<tr><td>Perfect Oligo: All intended base changes occur, but no indel. Its value is labeled.</td></tr>
+        <tr><td>Edited Oligo: One or more intended base changes occur, and there is indel.</td></tr>
+		<tr><td>Perfect Oligo: All intended base changes occur, but no indel.
+ Percentage value of perfect oligo is shown inside the bar.</td></tr>
 		<tr>
 			<td><img src=Assets/$site_name.hdr.$plot_ext /></td>$rowsep
 		</tr>
@@ -217,6 +244,7 @@ print $fh "<p><b>Parameters Used in Analysis:</b>$tog
 ## Spreadsheet data
 $tog = getToggleLink( "data", 1 );
 print $fh "<p><b>Spreadsheet Data:</b>$tog
+    <div class='descr'>Most of the plots were drawn based on data in these spreadsheets:</div><p>
     <table border=0><tr><td width=30></td><td>
 	<table border=0 cellpadding=3 cellspacing=0 style='border-collapse:collapse'>
 		<tr><td><a href=Assets/${site_name}_cnt.xlsx>Read stats</a></td></tr>
@@ -308,4 +336,24 @@ sub getToggleLink {
     $str .= "<img style='border:0;' src=Assets/$fname width=15 height=15 id=\'$sn.img\'></a>";
     $str .= "\n<div id=\"$sn.div\" style=\"display:$style\">";
     return $str;
+}
+
+sub getDescriptions {
+   
+    my $cov_des = "The plot shows the read depth in the amplicon range, with grey bar indicating the location of the CRISPR sgRNA region. Read depth at each position is the sum of reads aligned and reads with deletion at the position.";
+
+    my $ins_des = "The plot shows the insertion rates across the amplicon range. Insertion rate is calculated as reads with insertion divided by read depth (aligned+deleted). If the insertion is caused by CRISPR, the insertion peak should overlap with the location of CRISRP site. If the peak is far away from the CRISPR site, the sgRNA sequence or coordinates provided may be incorrect, or the sample was swapped with another that has a different guide.";
+	
+    my $del_des = "The plot shows the deletion rates across the amplicon range. Deletion rate is calculated as reads with deletion divided by read depth (aligned+deleted). If the deletion is caused by CRISPR, the peak should overlap with the location of CRISRP site. If the peak is far away from the CRISPR site, the sgRNA sequence or coordinates provided may be incorrect, or the sample was swapped with another that has a different guide.";
+
+    my $len_des = "The plot shows the locations and frequencies of the top-abundance indel alleles, and frequency of WT (non-indel) reads. The X-axis indicates the allele position and a net length change as a result of insertion and deletion. WT read has indel length of 0. If allele position is p, for insertion, the inserted bases occur between p and p+1; for deletion, the deleted bases range from p to (p + indel length - 1).
+
+<p>In control sample where no CRISPR is introduced, there is often no significant number of indel reads. Without several indel alleles, the WT bar will look awefully wide in the plot. In order to maintain similar bar width comparable to other samples, sham alleles of zero reads are added to the plot and labeled like \"any:+n\" and \"any:-n\" in X-axis.";
+ 
+    my $snp_des = "The plot shows the point mutation rates in and around a CRISPR site. The X-axis shows the position and reference base on positive strand; Y-axis shows the percentage of reads with the mutant bases. SNP rate is calculated as reads with point mutations divided by total aligned reads at the position. Reads with deletion at the position are not included in the total. The sgRNA sequence region is marked with a horizontal line. The number of bases on the sides of the guide to display is determined by the parameter wing_length in the conf.txt file. Please note that not every read is necessarily long enough to cover all the positions in the plot. Neighboring positions may not show on the same read."; 
+
+    my $hdr_snp_des = "The chart is similar to the \"SNP Frequency at CRISPR Site\" chart. The differences are: (1) The coordinates are restricted to HDR/sgRNA region which covers all bases of intended HDR mutations and sgRNA region. (2) All positions in the chart are on same read. As a result, the SNP rates were deemed more accurate.";
+    my %d = ( 'cov'=>$cov_des, 'ins'=>$ins_des, 'del'=>$del_des,
+             'len'=>$len_des, 'snp'=>$snp_des, 'hdr.snp'=>$hdr_snp_des );
+    return %d;
 }

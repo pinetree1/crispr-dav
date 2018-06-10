@@ -2,6 +2,7 @@
 ##!/usr/bin/perl -w
 # Author: Charles Tilford
 # 6/12/2017: xw removed reliance on bioperl
+# 6/9/2018: xw added title and description; edited sequence key.
 use strict;
 use JSON;
 use FindBin qw($Bin);
@@ -98,6 +99,18 @@ if ($#samples == -1) {
 }
 
 print $fh &HTML_START();
+print $fh "<h1>Alignment View of Insertion and Deletion Alleles in CDS</h1>
+<p>
+This is an interactive alignment view of the CDS (coding sequence) of sgRNA guide,
+ WT (non-indel), and indel alleles in the gene. The frequencies of WT, deletion and
+ insert reads are shown. Point mutations in reads were not represented here.
+ The CDS sequences before and after indels were reconstructed from reference CDS. The
+ bars can be zoomed in and out, and moved to the left and right. Intronic bases, if
+ present in sgRNA sequence or deleted bases, will not be drawn. Deletion is shown as
+ an arc line connecting neighboring bases. Insertion is shown as a small tick mark
+ between two bases. The inserted bases are shown in the pop up window.
+<p>
+";
 
 foreach my $sample (@samples) {
     foreach my $site (sort keys %{$source->{$sample}}) {
@@ -637,13 +650,13 @@ sub html_key {
 <span style='color:green'>!! Wildtype [52932] 98%</span> : This row is WildType; '!!' means it <b>was</b> observed, in this case 52,932 reads (98% of all reads)<br />
 
 <h2>Sequence Key</h2>
-<i>The shown sequence is a combined DNA/tranlsation for the bar being viewed. It is colored according to its alignment to the wildtype (if a wildtype sequence was provided)</i>
+<i>The shown sequence is a combined DNA/tranlsation for the bar being viewed. It is colored according to its alignment to the wildtype.</i>
 <pre class='aln'>
 <span class="dna wt">ATGGAAACCAACTTCTCCACTCCTCTGAATGAATATGAAGAAGTGTCCTA</span> DNA, grayed-out means it agrees with WildType in this part of the alignment
 <span class="prt"></span><span class="prt wt">[M][E][T][N][F][S][T][P][L][N][E][Y][E][E][V][S][Y</span> Protein, grayed-out as it also matches WildType
 
-<span class="dna wt">TTTCATTGCACTGGACCGCTG</span><span class="dna">--</span><span class="dna wt">TTTGTGTCCTGCATCCAGTCTGGGCCC</span> 2bp insertion, but otherwise agrees with WildType
-<span class="prt wt">][F][I][A][L][D][R][C</span><span class="prt">--][L][C][P][A][S][S][L][G][P</span> The graying is removed when the frameshift causes a disagreement with WildType
+<span class="dna wt">TTTCATTGCACTGGACCGCTG</span><span class="dna">--</span><span class="dna wt">TTTGTGTCCTGCATCCAGTCTGGGCCC</span> 2bp deletion, but otherwise agrees with WildType
+<span class="prt wt">][F][I][A][L][D][R][C</span><span class="prt">--][L][C][P][A][S][S][L][G][P</span> The frameshift caused a change of amino acid sequence 
 
 <span class="prt wt">][F][I][A][L][D][R][</span><span class="stop">*</span><span class="prt">-][f][v][s][c][i][q][s][g][p]</span> Lower-case amino acids indicate any translation after a stop.
 </pre>

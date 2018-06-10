@@ -16,7 +16,7 @@ use File::Path qw(make_path);
 use Data::Dumper;
 use FindBin qw($Bin);
 use Config::Tiny;
-use Carp qw(croak);
+use Carp qw(carp croak confess);
 
 =head2 new
 
@@ -43,20 +43,41 @@ sub getGenomes {
     my $cfg = Config::Tiny->read($conf);
     my $genomes;
     foreach my $k (keys %{$cfg}) {
-        if ( $cfg->{$k}{ref_fasta} ) {
-            $genomes->{$k}{ref_fasta}=$cfg->{$k}{ref_fasta};
-            if ( !$cfg->{$k}{refGene} ) {
-                croak "Error: no refGene entry for $k in config file!\n";
-            }
-            $genomes->{$k}{refGene}=$cfg->{$k}{refGene};
-            
-            if ( !$cfg->{$k}{bwa_idx} ) {
-                croak "Error: no bwa_idx entry for $k in config file!\n";
-            }
-            $genomes->{$k}{bwa_idx}=$cfg->{$k}{bwa_idx};
+        next if ( $k eq "app" or $k eq "prinseq" or $k eq "other" ); 
+        for my $type ( "ref_fasta", "bwa_idx", "refGene" ) {
+            $genomes->{$k}{$type}=$cfg->{$k}{$type};
         }
     }
     return $genomes;
+}
+
+=head2 checkGenome
+
+ Function: Make sure the genome has fasta file, bwa index, and refGene coordinates
+ Args    : hash of genomes, and genome name of interest
+ Return  : Return 1 if successful. Exit if not.  
+=cut
+
+sub checkGenome {
+    my ($self, $genomes, $genome) = @_;
+    my @errors;
+    for my $type ( "ref_fasta", "bwa_idx", "refGene" ) {
+        my $file = $genomes->{$genome}{$type};
+        if ( !$file ) {
+             if ( $type ne "refGene" ) {
+                 push(@errors, "Genome $genome: The $type entry was not set in config file.");
+             }
+        } elsif ( $file !~ /^\// ) {
+             push(@errors, "Genome $genome: Absolute path is required for $file in config file.");
+        } elsif ( $type eq "bwa_idx" ) {
+             push(@errors, "Genome $genome: BWA index $file was not found.") if ! -f "$file.bwt";
+        } elsif ( ! -f $file ) {
+             push(@errors, "Genome $genome: $file was not found.");
+        }
+    }
+
+    croak join("\n", @errors) if @errors;
+    return 1;
 }
 
 =head2 xls2tsv 
@@ -499,12 +520,12 @@ sub createBeds {
         $genesym = uc($genesym);
 
         if ( !$refseq_ID ) {
-            print STDERR "refSeq ID not found in refGene table. Have set it to -.\n";
+            print STDERR "Could not find refSeq ID. Had set it to -.\n";
             $refseq_ID = "-";
         }
 
         if ( !$txStrand ) {
-            print STDERR "Could not find txStrand in refGene table. Set it to +.\n";
+            print STDERR "Could not find txStrand. Had set it to +.\n";
             $txStrand = '+';
         }
 
@@ -553,6 +574,10 @@ sub createBeds {
 sub getGuideInfo {
     my ($guide_aref, $known_chrom, $bwa_idx, $refgene_file, $work_dir ) = @_;
 
+    if ( !-f "$bwa_idx.bwt" ) {
+        croak "Could not find bwa index $bwa_idx!\n";
+    }
+
     ## create a fasta file
     my $guide_fasta = "$work_dir/guides.fa";
     open(my $outf, ">$guide_fasta") or die "Cannot create $guide_fasta.\n";
@@ -567,7 +592,7 @@ sub getGuideInfo {
     $cmd .= " bwa samse $bwa_idx - $guide_fasta > $sam 2>/dev/null";
     my $status = system($cmd);
     if ($status) {
-        croak  "Failed in aligning guide sequence!\n";
+        confess  "Error: Failed in BWA aligning guide sequence!\n";
     }
 
     ## parse alignment result
@@ -578,9 +603,12 @@ sub getGuideInfo {
         next if $a[5] =~ /H/; # $a[5] is cigar 
         my $seq = $a[0];
         my ($chr, $start, $end, $strand) = parseSamRecord($line, $known_chrom); 
-        croak  "Error: Could not find $seq in reference genome!\n" if !$chr;
+        confess  "Error: Could not find $seq in reference genome!\n" if !$chr;
 
-        my @refgene_info = getRefGeneInfo($chr, $start, $end, $refgene_file);    
+        my @refgene_info = ();
+        if ( -f $refgene_file ) {
+            @refgene_info = getRefGeneInfo($chr, $start, $end, $refgene_file);    
+        } 
         $guide_info{$seq} = join("\t", $chr, $start, $end, $seq, $strand, @refgene_info ); 
     }
     return %guide_info;
@@ -622,12 +650,13 @@ sub parseSamRecord {
 =head2 getRefGeneInfo
 
  Function: Find gene info from refGene table.
-
+ Return  : An array containing genesym, refseqid, tanscript(start, end and strand).
+           Transcript start is made 1-based.
 =cut
 
 sub getRefGeneInfo {
     my ($chr, $start, $end, $refGeneTable)=@_;
-    croak "Could not find $refGeneTable.\n" if !-f $refGeneTable;
+    croak "Could not find refGene file $refGeneTable\n" if !-f $refGeneTable;
 
     open(PP, "awk '\$3==\"$chr\"' $refGeneTable |");
 
@@ -644,7 +673,7 @@ sub getRefGeneInfo {
                 $longest = $txEnd - $txStart;
                 $refseqid= $a[1];
                 $genesym = $a[12];
-                $tx_start = $txStart+1;
+                $tx_start = $txStart+1; # now 1-based
                 $tx_end = $txEnd;        
                 $tx_strand = $a[3];
             }

@@ -3,12 +3,15 @@
 ## Add a genome section to reflect the genome of interest. 
 ## If there are multiple genomes, each genome must have its own section.
 ## When amplicon sequence is used as reference, this section is ignored.
-#
+
+## A genome musgt have ref_fasta and bwa_idx. 
+## The refGene entry is optional. It's used for visual alignment view of coding sequence.
+## Absolute path must be used for genome files when a samplesheet is used to prepare run.sh. 
 
 [genomex]
-ref_fasta = /bfx/genome/genomex/genomex.fa
-bwa_idx = /bfx/genome/genomex/genomex.fa
-refGene = /bfx/genome/genomex/refgenex.txt
+ref_fasta = genomex/genomex.fa
+bwa_idx = genomex/genomex.fa
+refGene = genomex/refgenex.txt
 
 [hg38]
 ref_fasta = /bfx/genome/hg38/hg38.fa

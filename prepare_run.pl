@@ -54,9 +54,9 @@ foreach my $amp ( @$ordered_amps ) {
     my $genesym = $syms[0];
     my $guide_aref = $ordered_guides->{$amp};
     my $hdr_href = $hdrs->{$amp};    
-    my $bwa_idx = $genomes->{$genome}{bwa_idx};
-    my $refgene_file = $genomes->{$genome}{refGene};
     my @project_ids = keys %{$projects->{$amp}}; 
+
+    $p->checkGenome($genomes, $genome);
 
     my $amp_path = "$prep_dir/amp${i}_" . $genesym . "_" . rand();
     my $amp_path = File::Spec->rel2abs($amp_path);
@@ -81,9 +81,9 @@ foreach my $amp ( @$ordered_amps ) {
     my $amp_bed = "$amp_path/amplicon.bed"; 
     my $site_bed = "$amp_path/site.bed";
     $p->createBeds($genesym, $genome, $chrom, $amp_start, $amp_end,
-            $guide_aref, $hdr_href,
-            $bwa_idx, $refgene_file, $amp_path,
-            $amp_bed, $site_bed);
+          $guide_aref, $hdr_href, $genomes->{$genome}{bwa_idx}, 
+          $genomes->{$genome}{refGene}, $amp_path,
+          $amp_bed, $site_bed);
 
     # copy files
     qx(cp $samplesheet $amp_path);

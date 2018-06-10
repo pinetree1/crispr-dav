@@ -2,7 +2,7 @@
 ## Author: X. Wang
 suppressMessages(library(ggplot2))
 suppressMessages(library(naturalsort))
-library(reshape2)
+suppressMessages(library(reshape2))
 options(scipen=999)
 
 args <- commandArgs(trailingOnly=FALSE)

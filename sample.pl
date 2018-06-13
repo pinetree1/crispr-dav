@@ -74,9 +74,9 @@ if ( $h{merge} ne "Y" or !-f $h{read2fastq}) {
         ns_max_p      => $h{ns_max_p}
     );
 
-    if ( $status == 1 ) {
+    if ( $status == 2 ) {
         quit($fail_flag, "No quality reads after filtering");
-    } elsif ( $status == 2 ) {
+    } elsif ( $status == 3 ) {
         quit($fail_flag, "Other filtering error");
     }
 
@@ -112,7 +112,8 @@ if ( $h{merge} ne "Y" or !-f $h{read2fastq}) {
     );
 
 } else {
-    # merge paired-end reads
+    
+    # merge paired-end reads before filtering as merge can increase read length.
     my $status = $ngs->merge_reads(
         r1_fastq_inf  => $h{read1fastq},
         r2_fastq_inf  => $h{read2fastq},
@@ -126,18 +127,16 @@ if ( $h{merge} ne "Y" or !-f $h{read2fastq}) {
     # filter merged fastq file
     my $merged_fastq = "$outdir/$sample.extendedFrags.fastq.gz";
     my $merged_filt  = "$outdir/$sample.extendedFrags.filt.fastq.gz";
-    if ( -s $merged_fastq ) {
-        $status = $ngs->filter_reads (
+    $status = $ngs->filter_reads (
             read1_inf     => $merged_fastq,
             read1_outf    => $merged_filt,
             min_qual_mean => $h{min_qual_mean},
             min_len       => $h{min_len},
             ns_max_p      => $h{ns_max_p}
-        );
+    );
 
-        if ( $status == 2 ) {
-            quit($fail_flag, "Failed in filtering merged fastq file");
-        }
+    if ( $status == 3 ) {
+        quit($fail_flag, "Failed in filtering merged fastq files");
     }
 
     # filter un-merged fastq file
@@ -145,8 +144,7 @@ if ( $h{merge} ne "Y" or !-f $h{read2fastq}) {
     my $un_merged_fastq2 = "$outdir/$sample.notCombined_2.fastq.gz";
     my $un_merged_filt1 = "$outdir/$sample.notCombined_1.filt.fastq.gz";
     my $un_merged_filt2 = "$outdir/$sample.notCombined_2.filt.fastq.gz";
-    if ( -s $un_merged_fastq1 ) {
-        $status = $ngs->filter_reads (
+    $status = $ngs->filter_reads (
             read1_inf     => $un_merged_fastq1,
             read2_inf     => $un_merged_fastq2,
             read1_outf    => $un_merged_filt1,
@@ -154,18 +152,16 @@ if ( $h{merge} ne "Y" or !-f $h{read2fastq}) {
             min_qual_mean => $h{min_qual_mean},
             min_len       => $h{min_len},
             ns_max_p      => $h{ns_max_p}
-        );
+    );
 
-        if ( $status == 2 ) {
-            quit($fail_flag, "Failed in filtering un-merged fastq files");
-        }
+    if ( $status == 3 ) {
+        quit($fail_flag, "Failed in filtering un-merged fastq files");
     }
 
-    # align merged fastq file
+    # align merged fastq file which is ok to be empty
     my @mg_bamstats;
     my $merged_filt_bamfile = "$outdir/$sample.extendedFrags.bam"; 
-    if ( -s $merged_filt ) {
-        @mg_bamstats = $ngs->create_bam(
+    @mg_bamstats = $ngs->create_bam(
             sample             => $sample,
             read1_inf          => $merged_filt,
             idxbase            => $h{idxbase},
@@ -178,9 +174,8 @@ if ( $h{merge} ne "Y" or !-f $h{read2fastq}) {
             remove_duplicate   => $h{unique},
             chromCount_outfile => "$readchr.merge"
         );
-    }
 
-    # align un-merged fastq files
+    # align un-merged fastq files which are ok to be empty
     my @um_bamstats;
     my $un_merged_filt_bamfile = "$outdir/$sample.notCombined.bam"; 
     my @um_bamstats = $ngs->create_bam(
@@ -229,11 +224,11 @@ if ( $h{merge} ne "Y" or !-f $h{read2fastq}) {
     $ngs->combineChromCount(inf_aref=>["$readchr.merge", "$readchr.un_merge"], 
                           outfile=>$readchr); 
 
-    clean_up( $merged_filt, $un_merged_filt1, $un_merged_filt2, 
-        $merged_filt_bamfile,"$merged_filt_bamfile.bai", 
-        $un_merged_filt_bamfile, "$un_merged_filt_bamfile.bai", 
-        "$readchr.merge", "$readchr.un_merge"
-        );
+    #clean_up( $merged_filt, $un_merged_filt1, $un_merged_filt2, 
+    #    $merged_filt_bamfile,"$merged_filt_bamfile.bai", 
+    #    $un_merged_filt_bamfile, "$un_merged_filt_bamfile.bai", 
+    #    "$readchr.merge", "$readchr.un_merge"
+    #    );
 }
 unlink $ampbed;
 

@@ -94,28 +94,38 @@ sub filter_reads {
     );
 
     required_args( \%h, 'read1_inf', 'read1_outf' );
+    my $read1_outf = $h{read1_outf};
+    my $read2_outf = $h{read2_outf};
+
+    my $ZERO_INIT_READ = 1;
+    my $ZERO_GOOD_READ = 2;
+    my $OTHER_FAILURE  = 3;
 
     my $f1 = $h{read1_inf};
     my $f2 = $h{read2_inf};
     if ( $f1 !~ /\.gz$/ or ( $f2 && $f2 !~ /\.gz$/ ) ) {
         print STDERR "Fastq file must be gzipped and has .gz extension";
-        return 1;
+        return $OTHER_FAILURE;
+    }
+
+    # fastq file cannot be empty
+    my $readcount = `gunzip -c $f1 |wc -l`; 
+    chomp $readcount;
+    if ( $readcount == 0 ) {
+        print STDERR "Fastq file $f1 is empty";
+        `gzip -c /dev/null > $read1_outf`;
+        `gzip -c /dev/null > $read2_outf` if $f2; 
+        return $ZERO_INIT_READ;
     }
 
     my $param = "-min_len $h{min_len}" if defined $h{min_len};
     $param .= " -min_qual_mean $h{min_qual_mean}" if defined $h{min_qual_mean};
     $param .= " -ns_max_p $h{ns_max_p}"           if defined $h{ns_max_p};
 
-    my $read1_outf = $h{read1_outf};
-    my $read2_outf = $h{read2_outf};
-
     my ( $cmd, $status );
 
-	my $ZERO_GOOD_READ = 1;
-    my $OTHER_FAILURE  = 2;
-
     my $log = "$read1_outf.filter.log";
-	my $prinseq = $self->{prinseq};
+    my $prinseq = $self->{prinseq};
     if ( !-f $f2 ) {
         print STDERR "\nFiltering single-end fastq.\n";
         $cmd = "(gunzip -c $f1 | $prinseq -fastq stdin" .
@@ -125,7 +135,9 @@ sub filter_reads {
         if ($status == 0) {
             if ( ! -f "$read1_outf.fastq" ) {
                 # zero good reads. All bad reads.
+                `gzip -c /dev/null > $read1_outf`;
                 $status = $ZERO_GOOD_READ;
+
             } else { 
                 $cmd = "gzip -c $read1_outf.fastq > $read1_outf && rm $read1_outf.fastq";
                 print STDERR "$cmd\n" if $self->{verbose};
@@ -147,6 +159,8 @@ sub filter_reads {
         $status = system($cmd);
         if ($status == 0) {
             if ( ! -f "${read1_outf}_1.fastq" or !-f "${read1_outf}_2.fastq" ) {
+                `gzip -c /dev/null > $read1_outf`;
+                `gzip -c /dev/null > $read2_outf`;
                 $status = $ZERO_GOOD_READ;
             } else {
                 $cmd = "gzip -c ${read1_outf}_1.fastq > $read1_outf" .
@@ -163,7 +177,6 @@ sub filter_reads {
         }
     }
 
-    #print STDERR "\nFailed in filtering reads.\n" if $status;
     return $status;
 }
 

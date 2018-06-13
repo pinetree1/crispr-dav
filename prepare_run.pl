@@ -58,8 +58,8 @@ foreach my $amp ( @$ordered_amps ) {
 
     $p->checkGenome($genomes, $genome);
 
-    my $amp_path = "$prep_dir/amp${i}_" . $genesym . "_" . rand();
-    my $amp_path = File::Spec->rel2abs($amp_path);
+    my $amp_path = "$prep_dir/" . join("_", "amp", $genesym, $chrom, $amp_start, $amp_end);
+    $amp_path = File::Spec->rel2abs($amp_path);
     make_path($amp_path);
     push(@amp_paths, $amp_path);
 

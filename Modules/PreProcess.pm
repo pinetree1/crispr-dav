@@ -234,9 +234,11 @@ sub createFastqList {
 sub getFastqFiles {
     my ($sample_id, $dir) = @_;
     croak "Fastq directory s3 path is not accepted.\n" if $dir =~ /^s3:/;
+    my $msg = "Fastq file name must start with a sample ID followed by _, -, or ., and contain _R1_ for read1 file, _R2_ for read2 file, and end with .gz";
+
     my @fs = sort glob("$dir/${sample_id}*.gz");
     if ( !@fs ) {
-        croak "Could not find fastq files that start with $sample_id and end with .gz";
+        croak "Could not find fastq files for $sample_id. $msg\n";
     }
  
     my @files;
@@ -244,13 +246,16 @@ sub getFastqFiles {
         if ( basename($f) =~ /^${sample_id}.*_I[12]_.*/ ) { 
             # This may be index files. Skip.
             next;
-        } elsif ( basename($f) =~ /^${sample_id}/ ) {
+        } elsif ( basename($f) =~ /^${sample_id}[_\-\.]/ and basename($f) =~ /_R[12]_/ ) {
             push(@files, $f);
         }
     }    
 
-    if ( scalar(@files) > 2 ) {
-        croak "Error: cannot have more than 2 files for $sample_id: ".join(",", @files)."\n";
+    if ( !@files ) {
+        croak "Error: Could not find fastq files for $sample_id. $msg\n" 
+    } 
+    elsif ( scalar(@files) > 2 ) { 
+        croak "Error: cannot have more than 2 files for $sample_id: \n".join("\n", @files)."\n";
     } 
 
     return @files;       
@@ -336,6 +341,8 @@ sub parseSamplesheet {
 
         my ($genesym, $genome, $range, $sgRNA, $hdr, $sampleName, $sampleID, 
              $project, $fqdir) = split(/\t/, $line);
+        next if ( !$genesym && !$genome && !$range && !$sgRNA && !$hdr
+             && !$sampleName && !$sampleID && !$project && !$fqdir );
 
         if (!$genesym or !$genome or !$range or !$sampleName or !$sampleID ) {
             push(@errors, "Line $i: Empty value for genesym, genome, amplicon, sampleName or sampleID. If the affected field is not empty, this error could be caused by inserted or missing columns.");

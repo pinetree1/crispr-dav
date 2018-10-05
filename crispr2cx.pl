@@ -108,7 +108,9 @@ This is an interactive alignment view of the CDS (coding sequence) of sgRNA guid
  bars can be zoomed in and out, and moved to the left and right. Intronic bases, if
  present in sgRNA sequence or deleted bases, will not be drawn. Deletion is shown as
  an arc line connecting neighboring bases. Insertion is shown as a small tick mark
- between two bases. The inserted bases are shown in the pop up window.
+ between two bases. Please note: the amino acid sequence at or after the insertion 
+ was left unchanged from the wild type, due to technical issues. However, the inserted 
+ bases and resulting amino acid sequence are shown in the pop-up window.
 <p>
 ";
 

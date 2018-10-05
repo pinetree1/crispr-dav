@@ -66,7 +66,7 @@ function crisprPop (mlco, d) {
             text.push("<span class='frame'>Frame Preserved</span>");
         }
         text.push("<b>Sequence:</b>"+sb);
-        if (st == 'Ins') text.push("<div class='smallnote'><b>NOTE:</b> The sequence above is accurate, but the display of insertions in the main window is not (they will incorrectly appear wild type)</div>");
+        //if (st == 'Ins') text.push("<div class='smallnote'><b>NOTE:</b> The sequence above is accurate, but the display of insertions in the main window is not (they will incorrectly appear wild type)</div>");
     }
     //text.push( mlco.preDump(dd) );
     return text.join(mlco.cat);

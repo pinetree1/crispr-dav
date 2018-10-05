@@ -3,6 +3,7 @@
 ## Author: X. Wang
 suppressMessages(library(ggplot2))
 options(scipen=999)
+Sys.setlocale("LC_ALL", "en_US.UTF-8")
 
 args <- commandArgs(trailingOnly=FALSE)
 script.name <- sub("--file=", "", args[grep("--file=",args)])

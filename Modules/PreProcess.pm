@@ -264,11 +264,47 @@ sub getFastqFiles {
     return @files;       
 }
 
+=head2 findHeader
+
+ Function: Identify the header row
+
+ Args    : an array ref of column names; 
+           a string of tab-delimited and space-removed line content. 
+
+ Returns : (1) A hash reference of all-uppercase column names vs column number index. 
+               If a column is not found, the index is -1. 
+           (2) Total number of matched columns
+=cut
+
+sub findHeader {
+    my ($ref, $line) = @_;
+    my %header;
+    foreach my $cn (@$ref) {
+        $cn = uc($cn);
+        $header{$cn} = -1;
+    }
+
+    my $i = 0;
+    my $matched = 0;
+    foreach my $cn ( split(/\t/, $line) ) {
+        $cn = uc($cn);
+        if ( defined $header{$cn} ) {
+            $header{$cn} = $i;
+            $matched ++;
+        }  
+        $i++;
+    }
+
+    return (\%header, $matched);
+}
+
 =head2 parseSamplesheet
 
- Function: Parse samplesheet tsv or xlsx file. The samplesheet has 2 header rows.
-           The column order is: genesym, genome, amplicon range, guide sequence, HDR,
-                 sample name, sample ID, projectID, fastq dir path 
+ Function: Parse samplesheet tsv or xlsx file. The samplesheet must have these table header names:
+           GENE_SYMBOL, GENOME_NAME, AMPLICON_RANGE, GUIDE_SEQUENCE, HDR_NEWBASES,
+                 SAMPLE_NAME, SAMPLE_ID, SAMPLE_PROJECT, FASTQ_DIRPATH. There can be 0 or more rows 
+           before the row of these names. But rows below the row of these names are considered data.
+           PROJECT_ID and FASTQ_DIRPATH are optional if fastqdir and project arguments are provided. 
  Args    : samplesheet, genome reference(returned by getGenomes), fastqdir, projectid
            Fastqdir is optionl. If specified, it overwrites the fastq dirpath in samplesheet.
            Projectid is optional. If specified, it overwrites the project in samplesheet.
@@ -280,10 +316,6 @@ sub getFastqFiles {
 
 sub parseSamplesheet {
     my ($self, $infile, $genomes, $fastqdir, $projectid) = @_;
-
-    if ($fastqdir && $fastqdir !~ /^s3:/ && !-d $fastqdir) {
-        croak "Fastq directory $fastqdir does not exist!";
-    }
 
     # One spreadsheet can have multiple genomes.
     ## General conditions of the input within the same amplicon:
@@ -304,12 +336,11 @@ sub parseSamplesheet {
         $self->xls2tsv($infile);
         $infile="$base.txt";
     }
-    qx(dos2unix -q $infile);
+
+    qx(perl -pi -e 's/\r\n/\n/g' $infile);
+    qx(perl -pi -e 's/\r/\n/g' $infile);
 
     open(my $inf, $infile) or croak $!;
-
-    ## skip the first 2 lines;
-    <$inf>; <$inf>; 
 
     my @ordered_amps;
     my %seen_amps;
@@ -334,21 +365,61 @@ sub parseSamplesheet {
     my @errors;
     my $i = 2;
     my $prev_end = 0;  # end coordinate of previous amplicon
+
+    my @header_names = ("GENE_SYMBOL", "GENOME_NAME", "AMPLICON_RANGE", 
+           "GUIDE_SEQUENCE", "HDR_NEWBASES", "SAMPLE_NAME", "SAMPLE_ID");
+    if ( !$projectid ) { push(@header_names, "SAMPLE_PROJECT"); }
+    if ( !$fastqdir ) { push(@header_names, "FASTQ_DIRPATH"); }
+     
+    my $header_ref; # column_name=>index
+    my $matched = 0;
+    my $high_matched_cols = 0;
+    my $high_matched_header_ref;
+
     while (my $line=<$inf>) {
         $i++;
         next if ($line !~ /\w/ or $line =~ /^#/);
         chomp $line;
 
         # Keep only allowed chars: \w (digit, letter, _) , -, comma, :, and \t.
-        $line =~ s/[^\w\t,\/:\-]//g;  # space is removed
+        $line =~ s/[^\w\t,\/:\-]//g;  # space is removed. 
 
-        my ($genesym, $genome, $range, $sgRNA, $hdr, $sampleName, $sampleID, 
-             $project, $fqdir) = split(/\t/, $line);
+        if ( $matched != scalar(@header_names)  ) {
+            ($header_ref, $matched) = findHeader(\@header_names, $line);
+            if ( $matched > $high_matched_cols ) {
+                $high_matched_cols = $matched;
+                $high_matched_header_ref = $header_ref;
+            }
+            next;
+        }
+
+        my %data;
+        my @a = split('\t', $line);
+        foreach my $cn ( keys %$header_ref ) {
+            $data{$cn} = $a[$header_ref->{$cn}];
+        }
+
+        my $genesym = $data{GENE_SYMBOL};
+        my $genome = $data{GENOME_NAME};
+        my $range = $data{AMPLICON_RANGE};
+        my $sgRNA = $data{GUIDE_SEQUENCE};
+        my $hdr = $data{HDR_NEWBASES};
+        my $sampleName = $data{SAMPLE_NAME};
+        my $sampleID = $data{SAMPLE_ID}; 
+        my $project = $data{SAMPLE_PROJECT};
+        my $fqdir = $data{FASTQ_DIRPATH};
+	
+        # Project ID
+        $project = $projectid if $projectid;
+ 
+        # fastq path 
+        $fqdir = $fastqdir if $fastqdir;
+
         next if ( !$genesym && !$genome && !$range && !$sgRNA && !$hdr
              && !$sampleName && !$sampleID && !$project && !$fqdir );
 
         if (!$genesym or !$genome or !$range or !$sampleName or !$sampleID ) {
-            push(@errors, "Line $i: Empty value for genesym, genome, amplicon, sampleName or sampleID. If the affected field is not empty, this error could be caused by inserted or missing columns.");
+            push(@errors, "Line $i: missing value for genesym, genome, amplicon, sampleName or sampleID.");
             next;
         }
 
@@ -406,16 +477,8 @@ sub parseSamplesheet {
         # sample name: meaningful name to scientist
         $sampleName =~ s/,//g;
       
-        # Project ID
-        $project = $projectid if $projectid;
- 
-        # fastq path 
-        $fqdir = $fastqdir if $fastqdir;
-
         if ( $fqdir !~ /\w/ ) {
             push(@errors, "Line $i: Fastq directory is empty and not specified on command line");
-        } elsif ( $fqdir =~ /^s3:/ ) { 
-            push(@errors, "Line $i: Fastq directory should not be s3 path!");
         } elsif ( ! -d $fqdir ) {
             push(@errors, "Line $i: $fqdir does not exist!");
         }
@@ -458,6 +521,19 @@ sub parseSamplesheet {
         }
     }
     close $inf;
+
+    if ( $high_matched_cols != scalar(@header_names) ) {
+        print "Error: Some or all of the required table headers(case insensitive) were not found:\n";  
+        foreach my $cn (@header_names) {
+            my $result = "Found";
+            if ( ( !defined $high_matched_header_ref->{$cn} ) or 
+                 $high_matched_header_ref->{$cn} < 0 ) {
+                 $result = "Not found"; 
+            }
+            print "$cn\t\t$result\n"; 
+        }
+        exit 1;
+    }
 
     # More error checking
     foreach my $amp ( sort keys %genesyms ) {

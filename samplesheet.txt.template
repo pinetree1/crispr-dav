@@ -1,6 +1,6 @@
-Gene symbol	"Allowed: hg19, mm10 etc as in config"	chrN:start-end	"Seq1,Seq2,... OK to leave blank for control sample."	"Optional. Format:pos1Base1, pos2Base2,... Bases must be on positive strand. OK to leave blank for control sample. "	"Unique per amplicon. One sample per row. Allowed: letter, number, -, and _. "	Fastq file name starts with this. This uniquely identifies the fastq file.	Optional. Only one project ID. 	Optional. Fastq directory path
-Gene Symbol	Genome	Amplicon range	sgRNA Sequences	Expected HDR Bases on Positive Strand	Sample Name	Sample ID	Project ID	FastqPath
-GENEX	genomex	chr4:35769-36280	TACGGGAACACCAGGGAACA	"35838T,35859A,35862T,35865C"	sample1	sample1	project1	rawfastq
-GENEX	genomex	chr4:35769-36280	TACGGGAACACCAGGGAACA	"35838T,35859A,35862T,35865C"	sample2	sample2	project1	rawfastq
-GENEX	genomex	chr4:35769-36280	TACGGGAACACCAGGGAACA	"35838T,35859A,35862T,35865C"	sample3	sample3	project1	rawfastq
-GENEX	genomex	chr4:35769-36280	TACGGGAACACCAGGGAACA	"35838T,35859A,35862T,35865C"	sample4	sample4	project1	rawfastq
+Gene symbol	Allowed: hg19, mm10 etc as in config	chrN:start-end	sgRNA sequence. OK to leave blank for control sample.	Optional. Format:pos1Base1, pos2Base2,... Bases must be on positive strand. OK to leave blank for control sample. 	Unique per amplicon. One sample per row. Allowed: letter, number, -, and _. 	Fastq file name starts with this. This uniquely identifies the fastq file.	Optional. Only one project ID. Overwritten by command line argument. 	Optional. Fastq directory path. Overwritten by command line argument.
+Gene_Symbol	Genome_Name	Amplicon_Range	Guide_Sequence	HDR_NewBases	Sample_Name	Sample_ID	Sample_Project	Fastq_DirPath
+GENEX	genomex	chr4:35769-36280	TACGGGAACACCAGGGAACA	35838T,35859A,35862T,35865C	sample1	sample1	project1	rawfastq
+GENEX	genomex	chr4:35769-36280	TACGGGAACACCAGGGAACA	35838T,35859A,35862T,35865C	sample2	sample2	project1	rawfastq
+GENEX	genomex	chr4:35769-36280	TACGGGAACACCAGGGAACA	35838T,35859A,35862T,35865C	sample3	sample3	project1	rawfastq
+GENEX	genomex	chr4:35769-36280	TACGGGAACACCAGGGAACA	35838T,35859A,35862T,35865C	sample4	sample4	project1	rawfastq

@@ -607,12 +607,12 @@ sub createBeds {
         $genesym = uc($genesym);
 
         if ( !$refseq_ID ) {
-            print STDERR "Could not find refSeq ID. Had set it to -.\n";
+            print STDERR "Could not find refSeq ID for guide seq $seq, $chr:$start-$end. Setting Refseq ID to - in amplicon bed file.\n";
             $refseq_ID = "-";
         }
 
         if ( !$txStrand ) {
-            print STDERR "Could not find txStrand. Had set it to +.\n";
+            print STDERR "Could not find txStrand for guide seq $seq, $chr:$start-$end. Setting gene strand to + in amplicon bed file.\n";
             $txStrand = '+';
         }
 
@@ -646,7 +646,7 @@ sub createBeds {
     close $ampf;
 
     if ( scalar(@genesyms) > 1 ) {
-        croak "Error: The guide sequences in the amplicon matched to more than one gene!\n";
+        croak "Error: The guide sequences in the amplicon matched to more than one gene! They must be in the same gene.\n";
     }
 }
 

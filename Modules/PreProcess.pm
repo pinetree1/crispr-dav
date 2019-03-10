@@ -425,7 +425,7 @@ sub parseSamplesheet {
 
         # Genesym
         $genesym=uc($genesym);
-        $genesym =~ s/\-/_/g;  # replace - in gene symbol with _
+        $genesym =~ s/[\/\-]/_/g;  # replace / and - in gene symbol with _
 
         # Genome
         if ($genomeNames{lc($genome)}) {

@@ -222,13 +222,19 @@ sub create_bam {
     );
     return ($status) if $status;
 
+    my $single = 1;
+    if ( $h{read2_inf} ) {
+        $single = 0;
+    }
+
     ## Indel realignment
     if ( $h{realign} && $h{abra} && $h{target_bed} && $h{ref_fasta} ) {
         $status = $self->ABRA_realign(
             bam_inf    => $h{bam_outf},
             abra       => $h{abra},
             target_bed => $h{target_bed},
-            ref_fasta  => $h{ref_fasta}
+            ref_fasta  => $h{ref_fasta},
+            single     => $single
         );
         return ($status) if $status;
     }
@@ -522,9 +528,10 @@ sub mark_duplicate {
 
  Usage   : $obj->ABRA_realign(bam_inf=>, abra=>'path/of/abra.jar', ...) 
  Function: Update bam file with ABRA for enhanced indel detection
- Args    : bam_inf, abra, target_bed, ref_fasta, 
+ Args    : bam_inf, abra, target_bed, ref_fasta, single 
 	target_bed is a bed file that specifies the region to realign
 	ref_fasta is a reference fasta file.
+        single=>0 is for PE reads; single=>1 is for SE read 
 
 =cut
 
@@ -535,7 +542,7 @@ sub ABRA_realign {
         @_
     );
 
-    required_args( \%h, 'bam_inf', 'abra', 'target_bed', 'ref_fasta' );
+    required_args( \%h, 'bam_inf', 'abra', 'target_bed', 'ref_fasta', 'single' );
 
     my $tmpdir = $self->{tmpdir};
 
@@ -553,6 +560,10 @@ sub ABRA_realign {
       " && $self->{java} -Djava.io.tmpdir=$tmpdir -jar $h{abra} --threads 2" .
       " --ref $h{ref_fasta} --targets $h{target_bed} --working $workdir" .
       " --in $h{bam_inf} --out $h{bam_outf}";
+    
+    if ($h{single}) {
+        $cmd .= " --single";
+    } 
 
     if ($replace_flag) {
         my $prev_bam = $h{bam_inf};
@@ -565,7 +576,7 @@ sub ABRA_realign {
 
     $cmd = "($cmd) &> $h{bam_inf}.abra.log";
     print STDERR "\nRealigning with ABRA.\n";
-    print STDERR "$cmd\n" if $self->{verbose};
+    print STDERR "$cmd\n";
 
     my $status = system($cmd);
     if ($status) {

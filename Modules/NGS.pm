@@ -223,7 +223,7 @@ sub create_bam {
     return ($status) if $status;
 
     my $single = 1;
-    if ( $h{read2_inf} ) {
+    if ( -f $h{read2_inf} ) {
         $single = 0;
     }
 
